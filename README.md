@@ -1,20 +1,22 @@
 # tarchia
 Mabel &amp; Opteryx Metastore
 
-
-# API Definition
+## API Definition
 
 ### Overview
 
 
-End Point   | POST | GET | PUT | DELETE
+API         | POST | GET | PUT | DELETE
 :---------- | :--- | :-- | :-- | :-----
-v1.0/table  |      |     |     |
+table       |      |     |     |
+columns     |      |     |     |
+blobs       |      |     |     |
 
-
-### human description
+### Table API
 
 fuller description
+
+#### **Search for Table**
 
 **End Point**
 
