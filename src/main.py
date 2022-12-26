@@ -10,7 +10,6 @@ tarchia = FastAPI(
 )
 tarchia.include_router(v1_0.columns)
 tarchia.include_router(v1_0.datasets)
-tarchia.include_router(v1_0.blobs)
 
 if __name__ == "__main__":
     run(
