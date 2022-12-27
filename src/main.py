@@ -8,7 +8,7 @@ from routes import v1_0
 tarchia = FastAPI(
     title="Tarchia Metastore"
 )
-tarchia.include_router(v1_0.columns)
+#tarchia.include_router(v1_0.columns)
 tarchia.include_router(v1_0.datasets)
 
 if __name__ == "__main__":

@@ -47,4 +47,24 @@ _Response_
 ~~~
 ~~~
 
-### Next API
+Testing -> POST Dataset
+Mabel -> GET Dataset
+Mabel -> POST blob
+
+
+- Get Dataset
+    - fetches schema
+- Add Blob to Datase
+    - include partitioning
+    - perform profiling
+
+Dataset format:
+
+{
+    "canonical_name": "gcs://" ... the path to the blobs,
+    "preferred_name": the name as it should appear,
+    "aliases": [],
+    "schema": [
+        {"name", "type", "default", "aliases", "description"}, ...
+    ]
+}
