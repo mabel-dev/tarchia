@@ -22,8 +22,10 @@ async def list_datasets(
     return [
         {
             "id": "12345",
+            "href": "https://tarchia.opteryx.app/datasets/12345",
             "preferred_name": "nvd.cves",
             "canonical_name": "c:/files/nvd/cves/",
+            "aliases": [],
             "schema": [{"name": "CVE", "type": "VARCHAR"}],
         }
     ]
