@@ -10,7 +10,7 @@ Resource    | POST | GET | PUT | DELETE
 :---------- | :--- | :-- | :-- | :-----
 datasets       | New dataset |     |     |
 columns     |      |     |     |
-blobs       |      |     |     |
+datasets/blobs       |      |     |     |
 
 ### Sataset API
 
@@ -21,15 +21,15 @@ fuller description
 **_End Point_**
 
 ~~~
-[GET] /v1.0/datasets?filter=<filter>&describe=<describe>
+[GET] /v1.0/datasets/?filter=<filter>&describe=<describe>
 ~~~
 
 **_Query Parameters_**
 
 Parameter | Type    | Required | Description
 :-------- | :------ | :------- | :-----------
-filter    | string  | No       | A regular expression to filter the result
-describe  | boolean | No       | Value has to be true. The result contains columns for each dataset.
+filter    | string  | No       | Regular Expression filter for dataset names (preferred and aliases).
+describe  | boolean | No       | Return extended details, including schema information.
 
 **_Example_**
 
@@ -39,7 +39,7 @@ _Request_
 curl -i -X GET \
 -H "Accept: application/json" \
 -H "Content-type: application/json" \
-"https://<domain>/v1.0/dataset/?filter=.*opteryx.*"
+"https://<domain>/v1.0/datasets/?filter=.*opteryx.*"
 ~~~
 
 _Response_
