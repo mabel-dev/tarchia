@@ -86,6 +86,18 @@ while collision:
     indentifier = CityHash64(identifier + blob location)
 ~~~
 
+**_Example_**
+
+~~~bash
+curl -X 'POST' \
+  'http://localhost:8080/v1.0/datasets/12345/blobs' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "location": "sample/space_missions.parquet"
+}'
+~~~
+
 -----
 
 Testing -> POST Dataset
