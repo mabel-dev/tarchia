@@ -90,12 +90,15 @@ class Distogram:  # pragma: no cover
         # but even if a bad decision is made on a table with 500 rows, the consequence
         # is minimal, if a bad decision is made on a table with 5m rows, it starts to
         # matter.
-        counts, bin_values = numpy.histogram(values, self._bin_count * 5, density=False)
+        bin_values, counts = numpy.unique(values, return_counts=True)
+        if len(bin_values) > (self._bin_count * 5):
+            counts, bin_values = numpy.histogram(values, self._bin_count * 5, density=False)
+            bin_values = [bin_values[i] + bin_values[i + 1] / 2 for i in range(len(bin_values))]
         for index, count in enumerate(counts):
             if count > 0:
                 update(
                     self,
-                    value=(bin_values[index] + bin_values[index + 1]) / 2,
+                    value=bin_values[index],
                     count=count,
                 )
 

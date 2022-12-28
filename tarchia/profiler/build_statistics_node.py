@@ -20,11 +20,9 @@ Gives information about a dataset's columns
 import datetime
 
 from functools import reduce
-from typing import Iterable
 
 import numpy
 import orjson
-import pyarrow
 
 from opteryx.attribute_types import OPTERYX_TYPES, determine_type
 from opteryx.models import Columns
