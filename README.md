@@ -1,18 +1,19 @@
 # tarchia
 Mabel &amp; Opteryx Metastore
 
+
+
 ## API Definition
 
 ### Overview
 
 
-Resource    | POST | GET | PUT | DELETE
-:---------- | :--- | :-- | :-- | :-----
+Resource       | POST | GET | PUT | DELETE
+:------------- | :--- | :-- | :-- | :-----
 datasets       | New dataset |     |     |
-columns     |      |     |     |
-datasets/blobs       |      |     |     |
+datasets/blobs | Add Blob to dataset |     |     |
 
-### Sataset API
+### Dataset API
 
 fuller description
 
@@ -21,7 +22,7 @@ fuller description
 **_End Point_**
 
 ~~~
-[GET] /v1.0/datasets/?filter=<filter>&describe=<describe>
+[GET] /v1.0/datasets/?filter={filter}&describe={describe}
 ~~~
 
 **_Query Parameters_**
@@ -46,6 +47,46 @@ _Response_
 
 ~~~
 ~~~
+
+#### **Record Blob**
+
+**_End Point_**
+
+~~~
+[POST] /v1.0/datasets/{dataset}/blobs
+~~~
+
+**_Query Parameters_**
+
+Parameter | Type    | Required | Description
+:-------- | :------ | :------- | :-----------
+dataset
+
+**_Body Parameters_** (json)
+
+Parameter | Type    | Required | Description
+:-------- | :------ | :------- | :-----------
+location
+
+**_Response_** (raw)
+
+~~~
+{blob_identifier}
+~~~
+
+Parameter       | Type    | Description
+:-------------- | :------ | :-----------
+blob_identifier | string  | 
+
+The blob_identifier is created using this approach to avoid collisions overwriting data:
+
+~~~
+identifier = CityHash64(blob location)
+while collision:
+    indentifier = CityHash64(identifier + blob location)
+~~~
+
+-----
 
 Testing -> POST Dataset
 Mabel -> GET Dataset

@@ -10,8 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 from opteryx import connectors
-from op
+from opteryx.utils.file_decoders import ExtentionType, KNOWN_EXTENSIONS
+
+from exceptions import ProcessingError
+
 
 def reader_factory(path):
 
@@ -25,15 +29,27 @@ def reader_factory(path):
     return protocols.get(protocol, connectors.DiskConnector)
 
 
-def just_a_test(blob_name):
-    reader_class = reader_factory(blob_name)
-    reader = reader_class()
-    blob_bytes = reader.read_blob(blob_name)
+def read_blob(blob_name):
+    """
+
+    """
+    # Opteryx now dicrete blob reader so we have to implement here. We're leveraging
+    # some of the functionality used by the the blob reader node
 
     # the the blob filename extension
     extension = blob_name.split(".")[-1]
 
     # find out how to read this blob
     decoder, file_type = KNOWN_EXTENSIONS.get(extension, (None, None))
-    # get the extenstion
-    # get the appropriate reader (opteryx.utils.file_decoders)
+    if file_type != ExtentionType.DATA:
+        raise ProcessingError("Cannot profile non DATA blobs.")
+
+    # work out how to read the blow
+    reader_class = reader_factory(blob_name)
+    reader = reader_class()
+
+    # read it into memory
+    blob_bytes = reader.read_blob(blob_name)
+
+    # decode into a Arrow table
+    return decoder(blob_bytes)

@@ -1,5 +1,12 @@
+import orjson
+
 from fastapi import APIRouter, HTTPException, Request, Response, Query, Path
 from fastapi.responses import ORJSONResponse
+
+import models.v1_0
+
+from profiler.blob_reader import read_blob
+from profiler.stats_builder import build_stats
 
 datasets = APIRouter(prefix="/v1.0/datasets", tags=["Datasets"])
 
@@ -80,12 +87,21 @@ async def get_blob(dataset: str, request: Request):
 
 
 @datasets.post("/{dataset}/blobs", response_class=ORJSONResponse)
-async def create_or_update_blob(dataset: str, request: Request):
+async def create_or_update_blob(dataset: str, blob:models.v1_0.NewBlob, request: Request):
     """
     Add a new blob to the dataset
     """
+
+    # read the payload
+    payload = await request.body()
+    payload = orjson.loads(payload)
+
     # fetch the blob
+    page = read_blob(payload["location"])
     # profile the blob
+    profile = build_stats(page)
     # save the blob profile to the metastore
+    
+
     # return the ID for the blob
-    return {}
+    return str(profile)

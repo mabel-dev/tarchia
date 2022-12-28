@@ -23,9 +23,8 @@ import numpy
 import orjson
 
 from opteryx.attribute_types import OPTERYX_TYPES, determine_type
-from opteryx.models import Columns
+from opteryx.third_party import distogram
 
-from tarchia.profiler import distogram
 
 MAX_COLLECTOR: int = 8
 MAX_VARCHAR_SIZE: int = 64  # long strings tend to lose meaning
@@ -48,7 +47,7 @@ def increment(dic: dict, value):
         dic[value] = 1
 
 
-def builder(page):
+def build_stats(page):
     """
     Biuld summary statistics about each column in the dataset
     """
@@ -71,9 +70,6 @@ def builder(page):
 
     uncollected_columns = []
     profile_collector: dict = {}
-
-    columns = Columns(page)
-    table_path = columns.table_path
 
     for block in page.to_batches(10000):
 
@@ -189,7 +185,7 @@ def builder(page):
         buffer = []
 
         for column, profile in profile_collector.items():
-            profile["name"] = columns.get_preferred_name(column)
+            profile["name"] = column
             profile["type"] = ", ".join(profile["type"])
 
             if column not in uncollected_columns:
