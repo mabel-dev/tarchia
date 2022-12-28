@@ -13,8 +13,6 @@
 """
 Build Statistics Node
 
-This is a SQL Query Execution Plan Node.
-
 Gives information about a dataset's columns
 """
 import datetime
@@ -50,9 +48,9 @@ def increment(dic: dict, value):
         dic[value] = 1
 
 
-def _statitics_collector(page):
+def builder(page):
     """
-    Collect summary statistics about each column
+    Biuld summary statistics about each column in the dataset
     """
 
     empty_profile = orjson.dumps(
@@ -226,4 +224,3 @@ def _statitics_collector(page):
             buffer.append(profile)
 
         return buffer
-

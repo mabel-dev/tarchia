@@ -22,7 +22,7 @@ from typing import Optional
 from typing import Tuple
 
 EPSILON = 1e-5
-BIN_COUNT: int = 100
+BIN_COUNT: int = 50
 Bin = Tuple[float, int]
 
 _caster = numpy.float64
@@ -93,7 +93,7 @@ class Distogram:  # pragma: no cover
         bin_values, counts = numpy.unique(values, return_counts=True)
         if len(bin_values) > (self._bin_count * 5):
             counts, bin_values = numpy.histogram(values, self._bin_count * 5, density=False)
-            bin_values = [bin_values[i] + bin_values[i + 1] / 2 for i in range(len(bin_values))]
+            bin_values = [bin_values[i] + bin_values[i + 1] / 2 for i in range(len(bin_values) - 1)]
         for index, count in enumerate(counts):
             if count > 0:
                 update(

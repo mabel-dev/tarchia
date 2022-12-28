@@ -22,11 +22,13 @@ async def list_datasets(
     return [
         {
             "id": "12345",
+            "type": "dataset",
             "href": "https://tarchia.opteryx.app/datasets/12345",
             "preferred_name": "nvd.cves",
             "canonical_name": "c:/files/nvd/cves/",
             "aliases": [],
             "schema": [{"name": "CVE", "type": "VARCHAR"}],
+            "permissions": [],
         }
     ]
 
@@ -82,4 +84,8 @@ async def create_or_update_blob(dataset: str, request: Request):
     """
     Add a new blob to the dataset
     """
+    # fetch the blob
+    # profile the blob
+    # save the blob profile to the metastore
+    # return the ID for the blob
     return {}
