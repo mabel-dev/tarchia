@@ -54,7 +54,6 @@ def build_stats(page):
 
     empty_profile = orjson.dumps(
         {
-            "name": None,
             "type": [],
             "count": 0,
             "missing": 0,
@@ -182,10 +181,9 @@ def build_stats(page):
 
             profile_collector[column] = profile
 
-        buffer = []
+        profiles = {}
 
         for column, profile in profile_collector.items():
-            profile["name"] = column
             profile["type"] = ", ".join(profile["type"])
 
             if column not in uncollected_columns:
@@ -217,6 +215,10 @@ def build_stats(page):
             profile.pop("dgram", None)
             profile.pop("counter", None)
 
-            buffer.append(profile)
+            profiles[column] = profile
 
-        return buffer
+        return {
+            "version": "1.0",
+            "type": "profile",
+            "columns": profiles
+        }
