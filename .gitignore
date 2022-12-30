@@ -128,3 +128,4 @@ dmypy.json
 # Pyre type checker
 .pyre/
 brace.py
+opteryx_blobs/**

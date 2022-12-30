@@ -40,7 +40,7 @@ _Request_
 curl -i -X GET \
 -H "Accept: application/json" \
 -H "Content-type: application/json" \
-"https://<domain>/v1.0/datasets/?filter=.*opteryx.*"
+"https://{host}:8080/v1.0/datasets/?filter=.*opteryx.*"
 ~~~
 
 _Response_
@@ -90,7 +90,7 @@ while collision:
 
 ~~~bash
 curl -X 'POST' \
-  'http://localhost:8080/v1.0/datasets/12345/blobs' \
+  'http://{host}:8080/v1.0/datasets/12345/blobs' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{

@@ -22,7 +22,7 @@ def reader_factory(path):
     protocols = {
         "gcs": connectors.GcpCloudStorageConnector,
         "s3": connectors.AwsS3Connector,
-        "file": connectors.DiskConnector
+        "file": connectors.DiskConnector,
     }
 
     protocol = path.split("://")[0]
@@ -30,9 +30,7 @@ def reader_factory(path):
 
 
 def read_blob(blob_name):
-    """
-
-    """
+    """ """
     # Opteryx now dicrete blob reader so we have to implement here. We're leveraging
     # some of the functionality used by the the blob reader node
 

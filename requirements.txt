@@ -1,4 +1,6 @@
+cityhash
 fastapi
+numpy
 opteryx
 orjson
 pydantic

@@ -10,4 +10,6 @@ application = FastAPI(title="Tarchia Metastore")
 application.include_router(v1_0.datasets)
 
 if __name__ == "__main__":
-    run("main:application", host="0.0.0.0", port=int(environ.get("PORT", 8080)))  # nosec
+    run(
+        "main:application", host="0.0.0.0", port=int(environ.get("PORT", 8080))
+    )  # nosec
