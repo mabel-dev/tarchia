@@ -50,4 +50,4 @@ def read_blob(blob_name):
     blob_bytes = reader.read_blob(blob_name)
 
     # decode into a Arrow table
-    return decoder(blob_bytes)
+    return blob_bytes.getbuffer().nbytes, decoder(blob_bytes)

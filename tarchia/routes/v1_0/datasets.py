@@ -121,10 +121,12 @@ async def create_or_update_blob(
 
     # fetch the blob
     location = payload["location"]
-    page = read_blob(location)
+    raw_bytes, page = read_blob(location)
     # profile the blob
     profile = build_stats(page)
     profile["location"] = location
+    profile["raw_bytes"] = raw_bytes
+    profile["data_bytes"] = page.nbytes
     # save the blob profile to the metastore
 
     store = KV_store_factory("rocksdb")(location="opteryx_blobs")
