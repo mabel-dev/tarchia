@@ -1,17 +1,23 @@
 # tarchia
 Mabel &amp; Opteryx Metastore
 
-
-
 ## API Definition
 
 ### Overview
-
 
 Resource       | POST | GET | PUT | DELETE
 :------------- | :--- | :-- | :-- | :-----
 datasets       | New dataset |     |     |
 datasets/blobs | Add Blob to dataset |     |     |
+
+> Note
+> The metastore does not assume it knows about every blob or dataset
+
+Actions:
+- profile a blob
+- record information about a dataset (schema etc)
+- get a list of datasets
+- get a list of blob profiles apply a prefilter on a set of blobs (range filters) - remove blobs where it knows there's no matches
 
 ### Dataset API
 

@@ -8,6 +8,7 @@ from routes import v1_0
 application = FastAPI(title="Tarchia Metastore")
 # tarchia.include_router(v1_0.columns)
 application.include_router(v1_0.datasets)
+application.include_router(v1_0.blobs)
 
 if __name__ == "__main__":
     run(

@@ -217,4 +217,4 @@ def build_stats(page):
 
             profiles[column] = profile
 
-        return {"version": "1.0", "type": "blob_statistics", "columns": profiles}
+        return {"version": "1.0", "record_type": "blob_statistics", "columns": profiles}

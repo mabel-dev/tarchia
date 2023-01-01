@@ -11,6 +11,7 @@
 # limitations under the License.
 
 from pathlib import Path
+from os import environ
 
 import yaml
 
@@ -20,6 +21,8 @@ try:  # pragma: no cover
     if _config_path.exists():
         with open(_config_path, "rb") as _config_file:
             config = yaml.safe_load(_config_file)
+        for key, value in config.items():
+            config["key"] = environ.get(key, value)
         print(f"loaded config from {_config_path}")
 except Exception as exception:  # pragma: no cover # it doesn't matter why - just use the defaults
     print(f"config file {_config_path} not used - {exception}")
@@ -30,6 +33,7 @@ except Exception as exception:  # pragma: no cover # it doesn't matter why - jus
 # GCP project ID - for Google Cloud Data
 GCP_PROJECT_ID: str = config.get("GCP_PROJECT_ID")
 
-DATASET_COLLECTION_NAME: str = config.get("DATASET_COLLECTION_NAME")
-STATISTICS_COLLECTION_NAME: str = config.get("STATISTICS_COLLECTION_NAME")
+METASTORE_HOST: str = config.get("METASTORE_HOST", "json")
+DATASET_COLLECTION_NAME: str = config.get("DATASET_COLLECTION_NAME", "opteryx_data_catalogue")
+BLOB_COLLECTION_NAME: str = config.get("BLOB_COLLECTION_NAME", "opteryx_blobs")
 # fmt:on
