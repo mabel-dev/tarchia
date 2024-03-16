@@ -16,9 +16,9 @@ Mabel &amp; Opteryx Metastore
 /v1/tables/{id}/lineage      | Get Lineage      |  -              |  -                |  -					
 /v1/search                   | Search Metadata  |  -              |  - 			      |  -
 
-### Dataset API
+### End Point Details
 
-**List Databases**
+#### List Databases
 
 Retrieves a list of all databases.
 
@@ -29,7 +29,7 @@ Retrieves a list of all databases.
 Request: No request body needed.
 Response: A list of databases with details (e.g., ID, name).
 
-**Create Database**
+#### Create Database
 
 Creates a new database.
 
@@ -40,7 +40,7 @@ Creates a new database.
 Request: JSON body with the details of the database to be created (e.g., name).
 Response: Details of the created database, including its ID.
 
-**Database Details**
+#### Database Details
 
 Retrieves details of a specific database by ID.
 
@@ -51,7 +51,7 @@ Retrieves details of a specific database by ID.
 Request: No request body needed; the database ID is specified in the URL path.
 Response: Detailed information about the database (e.g., name, tables, creation date).
 
-**Update Database**
+#### Update Database
 
 Updates the details of an existing database.
 
@@ -62,7 +62,7 @@ Updates the details of an existing database.
 Request: JSON body with the updated details of the database (e.g., name).
 Response: Updated details of the database.
 
-**Delete Database**
+#### Delete Database
 
 Deletes a specific database by ID.
 
@@ -73,7 +73,7 @@ Deletes a specific database by ID.
 Request: No request body needed; the database ID is specified in the URL path.
 Response: Confirmation of deletion.
 
-**List Tables**
+#### List Tables
 
 Retrieves a list of all tables across databases.
 
@@ -84,7 +84,7 @@ Retrieves a list of all tables across databases.
 Request: No request body needed.
 Response: A list of tables with details (e.g., ID, name, database association).
 
-**Create Table**
+#### Create Table
 
 Creates a new table in a database.
 
@@ -95,7 +95,7 @@ Creates a new table in a database.
 Request: JSON body with the details of the table to be created (e.g., name, columns).
 Response: Details of the created table, including its ID.
 
-**Table Details**
+#### Table Details
 
 Retrieves details of a specific table by ID.
 
@@ -106,7 +106,7 @@ Retrieves details of a specific table by ID.
 Request: No request body needed; the table ID is specified in the URL path.
 Response: Detailed information about the table (e.g., columns, data types, database ID).
 
-**Update Table**
+#### Update Table
 
 Updates the details of an existing table.
 
@@ -117,7 +117,7 @@ Updates the details of an existing table.
 Request: JSON body with the updated details of the table (e.g., name, columns).
 Response: Updated details of the table.
 
-**Delete Table**
+#### Delete Table
 
 Deletes a specific table by ID.
 
@@ -128,7 +128,7 @@ Deletes a specific table by ID.
 Request: No request body needed; the table ID is specified in the URL path.
 Response: Confirmation of deletion.
 
-**List Morsels in Table Manifest**
+#### List Morsels in Table Manifest
 
 Retrieves a list of morsel manifest entries associated with a specific table.
 
@@ -136,7 +136,7 @@ Retrieves a list of morsel manifest entries associated with a specific table.
 [GET] /v1/tables/{tableId}/morsels
 ~~~
 
-**Get Morsel Details**
+#### Get Morsel Details
 
 Retrieves details of a specific morsel manifest entry by its ID.
 
@@ -144,7 +144,7 @@ Retrieves details of a specific morsel manifest entry by its ID.
 [GET] /v1/tables/{tableId}/morsels/{morselId}
 ~~~
 
-**Update (or Add) Morsel in Table Manifest**
+#### Update (or Add) Morsel in Table Manifest
 
 Updates the details of an existing morsel manifest entry or adds a new morsel entry if it does not exist. This approach assumes idempotency, where the PUT method can be used to update existing entries or create new ones if the specified morselId does not exist within the table's manifest.
 
@@ -152,7 +152,7 @@ Updates the details of an existing morsel manifest entry or adds a new morsel en
 [PUT] /v1/tables/{tableId}/morsels/{morselId}
 ~~~
 
-**Delete Morsel from Table Manifest**
+#### Delete Morsel from Table Manifest
 
 Deletes a specific morsel manifest entry from a table's manifest by its ID.
 
@@ -160,7 +160,7 @@ Deletes a specific morsel manifest entry from a table's manifest by its ID.
 [DELETE] /v1/tables/{tableId}/morsels/{morselId}
 ~~~
 
-**Get Lineage**
+#### Get Lineage
 
 Retrieves the data lineage of a specific table by ID.
 
@@ -171,7 +171,7 @@ Retrieves the data lineage of a specific table by ID.
 Request: No request body needed; the table ID is specified in the URL path.
 Response: Lineage information, showing data sources, transformations, and destinations.
 
-**Search Metadata**
+#### Search Metadata
 
 Searches metadata across databases and tables.
 
@@ -201,18 +201,6 @@ curl -i -X GET \
 "https://{host}:8080/v1.0/datasets/?filter=.*opteryx.*"
 ~~~
 
-_Response_
-
-~~~
-~~~
-
-#### **Record Blob**
-
-**_End Point_**
-
-~~~
-[POST] /v1.0/datasets/{dataset}/blobs
-~~~
 
 **_Query Parameters_**
 
@@ -227,31 +215,3 @@ Parameter | Type    | Required | Description
 location
 
 **_Response_** (raw)
-
-~~~
-{blob_identifier}
-~~~
-
-Parameter       | Type    | Description
-:-------------- | :------ | :-----------
-blob_identifier | string  | 
-
-The blob_identifier is created using this approach to avoid collisions overwriting data:
-
-~~~
-identifier = CityHash64(blob location)
-while collision:
-    indentifier = CityHash64(identifier + blob location)
-~~~
-
-**_Example_**
-
-~~~bash
-curl -X 'POST' \
-  'http://{host}:8080/v1.0/datasets/12345/blobs' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "location": "sample/space_missions.parquet"
-}'
-~~~
