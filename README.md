@@ -5,14 +5,16 @@ Mabel &amp; Opteryx Metastore
 
 ### Overview
 
- Resource	            | GET	           | POST            | PUT             | DELETE
-:---------------------- | :--------------- | :-------------- | :-------------- | :----- 
-/v1/databases           | List Databases   | Create Database |  -              |  - 		
-/v1/databases/{id}      | Database Details |  -              | Update Database | Delete Database
-/v1/tables              | List Tables      | Create Table    |  -              |  -		
-/v1/tables/{id}         | Table Details    |  -              | Update Table    | Delete Table
-/v1/tables/{id}/lineage | Get Lineage      |  -              |  -              |  -					
-/v1/search              | Search Metadata  |  -              |  - 			   | -
+ Resource	                 | GET              | POST            | PUT               | DELETE
+:--------------------------- | :--------------- | :-------------- | :---------------- | :----- 
+/v1/databases                | List Databases   | Create Database |  -                |  - 		
+/v1/databases/{id}           | Database Details |  -              | Update Database   | Delete Database
+/v1/tables                   | List Tables      | Create Table    |  -                |  -		
+/v1/tables/{id}              | Table Details    |  -              | Update Table      | Delete Table
+/v1/tables/{id}/morsels      | List Morsels     |  -              |  -                |  -
+/v1/tables/{id}/morsels/{id} | Morsel Details   |  -              | Add/Update Morsel | Delete Morsel 
+/v1/tables/{id}/lineage      | Get Lineage      |  -              |  -                |  -					
+/v1/search                   | Search Metadata  |  -              |  - 			      |  -
 
 ### Dataset API
 
@@ -43,7 +45,7 @@ Response: Details of the created database, including its ID.
 Retrieves details of a specific database by ID.
 
 ~~~
-[GET] /v1/databases/{id}
+[GET] /v1/databases/{databaseId}
 ~~~
 
 Request: No request body needed; the database ID is specified in the URL path.
@@ -54,7 +56,7 @@ Response: Detailed information about the database (e.g., name, tables, creation 
 Updates the details of an existing database.
 
 ~~~
-[PUT] /v1/databases/{id}
+[PUT] /v1/databases/{databaseId}
 ~~~
 
 Request: JSON body with the updated details of the database (e.g., name).
@@ -65,7 +67,7 @@ Response: Updated details of the database.
 Deletes a specific database by ID.
 
 ~~~
-[DELETE] /v1/databases/{id}
+[DELETE] /v1/databases/{databaseId}
 ~~~
 
 Request: No request body needed; the database ID is specified in the URL path.
@@ -98,7 +100,7 @@ Response: Details of the created table, including its ID.
 Retrieves details of a specific table by ID.
 
 ~~~
-[GET] /v1/tables/{id}
+[GET] /v1/tables/{tableId}
 ~~~
 
 Request: No request body needed; the table ID is specified in the URL path.
@@ -109,7 +111,7 @@ Response: Detailed information about the table (e.g., columns, data types, datab
 Updates the details of an existing table.
 
 ~~~
-[PUT] /v1/tables/{id}
+[PUT] /v1/tables/{tableId}
 ~~~
 
 Request: JSON body with the updated details of the table (e.g., name, columns).
@@ -120,18 +122,50 @@ Response: Updated details of the table.
 Deletes a specific table by ID.
 
 ~~~
-[DELETE] /v1/tables/{id}
+[DELETE] /v1/tables/{tableId}
 ~~~
 
 Request: No request body needed; the table ID is specified in the URL path.
 Response: Confirmation of deletion.
+
+**List Morsels in Table Manifest**
+
+Retrieves a list of morsel manifest entries associated with a specific table.
+
+~~~
+[GET] /v1/tables/{tableId}/morsels
+~~~
+
+**Get Morsel Details**
+
+Retrieves details of a specific morsel manifest entry by its ID.
+
+~~~
+[GET] /v1/tables/{tableId}/morsels/{morselId}
+~~~
+
+**Update (or Add) Morsel in Table Manifest**
+
+Updates the details of an existing morsel manifest entry or adds a new morsel entry if it does not exist. This approach assumes idempotency, where the PUT method can be used to update existing entries or create new ones if the specified morselId does not exist within the table's manifest.
+
+~~~
+[PUT] /v1/tables/{tableId}/morsels/{morselId}
+~~~
+
+**Delete Morsel from Table Manifest**
+
+Deletes a specific morsel manifest entry from a table's manifest by its ID.
+
+~~~
+[DELETE] /v1/tables/{tableId}/morsels/{morselId}
+~~~
 
 **Get Lineage**
 
 Retrieves the data lineage of a specific table by ID.
 
 ~~~
-[GET] /v1/tables/{id}/lineage
+[GET] /v1/tables/{tableId}/lineage
 ~~~
 
 Request: No request body needed; the table ID is specified in the URL path.
@@ -221,27 +255,3 @@ curl -X 'POST' \
   "location": "sample/space_missions.parquet"
 }'
 ~~~
-
------
-
-Testing -> POST Dataset
-Mabel -> GET Dataset
-Mabel -> POST blob
-
-
-- Get Dataset
-    - fetches schema
-- Add Blob to Datase
-    - include partitioning
-    - perform profiling
-
-Dataset format:
-
-{
-    "canonical_name": "gcs://" ... the path to the blobs,
-    "preferred_name": the name as it should appear,
-    "aliases": [],
-    "schema": [
-        {"name", "type", "default", "aliases", "description"}, ...
-    ]
-}
