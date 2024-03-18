@@ -7,86 +7,86 @@ Mabel &amp; Opteryx Metastore
 
  Resource	                 | GET              | POST            | PUT               | DELETE
 :--------------------------- | :--------------- | :-------------- | :---------------- | :----- 
-/v1/databases                | List Databases   | Create Database |  -                |  - 		
-/v1/databases/{id}           | Database Details |  -              | Update Database   | Delete Database
-/v1/tables                   | List Tables      | Create Table    |  -                |  -		
-/v1/tables/{id}              | Table Details    |  -              | Update Table      | Delete Table
-/v1/tables/{id}/morsels      | List Morsels     |  -              |  -                |  -
-/v1/tables/{id}/morsels/{id} | Morsel Details   |  -              | Add/Update Morsel | Delete Morsel 
-/v1/tables/{id}/lineage      | Get Lineage      |  -              |  -                |  -					
+/v1/stores                 | List Stores      | Create Store.   |  -                |  - 		
+/v1/stores/{id}            | Store Details    |  -               | Update Store      | Delete Store
+/v1/datasets               | List Datasets    | Create Dataset  |  -                |  -		
+/v1/datasets/{id}          | Dataset Details  |  -               | Update Table      | Delete Table
+/v1/datasets/{id}/morsels  | List Morsels     |  -              |  -                |  -
+/v1/datasets/{id}/morsels/{id} | Morsel Details   |  -              | Add/Update Morsel | Delete Morsel 
+/v1/datasets/{id}/lineage  | Get Lineage      |  -              |  -                |  -					
 /v1/search                   | Search Metadata  |  -              |  - 			      |  -
 
 ### End Point Details
 
-#### List Databases
+#### List Stores
 
-Retrieves a list of all databases.
+Retrieves a list of all data stores.
 
 ~~~
-[GET] /v1/databases
+[GET] /v1/stores
 ~~~
 
 Request: No request body needed.
 Response: A list of databases with details (e.g., ID, name).
 
-#### Create Database
+#### Create Store
 
-Creates a new database.
+Creates a new data store.
 
 ~~~
-[POST] /v1/databases
+[POST] /v1/stores
 ~~~
 
 Request: JSON body with the details of the database to be created (e.g., name).
 Response: Details of the created database, including its ID.
 
-#### Database Details
+#### Store Details
 
-Retrieves details of a specific database by ID.
+Retrieves details of a specific store by ID.
 
 ~~~
-[GET] /v1/databases/{databaseId}
+[GET] /v1/stores/{storeId}
 ~~~
 
 Request: No request body needed; the database ID is specified in the URL path.
 Response: Detailed information about the database (e.g., name, tables, creation date).
 
-#### Update Database
+#### Update Store
 
-Updates the details of an existing database.
+Updates the details of an existing data store.
 
 ~~~
-[PUT] /v1/databases/{databaseId}
+[PUT] /v1/stores/{storeId}
 ~~~
 
 Request: JSON body with the updated details of the database (e.g., name).
 Response: Updated details of the database.
 
-#### Delete Database
+#### Delete Store
 
-Deletes a specific database by ID.
+Deletes a specific store by ID.
 
 ~~~
-[DELETE] /v1/databases/{databaseId}
+[DELETE] /v1/stores/{storeId}
 ~~~
 
 Request: No request body needed; the database ID is specified in the URL path.
 Response: Confirmation of deletion.
 
-#### List Tables
+#### List datasets 
 
 Retrieves a list of all tables across databases.
 
 ~~~
-[GET] /v1/tables
+[GET] /v1/datasets 
 ~~~
 
 Request: No request body needed.
 Response: A list of tables with details (e.g., ID, name, database association).
 
-#### Create Table
+#### Create Datasets 
 
-Creates a new table in a database.
+Creates a new dataset in a database.
 
 ~~~
 [POST] /v1/tables
