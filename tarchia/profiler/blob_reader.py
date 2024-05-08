@@ -11,10 +11,10 @@
 # limitations under the License.
 
 
-from opteryx import connectors
-from opteryx.utils.file_decoders import ExtentionType, KNOWN_EXTENSIONS
-
 from exceptions import ProcessingError
+
+from opteryx import connectors
+from opteryx.utils.file_decoders import KNOWN_EXTENSIONS, ExtentionType
 
 
 def reader_factory(path):

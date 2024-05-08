@@ -1,9 +1,8 @@
 from os import environ
 
 from fastapi import FastAPI
-from uvicorn import run
-
 from routes import v1_0
+from uvicorn import run
 
 application = FastAPI(title="Tarchia Metastore")
 # tarchia.include_router(v1_0.columns)

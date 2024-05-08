@@ -16,8 +16,7 @@ Data Models
 
 from typing import List, Literal, Optional
 
-from pydantic import BaseModel
-from pydantic import Extra
+from pydantic import BaseModel, Extra
 
 
 class NewBlob(BaseModel):

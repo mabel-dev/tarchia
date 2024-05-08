@@ -16,7 +16,6 @@ Build Statistics Node
 Gives information about a dataset's columns
 """
 import datetime
-
 from functools import reduce
 
 import numpy
@@ -24,7 +23,6 @@ import orjson
 
 from opteryx.attribute_types import OPTERYX_TYPES, determine_type
 from opteryx.third_party import distogram
-
 
 MAX_COLLECTOR: int = 8
 MAX_VARCHAR_SIZE: int = 64  # long strings tend to lose meaning
