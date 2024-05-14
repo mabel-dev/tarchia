@@ -10,10 +10,10 @@ from typing import Union
 from fastapi import FastAPI
 from fastapi import Header
 from fastapi import Query
+from models import CatalogConfig
 from pydantic import conint
 from starlette.requests import Request
 
-from .models import CatalogConfig
 from .models import CommitTableRequest
 from .models import CommitTableResponse
 from .models import CommitTransactionRequest
@@ -41,45 +41,45 @@ from .models import UpdateNamespacePropertiesResponse
 from .models import XIcebergAccessDelegation
 
 app = FastAPI(
-    title='Apache Iceberg REST Catalog API',
-    license={'name': 'Apache 2.0', 'url': 'https://www.apache.org/licenses/LICENSE-2.0.html'},
-    version='0.0.1',
-    description='Defines the specification for the first version of the REST Catalog API. Implementations should ideally support both Iceberg table specs v1 and v2, with priority given to v2.',
+    title="Apache Iceberg REST Catalog API",
+    license={"name": "Apache 2.0", "url": "https://www.apache.org/licenses/LICENSE-2.0.html"},
+    version="0.0.1",
+    description="Defines the specification for the first version of the REST Catalog API. Implementations should ideally support both Iceberg table specs v1 and v2, with priority given to v2.",
     servers=[
         {
-            'url': '{scheme}://{host}/{basePath}',
-            'description': 'Server URL when the port can be inferred from the scheme',
-            'variables': {
-                'scheme': {
-                    'description': 'The scheme of the URI, either http or https.',
-                    'default': 'https',
+            "url": "{scheme}://{host}/{basePath}",
+            "description": "Server URL when the port can be inferred from the scheme",
+            "variables": {
+                "scheme": {
+                    "description": "The scheme of the URI, either http or https.",
+                    "default": "https",
                 },
-                'host': {
-                    'description': 'The host address for the specified server',
-                    'default': 'localhost',
+                "host": {
+                    "description": "The host address for the specified server",
+                    "default": "localhost",
                 },
-                'basePath': {
-                    'description': 'Optional prefix to be appended to all routes',
-                    'default': '',
+                "basePath": {
+                    "description": "Optional prefix to be appended to all routes",
+                    "default": "",
                 },
             },
         },
         {
-            'url': '{scheme}://{host}:{port}/{basePath}',
-            'description': 'Generic base server URL, with all parts configurable',
-            'variables': {
-                'scheme': {
-                    'description': 'The scheme of the URI, either http or https.',
-                    'default': 'https',
+            "url": "{scheme}://{host}:{port}/{basePath}",
+            "description": "Generic base server URL, with all parts configurable",
+            "variables": {
+                "scheme": {
+                    "description": "The scheme of the URI, either http or https.",
+                    "default": "https",
                 },
-                'host': {
-                    'description': 'The host address for the specified server',
-                    'default': 'localhost',
+                "host": {
+                    "description": "The host address for the specified server",
+                    "default": "localhost",
                 },
-                'port': {'description': 'The port used when addressing the host', 'default': '443'},
-                'basePath': {
-                    'description': 'Optional prefix to be appended to all routes',
-                    'default': '',
+                "port": {"description": "The port used when addressing the host", "default": "443"},
+                "basePath": {
+                    "description": "Optional prefix to be appended to all routes",
+                    "default": "",
                 },
             },
         },
@@ -88,18 +88,18 @@ app = FastAPI(
 
 
 @app.get(
-    '/v1/config',
+    "/v1/config",
     response_model=None,
     responses={
-        '200': {'model': CatalogConfig},
-        '400': {'model': IcebergErrorResponse},
-        '401': {'model': IcebergErrorResponse},
-        '403': {'model': IcebergErrorResponse},
-        '419': {'model': IcebergErrorResponse},
-        '503': {'model': IcebergErrorResponse},
-        '5XX': {'model': IcebergErrorResponse},
+        "200": {"model": CatalogConfig},
+        "400": {"model": IcebergErrorResponse},
+        "401": {"model": IcebergErrorResponse},
+        "403": {"model": IcebergErrorResponse},
+        "419": {"model": IcebergErrorResponse},
+        "503": {"model": IcebergErrorResponse},
+        "5XX": {"model": IcebergErrorResponse},
     },
-    tags=['Configuration API'],
+    tags=["Configuration API"],
 )
 def get_config(
     warehouse: Optional[str] = None,
@@ -111,15 +111,15 @@ def get_config(
 
 
 @app.post(
-    '/v1/oauth/tokens',
+    "/v1/oauth/tokens",
     response_model=None,
     responses={
-        '200': {'model': OAuthTokenResponse},
-        '400': {'model': OAuthError},
-        '401': {'model': OAuthError},
-        '5XX': {'model': OAuthError},
+        "200": {"model": OAuthTokenResponse},
+        "400": {"model": OAuthError},
+        "401": {"model": OAuthError},
+        "5XX": {"model": OAuthError},
     },
-    tags=['OAuth2 API'],
+    tags=["OAuth2 API"],
 )
 def get_token(request: Request) -> Optional[Union[OAuthTokenResponse, OAuthError]]:
     """
@@ -129,23 +129,23 @@ def get_token(request: Request) -> Optional[Union[OAuthTokenResponse, OAuthError
 
 
 @app.get(
-    '/v1/{prefix}/namespaces',
+    "/v1/{prefix}/namespaces",
     response_model=None,
     responses={
-        '200': {'model': ListNamespacesResponse},
-        '400': {'model': IcebergErrorResponse},
-        '401': {'model': IcebergErrorResponse},
-        '403': {'model': IcebergErrorResponse},
-        '404': {'model': IcebergErrorResponse},
-        '419': {'model': IcebergErrorResponse},
-        '503': {'model': IcebergErrorResponse},
-        '5XX': {'model': IcebergErrorResponse},
+        "200": {"model": ListNamespacesResponse},
+        "400": {"model": IcebergErrorResponse},
+        "401": {"model": IcebergErrorResponse},
+        "403": {"model": IcebergErrorResponse},
+        "404": {"model": IcebergErrorResponse},
+        "419": {"model": IcebergErrorResponse},
+        "503": {"model": IcebergErrorResponse},
+        "5XX": {"model": IcebergErrorResponse},
     },
-    tags=['Catalog API'],
+    tags=["Catalog API"],
 )
 def list_namespaces(
-    page_token: Optional[PageToken] = Query(None, alias='pageToken'),
-    page_size: Optional[conint(ge=1)] = Query(None, alias='pageSize'),
+    page_token: Optional[PageToken] = Query(None, alias="pageToken"),
+    page_size: Optional[conint(ge=1)] = Query(None, alias="pageSize"),
     parent: Optional[str] = None,
     prefix: str = ...,
 ) -> Optional[Union[ListNamespacesResponse, IcebergErrorResponse]]:
@@ -156,20 +156,20 @@ def list_namespaces(
 
 
 @app.post(
-    '/v1/{prefix}/namespaces',
+    "/v1/{prefix}/namespaces",
     response_model=None,
     responses={
-        '200': {'model': CreateNamespaceResponse},
-        '400': {'model': IcebergErrorResponse},
-        '401': {'model': IcebergErrorResponse},
-        '403': {'model': IcebergErrorResponse},
-        '406': {'model': ErrorModel},
-        '409': {'model': IcebergErrorResponse},
-        '419': {'model': IcebergErrorResponse},
-        '503': {'model': IcebergErrorResponse},
-        '5XX': {'model': IcebergErrorResponse},
+        "200": {"model": CreateNamespaceResponse},
+        "400": {"model": IcebergErrorResponse},
+        "401": {"model": IcebergErrorResponse},
+        "403": {"model": IcebergErrorResponse},
+        "406": {"model": ErrorModel},
+        "409": {"model": IcebergErrorResponse},
+        "419": {"model": IcebergErrorResponse},
+        "503": {"model": IcebergErrorResponse},
+        "5XX": {"model": IcebergErrorResponse},
     },
-    tags=['Catalog API'],
+    tags=["Catalog API"],
 )
 def create_namespace(
     prefix: str, body: CreateNamespaceRequest = ...
@@ -181,19 +181,19 @@ def create_namespace(
 
 
 @app.get(
-    '/v1/{prefix}/namespaces/{namespace}',
+    "/v1/{prefix}/namespaces/{namespace}",
     response_model=None,
     responses={
-        '200': {'model': GetNamespaceResponse},
-        '400': {'model': IcebergErrorResponse},
-        '401': {'model': IcebergErrorResponse},
-        '403': {'model': IcebergErrorResponse},
-        '404': {'model': IcebergErrorResponse},
-        '419': {'model': IcebergErrorResponse},
-        '503': {'model': IcebergErrorResponse},
-        '5XX': {'model': IcebergErrorResponse},
+        "200": {"model": GetNamespaceResponse},
+        "400": {"model": IcebergErrorResponse},
+        "401": {"model": IcebergErrorResponse},
+        "403": {"model": IcebergErrorResponse},
+        "404": {"model": IcebergErrorResponse},
+        "419": {"model": IcebergErrorResponse},
+        "503": {"model": IcebergErrorResponse},
+        "5XX": {"model": IcebergErrorResponse},
     },
-    tags=['Catalog API'],
+    tags=["Catalog API"],
 )
 def load_namespace_metadata(
     prefix: str, namespace: str = ...
@@ -205,18 +205,18 @@ def load_namespace_metadata(
 
 
 @app.head(
-    '/v1/{prefix}/namespaces/{namespace}',
+    "/v1/{prefix}/namespaces/{namespace}",
     response_model=None,
     responses={
-        '400': {'model': IcebergErrorResponse},
-        '401': {'model': IcebergErrorResponse},
-        '403': {'model': IcebergErrorResponse},
-        '404': {'model': IcebergErrorResponse},
-        '419': {'model': IcebergErrorResponse},
-        '503': {'model': IcebergErrorResponse},
-        '5XX': {'model': IcebergErrorResponse},
+        "400": {"model": IcebergErrorResponse},
+        "401": {"model": IcebergErrorResponse},
+        "403": {"model": IcebergErrorResponse},
+        "404": {"model": IcebergErrorResponse},
+        "419": {"model": IcebergErrorResponse},
+        "503": {"model": IcebergErrorResponse},
+        "5XX": {"model": IcebergErrorResponse},
     },
-    tags=['Catalog API'],
+    tags=["Catalog API"],
 )
 def namespace_exists(prefix: str, namespace: str = ...) -> Optional[IcebergErrorResponse]:
     """
@@ -226,18 +226,18 @@ def namespace_exists(prefix: str, namespace: str = ...) -> Optional[IcebergError
 
 
 @app.delete(
-    '/v1/{prefix}/namespaces/{namespace}',
+    "/v1/{prefix}/namespaces/{namespace}",
     response_model=None,
     responses={
-        '400': {'model': IcebergErrorResponse},
-        '401': {'model': IcebergErrorResponse},
-        '403': {'model': IcebergErrorResponse},
-        '404': {'model': IcebergErrorResponse},
-        '419': {'model': IcebergErrorResponse},
-        '503': {'model': IcebergErrorResponse},
-        '5XX': {'model': IcebergErrorResponse},
+        "400": {"model": IcebergErrorResponse},
+        "401": {"model": IcebergErrorResponse},
+        "403": {"model": IcebergErrorResponse},
+        "404": {"model": IcebergErrorResponse},
+        "419": {"model": IcebergErrorResponse},
+        "503": {"model": IcebergErrorResponse},
+        "5XX": {"model": IcebergErrorResponse},
     },
-    tags=['Catalog API'],
+    tags=["Catalog API"],
 )
 def drop_namespace(prefix: str, namespace: str = ...) -> Optional[IcebergErrorResponse]:
     """
@@ -247,21 +247,21 @@ def drop_namespace(prefix: str, namespace: str = ...) -> Optional[IcebergErrorRe
 
 
 @app.post(
-    '/v1/{prefix}/namespaces/{namespace}/properties',
+    "/v1/{prefix}/namespaces/{namespace}/properties",
     response_model=None,
     responses={
-        '200': {'model': UpdateNamespacePropertiesResponse},
-        '400': {'model': IcebergErrorResponse},
-        '401': {'model': IcebergErrorResponse},
-        '403': {'model': IcebergErrorResponse},
-        '404': {'model': IcebergErrorResponse},
-        '406': {'model': ErrorModel},
-        '422': {'model': IcebergErrorResponse},
-        '419': {'model': IcebergErrorResponse},
-        '503': {'model': IcebergErrorResponse},
-        '5XX': {'model': IcebergErrorResponse},
+        "200": {"model": UpdateNamespacePropertiesResponse},
+        "400": {"model": IcebergErrorResponse},
+        "401": {"model": IcebergErrorResponse},
+        "403": {"model": IcebergErrorResponse},
+        "404": {"model": IcebergErrorResponse},
+        "406": {"model": ErrorModel},
+        "422": {"model": IcebergErrorResponse},
+        "419": {"model": IcebergErrorResponse},
+        "503": {"model": IcebergErrorResponse},
+        "5XX": {"model": IcebergErrorResponse},
     },
-    tags=['Catalog API'],
+    tags=["Catalog API"],
 )
 def update_properties(
     prefix: str, namespace: str = ..., body: UpdateNamespacePropertiesRequest = ...
@@ -273,20 +273,20 @@ def update_properties(
 
 
 @app.post(
-    '/v1/{prefix}/namespaces/{namespace}/register',
+    "/v1/{prefix}/namespaces/{namespace}/register",
     response_model=None,
     responses={
-        '200': {'model': LoadTableResult},
-        '400': {'model': IcebergErrorResponse},
-        '401': {'model': IcebergErrorResponse},
-        '403': {'model': IcebergErrorResponse},
-        '404': {'model': IcebergErrorResponse},
-        '409': {'model': IcebergErrorResponse},
-        '419': {'model': IcebergErrorResponse},
-        '503': {'model': IcebergErrorResponse},
-        '5XX': {'model': IcebergErrorResponse},
+        "200": {"model": LoadTableResult},
+        "400": {"model": IcebergErrorResponse},
+        "401": {"model": IcebergErrorResponse},
+        "403": {"model": IcebergErrorResponse},
+        "404": {"model": IcebergErrorResponse},
+        "409": {"model": IcebergErrorResponse},
+        "419": {"model": IcebergErrorResponse},
+        "503": {"model": IcebergErrorResponse},
+        "5XX": {"model": IcebergErrorResponse},
     },
-    tags=['Catalog API'],
+    tags=["Catalog API"],
 )
 def register_table(
     prefix: str, namespace: str = ..., body: RegisterTableRequest = ...
@@ -298,23 +298,23 @@ def register_table(
 
 
 @app.get(
-    '/v1/{prefix}/namespaces/{namespace}/tables',
+    "/v1/{prefix}/namespaces/{namespace}/tables",
     response_model=None,
     responses={
-        '200': {'model': ListTablesResponse},
-        '400': {'model': IcebergErrorResponse},
-        '401': {'model': IcebergErrorResponse},
-        '403': {'model': IcebergErrorResponse},
-        '404': {'model': IcebergErrorResponse},
-        '419': {'model': IcebergErrorResponse},
-        '503': {'model': IcebergErrorResponse},
-        '5XX': {'model': IcebergErrorResponse},
+        "200": {"model": ListTablesResponse},
+        "400": {"model": IcebergErrorResponse},
+        "401": {"model": IcebergErrorResponse},
+        "403": {"model": IcebergErrorResponse},
+        "404": {"model": IcebergErrorResponse},
+        "419": {"model": IcebergErrorResponse},
+        "503": {"model": IcebergErrorResponse},
+        "5XX": {"model": IcebergErrorResponse},
     },
-    tags=['Catalog API'],
+    tags=["Catalog API"],
 )
 def list_tables(
-    page_token: Optional[PageToken] = Query(None, alias='pageToken'),
-    page_size: Optional[conint(ge=1)] = Query(None, alias='pageSize'),
+    page_token: Optional[PageToken] = Query(None, alias="pageToken"),
+    page_size: Optional[conint(ge=1)] = Query(None, alias="pageSize"),
     prefix: str = ...,
     namespace: str = ...,
 ) -> Optional[Union[ListTablesResponse, IcebergErrorResponse]]:
@@ -325,24 +325,24 @@ def list_tables(
 
 
 @app.post(
-    '/v1/{prefix}/namespaces/{namespace}/tables',
+    "/v1/{prefix}/namespaces/{namespace}/tables",
     response_model=None,
     responses={
-        '200': {'model': LoadTableResult},
-        '400': {'model': IcebergErrorResponse},
-        '401': {'model': IcebergErrorResponse},
-        '403': {'model': IcebergErrorResponse},
-        '404': {'model': IcebergErrorResponse},
-        '409': {'model': IcebergErrorResponse},
-        '419': {'model': IcebergErrorResponse},
-        '503': {'model': IcebergErrorResponse},
-        '5XX': {'model': IcebergErrorResponse},
+        "200": {"model": LoadTableResult},
+        "400": {"model": IcebergErrorResponse},
+        "401": {"model": IcebergErrorResponse},
+        "403": {"model": IcebergErrorResponse},
+        "404": {"model": IcebergErrorResponse},
+        "409": {"model": IcebergErrorResponse},
+        "419": {"model": IcebergErrorResponse},
+        "503": {"model": IcebergErrorResponse},
+        "5XX": {"model": IcebergErrorResponse},
     },
-    tags=['Catalog API'],
+    tags=["Catalog API"],
 )
 def create_table(
     x__iceberg__access__delegation: Optional[XIcebergAccessDelegation1] = Header(
-        None, alias='X-Iceberg-Access-Delegation'
+        None, alias="X-Iceberg-Access-Delegation"
     ),
     prefix: str = ...,
     namespace: str = ...,
@@ -355,23 +355,23 @@ def create_table(
 
 
 @app.get(
-    '/v1/{prefix}/namespaces/{namespace}/tables/{table}',
+    "/v1/{prefix}/namespaces/{namespace}/tables/{table}",
     response_model=None,
     responses={
-        '200': {'model': LoadTableResult},
-        '400': {'model': IcebergErrorResponse},
-        '401': {'model': IcebergErrorResponse},
-        '403': {'model': IcebergErrorResponse},
-        '404': {'model': IcebergErrorResponse},
-        '419': {'model': IcebergErrorResponse},
-        '503': {'model': IcebergErrorResponse},
-        '5XX': {'model': IcebergErrorResponse},
+        "200": {"model": LoadTableResult},
+        "400": {"model": IcebergErrorResponse},
+        "401": {"model": IcebergErrorResponse},
+        "403": {"model": IcebergErrorResponse},
+        "404": {"model": IcebergErrorResponse},
+        "419": {"model": IcebergErrorResponse},
+        "503": {"model": IcebergErrorResponse},
+        "5XX": {"model": IcebergErrorResponse},
     },
-    tags=['Catalog API'],
+    tags=["Catalog API"],
 )
 def load_table(
     x__iceberg__access__delegation: Optional[XIcebergAccessDelegation3] = Header(
-        None, alias='X-Iceberg-Access-Delegation'
+        None, alias="X-Iceberg-Access-Delegation"
     ),
     snapshots: Optional[Snapshots1] = None,
     prefix: str = ...,
@@ -385,23 +385,23 @@ def load_table(
 
 
 @app.post(
-    '/v1/{prefix}/namespaces/{namespace}/tables/{table}',
+    "/v1/{prefix}/namespaces/{namespace}/tables/{table}",
     response_model=None,
     responses={
-        '200': {'model': CommitTableResponse},
-        '400': {'model': IcebergErrorResponse},
-        '401': {'model': IcebergErrorResponse},
-        '403': {'model': IcebergErrorResponse},
-        '404': {'model': IcebergErrorResponse},
-        '409': {'model': IcebergErrorResponse},
-        '419': {'model': IcebergErrorResponse},
-        '500': {'model': IcebergErrorResponse},
-        '503': {'model': IcebergErrorResponse},
-        '502': {'model': IcebergErrorResponse},
-        '504': {'model': IcebergErrorResponse},
-        '5XX': {'model': IcebergErrorResponse},
+        "200": {"model": CommitTableResponse},
+        "400": {"model": IcebergErrorResponse},
+        "401": {"model": IcebergErrorResponse},
+        "403": {"model": IcebergErrorResponse},
+        "404": {"model": IcebergErrorResponse},
+        "409": {"model": IcebergErrorResponse},
+        "419": {"model": IcebergErrorResponse},
+        "500": {"model": IcebergErrorResponse},
+        "503": {"model": IcebergErrorResponse},
+        "502": {"model": IcebergErrorResponse},
+        "504": {"model": IcebergErrorResponse},
+        "5XX": {"model": IcebergErrorResponse},
     },
-    tags=['Catalog API'],
+    tags=["Catalog API"],
 )
 def update_table(
     prefix: str, namespace: str = ..., table: str = ..., body: CommitTableRequest = ...
@@ -413,21 +413,21 @@ def update_table(
 
 
 @app.delete(
-    '/v1/{prefix}/namespaces/{namespace}/tables/{table}',
+    "/v1/{prefix}/namespaces/{namespace}/tables/{table}",
     response_model=None,
     responses={
-        '400': {'model': IcebergErrorResponse},
-        '401': {'model': IcebergErrorResponse},
-        '403': {'model': IcebergErrorResponse},
-        '404': {'model': IcebergErrorResponse},
-        '419': {'model': IcebergErrorResponse},
-        '503': {'model': IcebergErrorResponse},
-        '5XX': {'model': IcebergErrorResponse},
+        "400": {"model": IcebergErrorResponse},
+        "401": {"model": IcebergErrorResponse},
+        "403": {"model": IcebergErrorResponse},
+        "404": {"model": IcebergErrorResponse},
+        "419": {"model": IcebergErrorResponse},
+        "503": {"model": IcebergErrorResponse},
+        "5XX": {"model": IcebergErrorResponse},
     },
-    tags=['Catalog API'],
+    tags=["Catalog API"],
 )
 def drop_table(
-    purge_requested: Optional[bool] = Query(False, alias='purgeRequested'),
+    purge_requested: Optional[bool] = Query(False, alias="purgeRequested"),
     prefix: str = ...,
     namespace: str = ...,
     table: str = ...,
@@ -439,18 +439,18 @@ def drop_table(
 
 
 @app.head(
-    '/v1/{prefix}/namespaces/{namespace}/tables/{table}',
+    "/v1/{prefix}/namespaces/{namespace}/tables/{table}",
     response_model=None,
     responses={
-        '400': {'model': IcebergErrorResponse},
-        '401': {'model': IcebergErrorResponse},
-        '403': {'model': IcebergErrorResponse},
-        '404': {'model': IcebergErrorResponse},
-        '419': {'model': IcebergErrorResponse},
-        '503': {'model': IcebergErrorResponse},
-        '5XX': {'model': IcebergErrorResponse},
+        "400": {"model": IcebergErrorResponse},
+        "401": {"model": IcebergErrorResponse},
+        "403": {"model": IcebergErrorResponse},
+        "404": {"model": IcebergErrorResponse},
+        "419": {"model": IcebergErrorResponse},
+        "503": {"model": IcebergErrorResponse},
+        "5XX": {"model": IcebergErrorResponse},
     },
-    tags=['Catalog API'],
+    tags=["Catalog API"],
 )
 def table_exists(
     prefix: str, namespace: str = ..., table: str = ...
@@ -462,18 +462,18 @@ def table_exists(
 
 
 @app.post(
-    '/v1/{prefix}/namespaces/{namespace}/tables/{table}/metrics',
+    "/v1/{prefix}/namespaces/{namespace}/tables/{table}/metrics",
     response_model=None,
     responses={
-        '400': {'model': IcebergErrorResponse},
-        '401': {'model': IcebergErrorResponse},
-        '403': {'model': IcebergErrorResponse},
-        '404': {'model': IcebergErrorResponse},
-        '419': {'model': IcebergErrorResponse},
-        '503': {'model': IcebergErrorResponse},
-        '5XX': {'model': IcebergErrorResponse},
+        "400": {"model": IcebergErrorResponse},
+        "401": {"model": IcebergErrorResponse},
+        "403": {"model": IcebergErrorResponse},
+        "404": {"model": IcebergErrorResponse},
+        "419": {"model": IcebergErrorResponse},
+        "503": {"model": IcebergErrorResponse},
+        "5XX": {"model": IcebergErrorResponse},
     },
-    tags=['Catalog API'],
+    tags=["Catalog API"],
 )
 def report_metrics(
     prefix: str,
@@ -488,23 +488,23 @@ def report_metrics(
 
 
 @app.get(
-    '/v1/{prefix}/namespaces/{namespace}/views',
+    "/v1/{prefix}/namespaces/{namespace}/views",
     response_model=None,
     responses={
-        '200': {'model': ListTablesResponse},
-        '400': {'model': IcebergErrorResponse},
-        '401': {'model': IcebergErrorResponse},
-        '403': {'model': IcebergErrorResponse},
-        '404': {'model': ErrorModel},
-        '419': {'model': IcebergErrorResponse},
-        '503': {'model': IcebergErrorResponse},
-        '5XX': {'model': IcebergErrorResponse},
+        "200": {"model": ListTablesResponse},
+        "400": {"model": IcebergErrorResponse},
+        "401": {"model": IcebergErrorResponse},
+        "403": {"model": IcebergErrorResponse},
+        "404": {"model": ErrorModel},
+        "419": {"model": IcebergErrorResponse},
+        "503": {"model": IcebergErrorResponse},
+        "5XX": {"model": IcebergErrorResponse},
     },
-    tags=['Catalog API'],
+    tags=["Catalog API"],
 )
 def list_views(
-    page_token: Optional[PageToken] = Query(None, alias='pageToken'),
-    page_size: Optional[conint(ge=1)] = Query(None, alias='pageSize'),
+    page_token: Optional[PageToken] = Query(None, alias="pageToken"),
+    page_size: Optional[conint(ge=1)] = Query(None, alias="pageSize"),
     prefix: str = ...,
     namespace: str = ...,
 ) -> Optional[Union[ListTablesResponse, IcebergErrorResponse, ErrorModel]]:
@@ -515,20 +515,20 @@ def list_views(
 
 
 @app.post(
-    '/v1/{prefix}/namespaces/{namespace}/views',
+    "/v1/{prefix}/namespaces/{namespace}/views",
     response_model=None,
     responses={
-        '200': {'model': LoadViewResult},
-        '400': {'model': IcebergErrorResponse},
-        '401': {'model': IcebergErrorResponse},
-        '403': {'model': IcebergErrorResponse},
-        '404': {'model': ErrorModel},
-        '409': {'model': ErrorModel},
-        '419': {'model': IcebergErrorResponse},
-        '503': {'model': IcebergErrorResponse},
-        '5XX': {'model': IcebergErrorResponse},
+        "200": {"model": LoadViewResult},
+        "400": {"model": IcebergErrorResponse},
+        "401": {"model": IcebergErrorResponse},
+        "403": {"model": IcebergErrorResponse},
+        "404": {"model": ErrorModel},
+        "409": {"model": ErrorModel},
+        "419": {"model": IcebergErrorResponse},
+        "503": {"model": IcebergErrorResponse},
+        "5XX": {"model": IcebergErrorResponse},
     },
-    tags=['Catalog API'],
+    tags=["Catalog API"],
 )
 def create_view(
     prefix: str, namespace: str = ..., body: CreateViewRequest = ...
@@ -540,19 +540,19 @@ def create_view(
 
 
 @app.get(
-    '/v1/{prefix}/namespaces/{namespace}/views/{view}',
+    "/v1/{prefix}/namespaces/{namespace}/views/{view}",
     response_model=None,
     responses={
-        '200': {'model': LoadViewResult},
-        '400': {'model': IcebergErrorResponse},
-        '401': {'model': IcebergErrorResponse},
-        '403': {'model': IcebergErrorResponse},
-        '404': {'model': ErrorModel},
-        '419': {'model': IcebergErrorResponse},
-        '503': {'model': IcebergErrorResponse},
-        '5XX': {'model': IcebergErrorResponse},
+        "200": {"model": LoadViewResult},
+        "400": {"model": IcebergErrorResponse},
+        "401": {"model": IcebergErrorResponse},
+        "403": {"model": IcebergErrorResponse},
+        "404": {"model": ErrorModel},
+        "419": {"model": IcebergErrorResponse},
+        "503": {"model": IcebergErrorResponse},
+        "5XX": {"model": IcebergErrorResponse},
     },
-    tags=['Catalog API'],
+    tags=["Catalog API"],
 )
 def load_view(
     prefix: str, namespace: str = ..., view: str = ...
@@ -564,23 +564,23 @@ def load_view(
 
 
 @app.post(
-    '/v1/{prefix}/namespaces/{namespace}/views/{view}',
+    "/v1/{prefix}/namespaces/{namespace}/views/{view}",
     response_model=None,
     responses={
-        '200': {'model': LoadViewResult},
-        '400': {'model': IcebergErrorResponse},
-        '401': {'model': IcebergErrorResponse},
-        '403': {'model': IcebergErrorResponse},
-        '404': {'model': ErrorModel},
-        '409': {'model': ErrorModel},
-        '419': {'model': IcebergErrorResponse},
-        '500': {'model': ErrorModel},
-        '503': {'model': IcebergErrorResponse},
-        '502': {'model': ErrorModel},
-        '504': {'model': ErrorModel},
-        '5XX': {'model': ErrorModel},
+        "200": {"model": LoadViewResult},
+        "400": {"model": IcebergErrorResponse},
+        "401": {"model": IcebergErrorResponse},
+        "403": {"model": IcebergErrorResponse},
+        "404": {"model": ErrorModel},
+        "409": {"model": ErrorModel},
+        "419": {"model": IcebergErrorResponse},
+        "500": {"model": ErrorModel},
+        "503": {"model": IcebergErrorResponse},
+        "502": {"model": ErrorModel},
+        "504": {"model": ErrorModel},
+        "5XX": {"model": ErrorModel},
     },
-    tags=['Catalog API'],
+    tags=["Catalog API"],
 )
 def replace_view(
     prefix: str, namespace: str = ..., view: str = ..., body: CommitViewRequest = ...
@@ -592,18 +592,18 @@ def replace_view(
 
 
 @app.delete(
-    '/v1/{prefix}/namespaces/{namespace}/views/{view}',
+    "/v1/{prefix}/namespaces/{namespace}/views/{view}",
     response_model=None,
     responses={
-        '400': {'model': IcebergErrorResponse},
-        '401': {'model': IcebergErrorResponse},
-        '403': {'model': IcebergErrorResponse},
-        '404': {'model': ErrorModel},
-        '419': {'model': IcebergErrorResponse},
-        '503': {'model': IcebergErrorResponse},
-        '5XX': {'model': IcebergErrorResponse},
+        "400": {"model": IcebergErrorResponse},
+        "401": {"model": IcebergErrorResponse},
+        "403": {"model": IcebergErrorResponse},
+        "404": {"model": ErrorModel},
+        "419": {"model": IcebergErrorResponse},
+        "503": {"model": IcebergErrorResponse},
+        "5XX": {"model": IcebergErrorResponse},
     },
-    tags=['Catalog API'],
+    tags=["Catalog API"],
 )
 def drop_view(
     prefix: str, namespace: str = ..., view: str = ...
@@ -615,14 +615,14 @@ def drop_view(
 
 
 @app.head(
-    '/v1/{prefix}/namespaces/{namespace}/views/{view}',
+    "/v1/{prefix}/namespaces/{namespace}/views/{view}",
     response_model=None,
     responses={
-        '419': {'model': IcebergErrorResponse},
-        '503': {'model': IcebergErrorResponse},
-        '5XX': {'model': IcebergErrorResponse},
+        "419": {"model": IcebergErrorResponse},
+        "503": {"model": IcebergErrorResponse},
+        "5XX": {"model": IcebergErrorResponse},
     },
-    tags=['Catalog API'],
+    tags=["Catalog API"],
 )
 def view_exists(
     prefix: str, namespace: str = ..., view: str = ...
@@ -634,20 +634,20 @@ def view_exists(
 
 
 @app.post(
-    '/v1/{prefix}/tables/rename',
+    "/v1/{prefix}/tables/rename",
     response_model=None,
     responses={
-        '400': {'model': IcebergErrorResponse},
-        '401': {'model': IcebergErrorResponse},
-        '403': {'model': IcebergErrorResponse},
-        '404': {'model': IcebergErrorResponse},
-        '406': {'model': ErrorModel},
-        '409': {'model': IcebergErrorResponse},
-        '419': {'model': IcebergErrorResponse},
-        '503': {'model': IcebergErrorResponse},
-        '5XX': {'model': IcebergErrorResponse},
+        "400": {"model": IcebergErrorResponse},
+        "401": {"model": IcebergErrorResponse},
+        "403": {"model": IcebergErrorResponse},
+        "404": {"model": IcebergErrorResponse},
+        "406": {"model": ErrorModel},
+        "409": {"model": IcebergErrorResponse},
+        "419": {"model": IcebergErrorResponse},
+        "503": {"model": IcebergErrorResponse},
+        "5XX": {"model": IcebergErrorResponse},
     },
-    tags=['Catalog API'],
+    tags=["Catalog API"],
 )
 def rename_table(
     prefix: str, body: RenameTableRequest = ...
@@ -659,22 +659,22 @@ def rename_table(
 
 
 @app.post(
-    '/v1/{prefix}/transactions/commit',
+    "/v1/{prefix}/transactions/commit",
     response_model=None,
     responses={
-        '400': {'model': IcebergErrorResponse},
-        '401': {'model': IcebergErrorResponse},
-        '403': {'model': IcebergErrorResponse},
-        '404': {'model': IcebergErrorResponse},
-        '409': {'model': IcebergErrorResponse},
-        '419': {'model': IcebergErrorResponse},
-        '500': {'model': IcebergErrorResponse},
-        '503': {'model': IcebergErrorResponse},
-        '502': {'model': IcebergErrorResponse},
-        '504': {'model': IcebergErrorResponse},
-        '5XX': {'model': IcebergErrorResponse},
+        "400": {"model": IcebergErrorResponse},
+        "401": {"model": IcebergErrorResponse},
+        "403": {"model": IcebergErrorResponse},
+        "404": {"model": IcebergErrorResponse},
+        "409": {"model": IcebergErrorResponse},
+        "419": {"model": IcebergErrorResponse},
+        "500": {"model": IcebergErrorResponse},
+        "503": {"model": IcebergErrorResponse},
+        "502": {"model": IcebergErrorResponse},
+        "504": {"model": IcebergErrorResponse},
+        "5XX": {"model": IcebergErrorResponse},
     },
-    tags=['Catalog API'],
+    tags=["Catalog API"],
 )
 def commit_transaction(
     prefix: str, body: CommitTransactionRequest = ...
@@ -686,20 +686,20 @@ def commit_transaction(
 
 
 @app.post(
-    '/v1/{prefix}/views/rename',
+    "/v1/{prefix}/views/rename",
     response_model=None,
     responses={
-        '400': {'model': IcebergErrorResponse},
-        '401': {'model': IcebergErrorResponse},
-        '403': {'model': IcebergErrorResponse},
-        '404': {'model': ErrorModel},
-        '406': {'model': ErrorModel},
-        '409': {'model': ErrorModel},
-        '419': {'model': IcebergErrorResponse},
-        '503': {'model': IcebergErrorResponse},
-        '5XX': {'model': IcebergErrorResponse},
+        "400": {"model": IcebergErrorResponse},
+        "401": {"model": IcebergErrorResponse},
+        "403": {"model": IcebergErrorResponse},
+        "404": {"model": ErrorModel},
+        "406": {"model": ErrorModel},
+        "409": {"model": ErrorModel},
+        "419": {"model": IcebergErrorResponse},
+        "503": {"model": IcebergErrorResponse},
+        "5XX": {"model": IcebergErrorResponse},
     },
-    tags=['Catalog API'],
+    tags=["Catalog API"],
 )
 def rename_view(
     prefix: str, body: RenameTableRequest = ...

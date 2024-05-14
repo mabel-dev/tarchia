@@ -42,11 +42,13 @@ try:  # pragma: no cover
 except Exception as exception:  # pragma: no cover # it doesn't matter why - just use the defaults
     print(f"Config file {_config_path} not used - {exception}")
 
+
 def get(key, default=None):
     value = environ.get(key)
     if value is None:
         value = _config_values.get(key, default)
     return value
+
 
 # fmt:off
 
