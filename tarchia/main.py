@@ -1,12 +1,18 @@
+"""
+Tarchia is the metadata store for Mabel and Opteryx.
+
+It is inspired by the Apache Iceberg REST API.
+"""
+
 from os import environ
 
+import v1.routes
 from fastapi import FastAPI
 from uvicorn import run
-import v1.routes
 
 application = FastAPI(title="Tarchia Metastore")
-# tarchia.include_router(v1_0.columns)
-application.include_router(v1.routes.app)
+
+application.include_router(v1.routes.v1_router)
 
 
 if __name__ == "__main__":

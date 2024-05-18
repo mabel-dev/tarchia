@@ -129,3 +129,4 @@ dmypy.json
 .pyre/
 brace.py
 opteryx_blobs/**
+test_db.json
