@@ -10,9 +10,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Optional
+
 
 class MissingDependencyError(Exception):  # pragma: no cover
     def __init__(self, dependency: str):
         self.dependency = dependency
         message = f"No module named '{dependency}' can be found, please install or include in requirements.txt"
+        super().__init__(message)
+
+
+class InvalidConfigurationError(Exception):
+    def __init__(self, setting: str, source: Optional[str] = None):
+        self.setting = setting
+        self.source = source
+        if source:
+            message = (
+                f"Configuration value for {setting} in {source} does not contain a valid value"
+            )
+        else:
+            message = f"Configuration value for {setting} does not contain a valid value"
         super().__init__(message)

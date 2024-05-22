@@ -6,14 +6,14 @@ development, prototyping and for regression testing.
 from typing import List
 from typing import Union
 
-from tarchia.exceptions import MissingDependencyError
-from tarchia.v1.catalog.provider_base import CatalogProvider
-from tarchia.v1.models import StreamingMetadata
-from tarchia.v1.models import TableMetadata
+from catalog.provider_base import CatalogProvider
+from exceptions import MissingDependencyError
+from models import StreamingMetadata
+from models import TableMetadata
 
 
-class TinyDBCatalogProvider:  # CatalogProvider):
-    def __init__(self, db_path: str = "db.json"):
+class TinyDBCatalogProvider(CatalogProvider):
+    def __init__(self, db_path: str = "tarchia.json"):
         """
         Initializes the database connection to TinyDB.
 
@@ -25,6 +25,9 @@ class TinyDBCatalogProvider:  # CatalogProvider):
         except ImportError as err:  # pragma: no cover
 
             raise MissingDependencyError(err.name) from err
+
+        if not db_path:
+            db_path = "tarchia.db"
 
         self.db = TinyDB(db_path)
         self.table = self.db.table("catalog")

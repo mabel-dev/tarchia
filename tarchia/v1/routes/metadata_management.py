@@ -8,7 +8,7 @@ Routes:
 from typing import Optional
 
 from fastapi import APIRouter
-from v1.models import UpdateMetadataRequest
+from models import UpdateMetadataRequest
 
 router = APIRouter()
 

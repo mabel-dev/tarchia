@@ -12,22 +12,33 @@ Routes:
 
 from typing import Optional
 
+from catalog import catalog_factory
 from fastapi import APIRouter
-from v1.models import CreateTableRequest
-from v1.models import TableCloneRequest
-from v1.models import UpdateSchemaRequest
+from fastapi import HTTPException
+from models import CreateTableRequest
+from models import StreamingMetadata
+from models import TableCloneRequest
+from models import TableMetadata
+from models import UpdateSchemaRequest
 
 router = APIRouter()
+catalog_provider = catalog_factory()
 
 
 @router.get("/tables")
 async def list_tables():
+
     return {"message": "Listing all tables"}
 
 
 @router.post("/tables")
 async def create_table(request: CreateTableRequest):
-    return {"message": "Table created", "table_details": request}
+    if request.disposition == "table":
+        new_table = TableMetadata()
+    elif request.disposition == "streaming":
+        new_table = StreamingMetadata(**request.__dict__)
+    else:
+        raise HTTPException(status_code=422, detail="Invalid disposition")
 
 
 @router.get("/tables/{tableIdentifier}")

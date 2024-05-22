@@ -52,6 +52,8 @@ def get(key, default=None):
 
 # fmt:off
 
+CATALOG_PROVIDER: str = get("CATALOG_PROVIDER", "TinyDB")
+
 # GCP project ID - for Google Cloud Data
 GCP_PROJECT_ID: str = get("GCP_PROJECT_ID")
 

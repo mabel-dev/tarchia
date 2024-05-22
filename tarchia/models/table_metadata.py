@@ -5,6 +5,11 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from uuid import uuid4
+
+
+def _uuid():
+    return str(uuid4())
 
 
 @dataclass
@@ -48,6 +53,7 @@ class Snapshot:
     manifest_list: str
     summary: Dict[str, str]
     schema_id: int
+    encryption_details: EncryptionDetails
 
 
 @dataclass
@@ -58,29 +64,27 @@ class SnapshotLogEntry:
 
 @dataclass
 class TableMetadata:
-    format_version: int
-    disposition: str
-    table_uuid: str
     location: str
     last_updated_ms: int
-    encryption_details: EncryptionDetails
     permissions: List[DatasetPermissions]
     schemas: List[Schema]
     snapshots: List[Snapshot]
     current_snapshot_id: int
     snapshot_log: List[SnapshotLogEntry]
+    format_version: int = 1
+    table_uuid: str = field(default_factory=_uuid)
     metadata: Dict[str, Any] = field(default_factory=dict)
+    disposition: str = "table"
 
 
 @dataclass
 class StreamingMetadata:
-    format_version: int
-    disposition: str
-    table_uuid: str
     location: str
     last_updated_ms: int
-    encryption_details: EncryptionDetails
     permissions: List[DatasetPermissions]
     schemas: List[Schema]
     current_snapshot: Snapshot
+    format_version: int = 1
+    table_uuid: str = field(default_factory=_uuid)
     metadata: Dict[str, Any] = field(default_factory=dict)
+    disposition: str = "streaming"

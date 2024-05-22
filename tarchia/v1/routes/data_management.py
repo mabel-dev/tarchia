@@ -19,7 +19,7 @@ from uuid import uuid4
 import orjson
 from fastapi import APIRouter
 from fastapi import HTTPException
-from v1.models import AddSnapshotRequest
+from models import AddSnapshotRequest
 
 router = APIRouter()
 

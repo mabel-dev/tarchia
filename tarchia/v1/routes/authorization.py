@@ -8,7 +8,7 @@ Routes:
 from typing import List
 
 from fastapi import APIRouter
-from v1.models import DatasetPermissions
+from models import DatasetPermissions
 
 router = APIRouter()
 
