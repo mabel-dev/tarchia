@@ -39,14 +39,14 @@ table/
 flowchart TD
     CATALOG[(Catalog)] --> SNAPSHOT(Snapshot)
     CATALOG  --> SCHEMA(Schema)
-    MANIFEST --> SCHEMA
+    SNAPSHOT --> SCHEMA
     SNAPSHOT --> MANIFEST(Manifest)
     SNAPSHOT --> INDEX(Indexes)
     SNAPSHOT --> STATS(Statistics)
     MANIFEST --> DATA(Data Files)
 ~~~
 
-
+The Catalog contains references to Schemas and Snapshots. 
 
 
 ## API Definition
