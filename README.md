@@ -17,13 +17,15 @@ table/
  |- metadata
  |   |- manifests/
  |   |   +- manifest-0000-0000.avro
+ |   |- schemas/
+ |   |   +- schema-0000-0000.json
  |   +- snapshots/
  |       +- snapshot-0000-0000.json
  +- data/
-     +- year=2000
-         +- month=01
-             +- day=01
-                 +- hour=00
+     +- year=2000/
+         +- month=01/
+             +- day=01/
+                 +- as_at_0000/
                      +- data-0000-0000.parquet
 ~~~
 
