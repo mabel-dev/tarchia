@@ -20,12 +20,3 @@ async def update_metadata(tableIdentifier: str, request: UpdateMetadataRequest):
         "identifier": tableIdentifier,
         "metadata": request.metadata,
     }
-
-
-@router.get("/tables/{tableIdentifier}/metadata")
-async def get_metadata(tableIdentifier: str, asOfTime: Optional[int] = None):
-    return {
-        "message": "Table metadata retrieved",
-        "identifier": tableIdentifier,
-        "asOfTime": asOfTime,
-    }

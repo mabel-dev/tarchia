@@ -5,31 +5,27 @@ Terminology
 
 - **Catalog** - A collection of tables.
 - **Data File** - Files that contain the rows of the table.
-- **Index** - A structure that improves data retrieval speed.
 - **Manifest** - Files that list and describe data files in the table.
 - **Metadata** - Information used to manage and describe tables.
 - **Schema** - The structure defining the columns of the table.
 - **Snapshot** - The state of the table at a specific point in time.
-- **Statistics** - Summary information about the data in columns.
 - **Table** - A dataset stored in a structured and managed way.
 
 
-~~~
+~~~python
 table/
  |- metadata
- |   |- indexes/
- |   |   +- index-0000-0000.index
  |   |- manifests/
  |   |   +- manifest-0000-0000.avro
- |   |- snapshots/
- |   |   +- snapshot-0000-0000.json
- |   +- statistics/
- |       +- statistics-0000-0000.json
+ |   |- schemas/
+ |   |   +- schema-0000-0000.json
+ |   +- snapshots/
+ |       +- snapshot-0000-0000.json
  +- data/
-     +- year=2000
-         +- month=01
-             +- day=01
-                 +- hour=00
+     +- year=2000/
+         +- month=01/
+             +- day=01/
+                 +- as_at_0000/
                      +- data-0000-0000.parquet
 ~~~
 
@@ -38,13 +34,15 @@ table/
 ~~~mermaid
 flowchart TD
     CATALOG[(Catalog)] --> SNAPSHOT(Snapshot)
-    SNAPSHOT --> MANIFEST(Manifest)
-    SNAPSHOT --> INDEX(Indexes)
-    SNAPSHOT --> STATS(Statistics)
+    CATALOG  --> SCHEMA(Schema)
+    subgraph Metadata 
+        SNAPSHOT --> SCHEMA
+        SNAPSHOT --> MANIFEST(Manifest)
+    end
     MANIFEST --> DATA(Data Files)
 ~~~
 
-
+The Catalog contains references to Schemas and Snapshots. 
 
 
 ## API Definition
@@ -53,32 +51,25 @@ flowchart TD
 
     [POST]      /v1/tables
     [GET]       /v1/tables
+UP    [GET]       /v1/tables/{tableIdentifier}?filter={filter}&as_at={timestamp}
+    [POST]       /v1/views/{viewIdentifier}/schemas
+    [POST]      /v1/tables/{tableIdentifier}/files
+NEW    [POST]      /v1/tables/{tableIdentifier}/files/truncate
+    [POST]      /v1/transactions/start
+    [POST]      /v1/transactions/commit
+    [POST]      /v1/tables/{tableIdentifier}/metadata
+    [POST]      /v1/tables/{tableIdentifier}/clone
 
 <!---
     [POST]      /v1/tables/{tableIdentifier}/permissions
     [GET]       /v1/tables/{tableIdentifier}/permissions/check
-    [POST]      /v1/transactions/start
-    [POST]      /v1/transactions/commit
-    [DELETE]    /v1/tables/{tableIdentifier}/files
-    [GET]       /v1/tables/{tableIdentifier}/files
-    [POST]      /v1/tables/{tableIdentifier}/files
-    [GET]       /v1/tables/{tableIdentifier}/snapshots
-    [POST]      /v1/tables/{tableIdentifier}/snapshots
     [POST]      /v1/tables/{tableIdentifier}/maintenance/compact
     [POST]      /v1/tables/{tableIdentifier}/maintenance/refresh_metadata
-    [POST]      /v1/tables/{tableIdentifier}/metadata
-    [GET]       /v1/tables/{tableIdentifier}/metadata
-    [GET]       /v1/tables/{tableIdentifier}
-    [DELETE]    /v1/tables/{tableIdentifier}
-    [GET]       /v1/tables/{tableIdentifier}/schemas
-    [POST]      /v1/tables/{tableIdentifier}/schemas
-    [POST]      /v1/tables/{tableIdentifier}/clone
 
     [POST]      /v1/views
     [GET]       /v1/views
     [GET]       /v1/views/{viewIdentifier}
     [DELETE]    /v1/views/{viewIdentifier}
-    [GET]       /v1/views/{viewIdentifier}/schemas
     [GET]       /v1/views/{viewIdentifier}/metadata
     [POST]      /v1/views/{viewIdentifier}/metadata
 
@@ -99,3 +90,46 @@ flowchart TD
 
     INDEX APIs
 --->
+
+## Request Fulfillment
+
+**I want to know what datasets there are**
+
+    [GET]       /v1/tables
+
+**I want to retrive the current instance of a dataset**
+
+    [GET]       /v1/tables/{tableIdentifier}?
+
+**I want to create a new dataset**
+
+    [POST]      /v1/tables
+
+**I want to retrieve a dataset as at a date in the past**
+
+    [GET]       /v1/tables/{tableIdentifier}?
+
+**I want to update the schema for a dataset**
+
+    [POST]       /v1/views/{viewIdentifier}/schemas
+
+**I want to update the metadata for a dataset**
+
+    [POST]      /v1/tables/{tableIdentifier}/metadata
+
+**I want to add another file to a dataset**
+
+    [POST]      /v1/transactions/start
+    [POST]      /v1/tables/{tableIdentifier}/files
+    [POST]      /v1/transactions/commit
+
+**I want to write a new instance of a dataset**
+
+    [POST]      /v1/transactions/start
+    [POST]      /v1/tables/{tableIdentifier}/files/truncate
+    [POST]      /v1/tables/{tableIdentifier}/files
+    [POST]      /v1/transactions/commit
+
+**I want to copy a dataset**
+
+    [POST]      /v1/tables/{tableIdentifier}/clone
