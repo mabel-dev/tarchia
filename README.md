@@ -39,7 +39,7 @@ table/
 flowchart TD
     CATALOG[(Catalog)] --> SNAPSHOT(Snapshot)
     CATALOG  --> SCHEMA(Schema)
-    SCHEMA   --> MANIFEST
+    MANIFEST --> SCHEMA
     SNAPSHOT --> MANIFEST(Manifest)
     SNAPSHOT --> INDEX(Indexes)
     SNAPSHOT --> STATS(Statistics)
