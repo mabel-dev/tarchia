@@ -39,7 +39,6 @@ table/
 flowchart TD
     CATALOG[(Catalog)] --> SNAPSHOT(Snapshot)
     SNAPSHOT --> MANIFEST(Manifest)
-    SNAPSHOT --> METADATA(Metadata)
     SNAPSHOT --> INDEX(Indexes)
     MANIFEST --> DATA(Data Files)
 ~~~
