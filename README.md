@@ -35,8 +35,10 @@ table/
 flowchart TD
     CATALOG[(Catalog)] --> SNAPSHOT(Snapshot)
     CATALOG  --> SCHEMA(Schema)
-    SNAPSHOT --> SCHEMA
-    SNAPSHOT --> MANIFEST(Manifest)
+    subgraph Metadata 
+        SNAPSHOT --> SCHEMA
+        SNAPSHOT --> MANIFEST(Manifest)
+    end
     MANIFEST --> DATA(Data Files)
 ~~~
 
