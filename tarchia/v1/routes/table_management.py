@@ -5,8 +5,6 @@ Routes:
     [GET]       /v1/tables
     [GET]       /v1/tables/{tableIdentifier}
     [DELETE]    /v1/tables/{tableIdentifier}
-    [GET]       /v1/tables/{tableIdentifier}/schemas
-    [POST]      /v1/tables/{tableIdentifier}/schemas
     [POST]      /v1/tables/{tableIdentifier}/clone
 """
 
@@ -16,7 +14,6 @@ from catalog import catalog_factory
 from fastapi import APIRouter
 from fastapi import HTTPException
 from models import CreateTableRequest
-from models import StreamingMetadata
 from models import TableCloneRequest
 from models import TableMetadata
 from models import UpdateSchemaRequest
@@ -49,15 +46,6 @@ async def get_table(tableIdentifier: str):
 @router.delete("/tables/{tableIdentifier}")
 async def delete_table(tableIdentifier: str):
     return {"message": "Table deleted", "identifier": tableIdentifier}
-
-
-@router.get("/tables/{tableIdentifier}/schemas")
-async def list_schemas(tableIdentifier: str, asOfTime: Optional[int] = None):
-    return {
-        "message": "Listing schemas for table",
-        "identifier": tableIdentifier,
-        "asOfTime": asOfTime,
-    }
 
 
 @router.post("/tables/{tableIdentifier}/schemas")

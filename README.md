@@ -51,30 +51,25 @@ The Catalog contains references to Schemas and Snapshots.
 
     [POST]      /v1/tables
     [GET]       /v1/tables
-    [GET]       /v1/tables/{tableIdentifier}
-    [DELETE]    /v1/tables/{tableIdentifier}
+UP    [GET]       /v1/tables/{tableIdentifier}?filter={filter}&as_at={timestamp}
+    [POST]       /v1/views/{viewIdentifier}/schemas
+    [POST]      /v1/tables/{tableIdentifier}/files
+NEW    [POST]      /v1/tables/{tableIdentifier}/files/truncate
+    [POST]      /v1/transactions/start
+    [POST]      /v1/transactions/commit
+    [POST]      /v1/tables/{tableIdentifier}/metadata
+    [POST]      /v1/tables/{tableIdentifier}/clone
 
 <!---
     [POST]      /v1/tables/{tableIdentifier}/permissions
     [GET]       /v1/tables/{tableIdentifier}/permissions/check
-    [POST]      /v1/transactions/start
-    [POST]      /v1/transactions/commit
-    [DELETE]    /v1/tables/{tableIdentifier}/files
-    [GET]       /v1/tables/{tableIdentifier}/files
-    [POST]      /v1/tables/{tableIdentifier}/files
-    [GET]       /v1/tables/{tableIdentifier}/snapshots
-    [POST]      /v1/tables/{tableIdentifier}/snapshots
     [POST]      /v1/tables/{tableIdentifier}/maintenance/compact
     [POST]      /v1/tables/{tableIdentifier}/maintenance/refresh_metadata
-    [POST]      /v1/tables/{tableIdentifier}/metadata
-    [GET]       /v1/tables/{tableIdentifier}/metadata
-    [POST]      /v1/tables/{tableIdentifier}/clone
 
     [POST]      /v1/views
     [GET]       /v1/views
     [GET]       /v1/views/{viewIdentifier}
     [DELETE]    /v1/views/{viewIdentifier}
-    [GET]       /v1/views/{viewIdentifier}/schemas
     [GET]       /v1/views/{viewIdentifier}/metadata
     [POST]      /v1/views/{viewIdentifier}/metadata
 
@@ -95,3 +90,46 @@ The Catalog contains references to Schemas and Snapshots.
 
     INDEX APIs
 --->
+
+## Request Fulfillment
+
+**I want to know what datasets there are**
+
+    [GET]       /v1/tables
+
+**I want to retrive the current instance of a dataset**
+
+    [GET]       /v1/tables/{tableIdentifier}?
+
+**I want to create a new dataset**
+
+    [POST]      /v1/tables
+
+**I want to retrieve a dataset as at a date in the past**
+
+    [GET]       /v1/tables/{tableIdentifier}?
+
+**I want to update the schema for a dataset**
+
+    [POST]       /v1/views/{viewIdentifier}/schemas
+
+**I want to update the metadata for a dataset**
+
+    [POST]      /v1/tables/{tableIdentifier}/metadata
+
+**I want to add another file to a dataset**
+
+    [POST]      /v1/transactions/start
+    [POST]      /v1/tables/{tableIdentifier}/files
+    [POST]      /v1/transactions/commit
+
+**I want to write a new instance of a dataset**
+
+    [POST]      /v1/transactions/start
+    [POST]      /v1/tables/{tableIdentifier}/files/truncate
+    [POST]      /v1/tables/{tableIdentifier}/files
+    [POST]      /v1/transactions/commit
+
+**I want to copy a dataset**
+
+    [POST]      /v1/tables/{tableIdentifier}/clone

@@ -93,37 +93,6 @@ async def commit_transaction(encoded_transaction: str):
     }
 
 
-@router.delete("/tables/{tableIdentifier}/files")
-async def delete_files_from_transaction(
-    tableIdentifier: str, file_paths: List[str], encoded_transaction: str
-):
-    transaction_data = verify_and_decode_transaction(encoded_transaction)
-    if not transaction_data or transaction_data["dataset"] != tableIdentifier:
-        raise HTTPException(status_code=400, detail="Invalid transaction data")
-
-    # Add file paths to the transaction's deletion list
-    transaction_data["deletions"].extend(file_paths)
-
-    # Reissue the updated transaction token
-    new_encoded_transaction = encode_and_sign_transaction(transaction_data)
-    return {
-        "message": "Files scheduled for deletion from transaction",
-        "encoded_transaction": new_encoded_transaction,
-    }
-
-
-@router.get("/tables/{tableIdentifier}/files")
-async def read_data_files(
-    tableIdentifier: str, snapshotId: Optional[int] = None, asOfTime: Optional[int] = None
-):
-    return {
-        "message": "File paths retrieved",
-        "identifier": tableIdentifier,
-        "snapshotId": snapshotId,
-        "asOfTime": asOfTime,
-    }
-
-
 @router.post("/tables/{tableIdentifier}/files")
 async def add_files_to_transaction(
     tableIdentifier: str, file_paths: List[str], encoded_transaction: str
@@ -138,17 +107,3 @@ async def add_files_to_transaction(
     # Reissue the updated transaction token
     new_encoded_transaction = encode_and_sign_transaction(transaction_data)
     return {"message": "Files added to transaction", "encoded_transaction": new_encoded_transaction}
-
-
-@router.get("/tables/{tableIdentifier}/snapshots")
-async def list_snapshots(tableIdentifier: str):
-    return {"message": "Listing snapshots for table", "identifier": tableIdentifier}
-
-
-@router.post("/tables/{tableIdentifier}/snapshots")
-async def manage_snapshots(tableIdentifier: str, request: AddSnapshotRequest):
-    return {
-        "message": "Snapshot managed",
-        "identifier": tableIdentifier,
-        "snapshot": request.snapshot,
-    }

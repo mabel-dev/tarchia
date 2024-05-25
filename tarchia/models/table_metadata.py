@@ -69,9 +69,11 @@ class Snapshot:
 class TableMetadata:
     location: str
     partitioning: List[str]
+    current_schema: str
     last_updated_ms: int
     permissions: List[DatasetPermissions]
     current_snapshot: Snapshot
     format_version: int = 1
     table_uuid: str = field(default_factory=_uuid)
     disposition: str = "table"
+    metadata: dict = field(default_factory=dict)
