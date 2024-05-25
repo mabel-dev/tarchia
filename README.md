@@ -51,10 +51,12 @@ The Catalog contains references to Schemas and Snapshots.
 
     [POST]      /v1/tables
     [GET]       /v1/tables
-UP    [GET]       /v1/tables/{tableIdentifier}?filter={filter}&as_at={timestamp}
-    [POST]       /v1/views/{viewIdentifier}/schemas
+    [DELETE]    /v1/tables/{tableIdentifier}
+    [GET]       /v1/tables/{tableIdentifier}?filter={filter}&as_at={timestamp}
+    [GET]       /v1/tables/{tableIdentifier}/{snapshotIdentifier}
+    [POST]      /v1/views/{viewIdentifier}/schemas
     [POST]      /v1/tables/{tableIdentifier}/files
-NEW    [POST]      /v1/tables/{tableIdentifier}/files/truncate
+    [POST]      /v1/tables/{tableIdentifier}/files/truncate
     [POST]      /v1/transactions/start
     [POST]      /v1/transactions/commit
     [POST]      /v1/tables/{tableIdentifier}/metadata

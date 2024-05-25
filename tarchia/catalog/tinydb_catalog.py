@@ -4,11 +4,9 @@ development, prototyping and for regression testing.
 """
 
 from typing import List
-from typing import Union
 
 from catalog.provider_base import CatalogProvider
 from exceptions import MissingDependencyError
-from models import StreamingMetadata
 from models import TableMetadata
 
 
@@ -32,7 +30,7 @@ class TinyDBCatalogProvider(CatalogProvider):
         self.db = TinyDB(db_path)
         self.table = self.db.table("catalog")
 
-    def get_table_(self, table_id: str) -> Union[TableMetadata, StreamingMetadata]:
+    def get_table_(self, table_id: str) -> TableMetadata:
         """
         Retrieve metadata for a specified table, including its schema and manifest references.
 
@@ -48,9 +46,7 @@ class TinyDBCatalogProvider(CatalogProvider):
         result = self.table.search(Table.id == table_id)
         return result[0] if result else {}
 
-    def update_table_metadata(
-        self, table_id: str, metadata: Union[TableMetadata, StreamingMetadata]
-    ) -> None:
+    def update_table_metadata(self, table_id: str, metadata: TableMetadata) -> None:
         """
         Update the metadata for a specified table.
 
@@ -63,7 +59,7 @@ class TinyDBCatalogProvider(CatalogProvider):
         Table = Query()
         self.table.upsert(metadata, Table.id == table_id)
 
-    def list_tables(self) -> List[Union[StreamingMetadata, TableMetadata]]:
+    def list_tables(self) -> List[TableMetadata]:
         """
         List all tables in the catalog along with their basic metadata.
 

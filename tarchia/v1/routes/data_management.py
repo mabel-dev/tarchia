@@ -13,7 +13,6 @@ Routes:
 import base64
 import hashlib
 from typing import List
-from typing import Optional
 from uuid import uuid4
 
 import orjson
@@ -97,6 +96,20 @@ async def commit_transaction(encoded_transaction: str):
 async def add_files_to_transaction(
     tableIdentifier: str, file_paths: List[str], encoded_transaction: str
 ):
+    transaction_data = verify_and_decode_transaction(encoded_transaction)
+    if not transaction_data or transaction_data["dataset"] != tableIdentifier:
+        raise HTTPException(status_code=400, detail="Invalid transaction data")
+
+    # Add file paths to the transaction's addition list
+    transaction_data["additions"].extend(file_paths)
+
+    # Reissue the updated transaction token
+    new_encoded_transaction = encode_and_sign_transaction(transaction_data)
+    return {"message": "Files added to transaction", "encoded_transaction": new_encoded_transaction}
+
+
+@router.post("/tables/{tableIdentifier}/files/truncate")
+async def truncate_all_files(tableIdentifier: str, file_paths: List[str], encoded_transaction: str):
     transaction_data = verify_and_decode_transaction(encoded_transaction)
     if not transaction_data or transaction_data["dataset"] != tableIdentifier:
         raise HTTPException(status_code=400, detail="Invalid transaction data")

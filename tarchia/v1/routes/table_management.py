@@ -32,25 +32,25 @@ async def list_tables():
 async def create_table(request: CreateTableRequest):
     if request.disposition == "table":
         new_table = TableMetadata()
-    elif request.disposition == "streaming":
-        new_table = StreamingMetadata(**request.__dict__)
     else:
         raise HTTPException(status_code=422, detail="Invalid disposition")
 
 
 @router.get("/tables/{tableIdentifier}")
-async def get_table(tableIdentifier: str):
+async def get_table(
+    tableIdentifier: str, as_at: Optional[int] = None, filter: Optional[str] = None
+):
+    return {"message": "Table details", "identifier": tableIdentifier}
+
+
+@router.get("/tables/{tableIdentifier}/{snapshotIdentifier}")
+async def get_table(tableIdentifier: str, snapshotIdentifier: str):
     return {"message": "Table details", "identifier": tableIdentifier}
 
 
 @router.delete("/tables/{tableIdentifier}")
 async def delete_table(tableIdentifier: str):
     return {"message": "Table deleted", "identifier": tableIdentifier}
-
-
-@router.post("/tables/{tableIdentifier}/schemas")
-async def update_schema(tableIdentifier: str, request: UpdateSchemaRequest):
-    return {"message": "Schema updated", "identifier": tableIdentifier, "schema": request.schema}
 
 
 @router.post("/tables/{tableIdentifier}/clone")

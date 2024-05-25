@@ -5,10 +5,9 @@ Routes:
     [GET]       /v1/tables/{tableIdentifier}/metadata
 """
 
-from typing import Optional
-
 from fastapi import APIRouter
 from models import UpdateMetadataRequest
+from models import UpdateSchemaRequest
 
 router = APIRouter()
 
@@ -20,3 +19,8 @@ async def update_metadata(tableIdentifier: str, request: UpdateMetadataRequest):
         "identifier": tableIdentifier,
         "metadata": request.metadata,
     }
+
+
+@router.post("/tables/{tableIdentifier}/schemas")
+async def update_schema(tableIdentifier: str, request: UpdateSchemaRequest):
+    return {"message": "Schema updated", "identifier": tableIdentifier, "schema": request.schema}
