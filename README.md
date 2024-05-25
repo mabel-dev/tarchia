@@ -14,17 +14,17 @@ Terminology
 - **Table** - A dataset stored in a structured and managed way.
 
 
-~~~
+~~~python
 table/
  |- metadata
- |   |- indexes/
- |   |   +- index-0000-0000.index
+# |   |- indexes/
+# |   |   +- index-0000-0000.index
  |   |- manifests/
  |   |   +- manifest-0000-0000.avro
  |   |- snapshots/
  |   |   +- snapshot-0000-0000.json
- |   +- statistics/
- |       +- statistics-0000-0000.json
+# |   +- statistics/
+# |       +- statistics-0000-0000.json
  +- data/
      +- year=2000
          +- month=01
@@ -38,6 +38,8 @@ table/
 ~~~mermaid
 flowchart TD
     CATALOG[(Catalog)] --> SNAPSHOT(Snapshot)
+    CATALOG  --> SCHEMA(Schema)
+    SCHEMA   --> MANIFEST
     SNAPSHOT --> MANIFEST(Manifest)
     SNAPSHOT --> INDEX(Indexes)
     SNAPSHOT --> STATS(Statistics)
@@ -53,6 +55,8 @@ flowchart TD
 
     [POST]      /v1/tables
     [GET]       /v1/tables
+    [GET]       /v1/tables/{tableIdentifier}
+    [DELETE]    /v1/tables/{tableIdentifier}
 
 <!---
     [POST]      /v1/tables/{tableIdentifier}/permissions
@@ -68,10 +72,6 @@ flowchart TD
     [POST]      /v1/tables/{tableIdentifier}/maintenance/refresh_metadata
     [POST]      /v1/tables/{tableIdentifier}/metadata
     [GET]       /v1/tables/{tableIdentifier}/metadata
-    [GET]       /v1/tables/{tableIdentifier}
-    [DELETE]    /v1/tables/{tableIdentifier}
-    [GET]       /v1/tables/{tableIdentifier}/schemas
-    [POST]      /v1/tables/{tableIdentifier}/schemas
     [POST]      /v1/tables/{tableIdentifier}/clone
 
     [POST]      /v1/views
