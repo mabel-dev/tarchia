@@ -5,26 +5,20 @@ Terminology
 
 - **Catalog** - A collection of tables.
 - **Data File** - Files that contain the rows of the table.
-- **Index** - A structure that improves data retrieval speed.
 - **Manifest** - Files that list and describe data files in the table.
 - **Metadata** - Information used to manage and describe tables.
 - **Schema** - The structure defining the columns of the table.
 - **Snapshot** - The state of the table at a specific point in time.
-- **Statistics** - Summary information about the data in columns.
 - **Table** - A dataset stored in a structured and managed way.
 
 
 ~~~python
 table/
  |- metadata
-# |   |- indexes/
-# |   |   +- index-0000-0000.index
  |   |- manifests/
  |   |   +- manifest-0000-0000.avro
- |   |- snapshots/
- |   |   +- snapshot-0000-0000.json
-# |   +- statistics/
-# |       +- statistics-0000-0000.json
+ |   +- snapshots/
+ |       +- snapshot-0000-0000.json
  +- data/
      +- year=2000
          +- month=01
@@ -41,8 +35,6 @@ flowchart TD
     CATALOG  --> SCHEMA(Schema)
     SNAPSHOT --> SCHEMA
     SNAPSHOT --> MANIFEST(Manifest)
-    SNAPSHOT --> INDEX(Indexes)
-    SNAPSHOT --> STATS(Statistics)
     MANIFEST --> DATA(Data Files)
 ~~~
 
