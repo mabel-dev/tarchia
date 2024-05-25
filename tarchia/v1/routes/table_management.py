@@ -1,11 +1,5 @@
 """
 
-Routes:
-    [POST]      /v1/tables
-    [GET]       /v1/tables
-    [GET]       /v1/tables/{tableIdentifier}
-    [DELETE]    /v1/tables/{tableIdentifier}
-    [POST]      /v1/tables/{tableIdentifier}/clone
 """
 
 from typing import Optional
@@ -21,6 +15,9 @@ from models import UpdateSchemaRequest
 router = APIRouter()
 catalog_provider = catalog_factory()
 
+def _uuid() -> str:
+    import uuid
+    return str(uuid.uuid4())
 
 @router.get("/tables")
 async def list_tables():
@@ -30,10 +27,19 @@ async def list_tables():
 
 @router.post("/tables")
 async def create_table(request: CreateTableRequest):
-    if request.disposition == "table":
-        new_table = TableMetadata()
-    else:
-        raise HTTPException(status_code=422, detail="Invalid disposition")
+
+    new_table = TableMetadata(
+        table_uuid=_uuid(),
+        format_version=1,
+        location=request.location,
+        partitioning=request.paritioning,
+        permissions=request.permissions,
+        disposition=request.disposition,
+        metadata=request.metadata
+    )
+    new_table.validate()
+
+    catalog_provider.update_table_metadata(table_id=new_table.table_uuid, metadata=new_table)    
 
 
 @router.get("/tables/{tableIdentifier}")

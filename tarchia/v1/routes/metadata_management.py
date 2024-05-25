@@ -1,8 +1,6 @@
 """
 
-Routes:
-    [POST]      /v1/tables/{tableIdentifier}/metadata
-    [GET]       /v1/tables/{tableIdentifier}/metadata
+
 """
 
 from fastapi import APIRouter
@@ -23,4 +21,8 @@ async def update_metadata(tableIdentifier: str, request: UpdateMetadataRequest):
 
 @router.post("/tables/{tableIdentifier}/schemas")
 async def update_schema(tableIdentifier: str, request: UpdateSchemaRequest):
+    return {"message": "Schema updated", "identifier": tableIdentifier, "schema": request.schema}
+
+@router.get("/tables/{tableIdentifier}/schemas")
+async def latest_schema(tableIdentifier: str):
     return {"message": "Schema updated", "identifier": tableIdentifier, "schema": request.schema}

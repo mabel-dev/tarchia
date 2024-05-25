@@ -55,6 +55,7 @@ The Catalog contains references to Schemas and Snapshots.
     [GET]       /v1/tables/{tableIdentifier}?filter={filter}&as_at={timestamp}
     [GET]       /v1/tables/{tableIdentifier}/{snapshotIdentifier}
     [POST]      /v1/views/{viewIdentifier}/schemas
+    [GET]       /v1/views/{viewIdentifier}/schemas
     [POST]      /v1/tables/{tableIdentifier}/files
     [POST]      /v1/tables/{tableIdentifier}/files/truncate
     [POST]      /v1/transactions/start

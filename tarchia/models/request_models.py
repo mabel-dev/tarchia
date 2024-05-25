@@ -1,17 +1,19 @@
 from dataclasses import dataclass
 from dataclasses import field
 from typing import Any
-from typing import Dict
+from typing import Dict, Optional
 from typing import List
 
 from models import DatasetPermissions
-from models import RolePermission
+from models import RolePermission, TableDisposition
 from models import Schema
 
 
-def default_permissions():
+def default_permissions() -> List[DatasetPermissions]:
     return [DatasetPermissions(role="*", permission=RolePermission.READ)]
 
+def default_partitioning() -> List[str]:
+    return ["year", "month", "day"]
 
 @dataclass
 class AddSnapshotRequest:
@@ -20,10 +22,11 @@ class AddSnapshotRequest:
 
 @dataclass
 class CreateTableRequest:
-    disposition: str
     location: str
     schema: Schema
-    permissions: List[DatasetPermissions] = field(default_factory=default_permissions)
+    paritioning: Optional[List[str]] = field(default=default_partitioning)
+    disposition: TableDisposition = TableDisposition.SNAPSHOT
+    permissions: List[DatasetPermissions] = field(default=default_permissions)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 

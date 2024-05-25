@@ -12,6 +12,10 @@ class RolePermission(Enum):
     WRITE = "write"
     OWN = "own"
 
+class TableDisposition(Enum):
+    SNAPSHOT = "snaphot"
+    CONTINOUS = "continuous"
+    EXTERNAL = "external"
 
 class IndexType(Enum):
     BINARY = "binary"
@@ -75,5 +79,8 @@ class TableMetadata:
     current_snapshot: Snapshot
     format_version: int = 1
     table_uuid: str = field(default_factory=_uuid)
-    disposition: str = "table"
+    disposition: TableDisposition = TableDisposition.SNAPSHOT
     metadata: dict = field(default_factory=dict)
+
+    def validate(self):
+        return True

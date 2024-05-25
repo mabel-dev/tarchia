@@ -132,3 +132,4 @@ opteryx_blobs/**
 test_db.json
 **.c
 **.cpp
+tarchia/avro/**/*
