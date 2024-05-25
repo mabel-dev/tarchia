@@ -40,6 +40,7 @@ flowchart TD
     CATALOG[(Catalog)] --> SNAPSHOT(Snapshot)
     SNAPSHOT --> MANIFEST(Manifest)
     SNAPSHOT --> INDEX(Indexes)
+    SNAPSHOT --> STATS(Statistics)
     MANIFEST --> DATA(Data Files)
 ~~~
 

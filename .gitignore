@@ -130,3 +130,5 @@ dmypy.json
 brace.py
 opteryx_blobs/**
 test_db.json
+**.c
+**.cpp
