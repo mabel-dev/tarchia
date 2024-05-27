@@ -6,16 +6,20 @@ from typing import List
 from typing import Optional
 from uuid import uuid4
 
+from utils.serde import to_dict
+
 
 class RolePermission(Enum):
     READ = "read"
     WRITE = "write"
     OWN = "own"
 
+
 class TableDisposition(Enum):
     SNAPSHOT = "snaphot"
     CONTINOUS = "continuous"
     EXTERNAL = "external"
+
 
 class IndexType(Enum):
     BINARY = "binary"
@@ -52,31 +56,24 @@ class Schema:
 
 
 @dataclass
-class Index:
-    path: str
-    column: str
-    index_type: IndexType
-
-
-@dataclass
 class Snapshot:
-    snapshot_id: int
-    parent_snapshot_path: Optional[str]
-    timestamp_ms: int
-    manifest_path: str
-    indexes: Optional[Index]
+    snapshot_id: str
+    parent_snapshot_path: Optional[str]  # can be not for this dataset
+    last_updated_ns: int
+    manifest_path: Optional[str]
     schema: Schema
     encryption_details: EncryptionDetails
 
 
 @dataclass
 class TableMetadata:
+    name: str
     location: str
     partitioning: List[str]
-    current_schema: str
-    last_updated_ms: int
+    last_updated_ns: int
     permissions: List[DatasetPermissions]
-    current_snapshot: Snapshot
+    schema: Schema
+    current_snapshot_id: Optional[str]
     format_version: int = 1
     table_uuid: str = field(default_factory=_uuid)
     disposition: TableDisposition = TableDisposition.SNAPSHOT
@@ -84,3 +81,7 @@ class TableMetadata:
 
     def validate(self):
         return True
+
+    @property
+    def dic(self):
+        return to_dict(self)

@@ -16,9 +16,7 @@ Terminology
 table/
  |- metadata
  |   |- manifests/
- |   |   +- manifest-0000-0000.avro
- |   |- schemas/
- |   |   +- schema-0000-0000.json
+ |   |   +- manifest-0000-0000.parquet
  |   +- snapshots/
  |       +- snapshot-0000-0000.json
  +- data/
@@ -44,6 +42,15 @@ flowchart TD
 
 The Catalog contains references to Schemas and Snapshots. 
 
+When a table is created, it is created with a schema but no snapshot (it doesn't have any data yet).
+
+When a table is written to, the writer gets the latest schema (this may not be the same as the latest snapshot, if the schema was updated since), writes the data, and saves the snapshot.
+
+Streaming datasets add new files to the dataset, create a new minfest and new snapshot; streaming data cannot change schemas beyond - adding and removing columns, and limited type converstions (int->float).
+
+When a table is read, we get the schema and the manifest. Each snapshot can only have one schema.
+
+The catalog references the latest schema, latest snapshot and key information about the table.
 
 ## API Definition
 

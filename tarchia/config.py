@@ -53,6 +53,14 @@ def get(key, default=None):
 # fmt:off
 
 CATALOG_PROVIDER: str = get("CATALOG_PROVIDER", "TinyDB")
+"""The service providing the storage for the Catalog."""
+
+STORAGE_PROVIDER: str = get("STORAGE_PROVIDER", "local")
+"""The service providing the storage for the metadata."""
+
+METADATA_ROOT: str = get("METADATA_ROOT", "warehouse")
+"""The root of the metadata store."""
+
 
 # GCP project ID - for Google Cloud Data
 GCP_PROJECT_ID: str = get("GCP_PROJECT_ID")
