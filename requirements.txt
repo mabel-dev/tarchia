@@ -3,4 +3,5 @@ fastapi
 numpy
 opteryx
 orjson
+pyarrow
 pydantic

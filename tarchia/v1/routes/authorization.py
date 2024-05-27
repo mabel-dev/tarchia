@@ -14,7 +14,17 @@ router = APIRouter()
 
 
 @router.post("/tables/{tableIdentifier}/permissions")
-async def update_permissions(tableIdentifier: str, permissions: DatasetPermissions):
+async def grant_permissions(tableIdentifier: str, permissions: DatasetPermissions):
+    # Store or update the permissions in your permissions management system.
+    return {
+        "message": "Permissions updated",
+        "identifier": tableIdentifier,
+        "permissions": permissions,
+    }
+
+
+@router.delete("/tables/{tableIdentifier}/permissions")
+async def revoke_permissions(tableIdentifier: str, permissions: DatasetPermissions):
     # Store or update the permissions in your permissions management system.
     return {
         "message": "Permissions updated",
