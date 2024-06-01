@@ -36,14 +36,13 @@ table/
 flowchart TD
     CATALOG[(Catalog)] --> SNAPSHOT(Snapshot)
     CATALOG  --> SCHEMA(Schema)
-    subgraph Metadata 
-        subgraph Large Tables
-            SNAPSHOT --> MAN_LIST(Manifest List)
-        end
+    subgraph  
         MAN_LIST --> MANIFEST(Manifest)
+        SNAPSHOT --> SCHEMA
+        SNAPSHOT --> MAN_LIST(Manifest List)
     end
-    SNAPSHOT --> SCHEMA
     MANIFEST --> DATA(Data Files)
+    style MAN_LIST stroke-width:1px,stroke-dasharray: 3 3
 ~~~
 
 The Catalog contains references to Schemas and Snapshots. 
@@ -57,6 +56,8 @@ Streaming datasets add new files to the dataset, create a new minfest and new sn
 When a table is read, we get the schema and the manifest. Each snapshot can only have one schema.
 
 The catalog references the latest schema, latest snapshot and key information about the table.
+
+Large files (generally those which are continuous) have another manifest layer to split large manifest files into smaller files (less effort to update, less effort to prune). These contain consolidated statistics for all entries in the manifest they point to.
 
 ## API Definition
 
