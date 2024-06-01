@@ -2,8 +2,8 @@
 
 """
 
-import uuid
 import time
+import uuid
 from typing import Optional
 
 from catalog import catalog_factory

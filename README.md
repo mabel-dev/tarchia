@@ -6,6 +6,7 @@ Terminology
 - **Catalog** - A collection of tables.
 - **Data File** - Files that contain the rows of the table.
 - **Manifest** - Files that list and describe data files in the table.
+- **Manifest List** - Files that contain pointers to Manifest files.
 - **Metadata** - Information used to manage and describe tables.
 - **Schema** - The structure defining the columns of the table.
 - **Snapshot** - The state of the table at a specific point in time.
@@ -15,8 +16,10 @@ Terminology
 ~~~python
 table/
  |- metadata
+ |   |- manifest_lists/
+ |   |   +- man_list-0000-0000.avro
  |   |- manifests/
- |   |   +- manifest-0000-0000.parquet
+ |   |   +- manifest-0000-0000.avro
  |   +- snapshots/
  |       +- snapshot-0000-0000.json
  +- data/
@@ -35,7 +38,8 @@ flowchart TD
     CATALOG  --> SCHEMA(Schema)
     subgraph Metadata 
         SNAPSHOT --> SCHEMA
-        SNAPSHOT --> MANIFEST(Manifest)
+        SNAPSHOT --> MAN_LIST(Manifest List)
+        MAN_LIST --> MANIFEST(Manifest)
     end
     MANIFEST --> DATA(Data Files)
 ~~~
