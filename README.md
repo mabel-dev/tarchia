@@ -38,7 +38,9 @@ flowchart TD
     CATALOG  --> SCHEMA(Schema)
     subgraph Metadata 
         SNAPSHOT --> SCHEMA
-        SNAPSHOT --> MAN_LIST(Manifest List)
+        subgraph Large Tables
+            SNAPSHOT --> MAN_LIST(Manifest List)
+        end
         MAN_LIST --> MANIFEST(Manifest)
     end
     MANIFEST --> DATA(Data Files)
