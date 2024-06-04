@@ -1,4 +1,3 @@
-from dataclasses import asdict
 from dataclasses import fields
 from dataclasses import is_dataclass
 from enum import Enum
@@ -14,7 +13,7 @@ def to_json(self) -> bytes:
             return o.__name__
         raise TypeError(f"Object of type {o.__class__.__name__} is not JSON serializable")
 
-    return orjson.dumps(asdict(self), default=default_serializer)
+    return orjson.dumps(to_dict(self), default=default_serializer)
 
 
 def to_dict(obj: Any) -> Dict[str, Any]:

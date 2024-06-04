@@ -133,3 +133,4 @@ test_db.json
 **.c
 **.cpp
 tarchia/avro/**/*
+scratch/**
