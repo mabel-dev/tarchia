@@ -75,7 +75,7 @@ class TableMetadata:
     schema: Schema
     current_snapshot_id: Optional[str]
     format_version: int = 1
-    table_uuid: str = field(default_factory=_uuid)
+    table_id: str = field(default_factory=_uuid)
     disposition: TableDisposition = TableDisposition.SNAPSHOT
     metadata: dict = field(default_factory=dict)
 

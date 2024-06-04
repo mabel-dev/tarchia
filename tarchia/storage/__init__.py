@@ -11,7 +11,7 @@ def storage_factory():
         from .google_cloud_storage import GoogleCloudStorage
 
         return GoogleCloudStorage()
-    
+
     if config.STORAGE_PROVIDER.upper() in ("AMAZON", "S3", "MINIO"):
         from .s3_storage import S3Storage
 

@@ -7,8 +7,8 @@ It is inspired by the Apache Iceberg REST API.
 from os import environ
 
 import v1.routes
-from middlewares import AuthorizationMiddleware
 from fastapi import FastAPI
+from middlewares import AuthorizationMiddleware
 from uvicorn import run
 
 application = FastAPI(title="Tarchia Metastore")

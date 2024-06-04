@@ -30,7 +30,7 @@ class TinyDBCatalogProvider(CatalogProvider):
         self.db = TinyDB(db_path)
         self.table = self.db.table("catalog")
 
-    def get_table_(self, table_id: str) -> TableMetadata:
+    def get_table(self, table_id: str) -> TableMetadata:
         """
         Retrieve metadata for a specified table, including its schema and manifest references.
 

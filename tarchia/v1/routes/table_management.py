@@ -7,7 +7,6 @@ import uuid
 from typing import Optional
 
 from catalog import catalog_factory
-from config import METADATA_ROOT
 from fastapi import APIRouter
 from fastapi import Request
 from fastapi import Response
@@ -42,11 +41,11 @@ async def list_tables(request: Request):
 
     tables = catalog_provider.list_tables()
     for table in tables:
-        table_uuid = table["table_uuid"]
+        table_id = table["table_id"]
         current_snapshot_id = table.get("current_snapshot_id")
         if current_snapshot_id is not None:
             # provide the URL to call to get the snapshot
-            table["snapshot"] = f"{base_url}/tables/{table_uuid}/{current_snapshot_id}"
+            table["snapshot"] = f"{base_url}/tables/{table_id}/{current_snapshot_id}"
     return tables
 
 
@@ -61,13 +60,13 @@ async def create_table(request: CreateTableRequest):
     - request: CreateTableRequest
         The request body containing the table metadata.
     """
-    table_uuid = _uuid()
+    table_id = _uuid()
 
     # We create tables without any snapshot, at create-time the table has no data and some
     # table types (external) we never record snapshots for.
     new_table = TableMetadata(
         name=request.name,
-        table_uuid=table_uuid,
+        table_id=table_id,
         format_version=1,
         location=request.location,
         partitioning=request.paritioning,
@@ -81,7 +80,7 @@ async def create_table(request: CreateTableRequest):
     new_table.validate()
 
     # Save the table to the Catalog
-    catalog_provider.update_table_metadata(table_id=new_table.table_uuid, metadata=new_table.dic)
+    catalog_provider.update_table_metadata(table_id=new_table.table_id, metadata=new_table.dic)
 
     # 204 (No Content)
     return Response(status_code=204)
@@ -92,15 +91,25 @@ async def create_table(request: CreateTableRequest):
 async def get_table(
     tableIdentifier: str,
     as_at: Optional[int] = None,
-    filter: Optional[str] = None,
     snapshotIdentifier: Optional[str] = None,
 ):
-    return {"message": "Table details", "identifier": tableIdentifier}
+    """
+    return the schema and the filelist
+    """
+
+    quit()
+
+    latest_table = catalog_provider.get_table(tableIdentifier)
+    if snapshotIdentifier is None and as_at is None:
+        snapshotIdentifier = latest_table.get("snapshot_id")
+    if as_at is not None:
+        # get all the snapshots
+        storage_provider.blob_list(prefix="prefix", as_at=as_at)
 
 
 @router.delete("/tables/{tableIdentifier}", response_class=ORJSONResponse)
 async def delete_table(tableIdentifier: str):
-    return {"message": "Table deleted", "identifier": tableIdentifier}
+    catalog_provider.delete_table_metadata(tableIdentifier)
 
 
 @router.post("/tables/{tableIdentifier}/clone", response_class=ORJSONResponse)

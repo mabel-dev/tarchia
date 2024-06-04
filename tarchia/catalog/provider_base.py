@@ -10,7 +10,7 @@ class CatalogProvider:
     with a document store for managing table metadata, schemas, and references to manifests.
     """
 
-    def get_table_(self, table_id: str) -> Dict[str, Any]:
+    def get_table(self, table_id: str) -> Dict[str, Any]:
         """
         Retrieve metadata for a specified table, including its schema and manifest references.
 
