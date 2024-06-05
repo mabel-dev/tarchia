@@ -3,6 +3,12 @@ Tarchia is the metadata store for Mabel and Opteryx.
 
 It is inspired by the Apache Iceberg REST API.
 """
+import sys
+import os
+
+sys.path.insert(1, os.path.join(sys.path[0], ".."))
+
+import tarchia
 
 from os import environ
 
