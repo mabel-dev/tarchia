@@ -6,7 +6,7 @@ from typing import List
 from typing import Optional
 from uuid import uuid4
 
-from utils.serde import to_dict
+from tarchia.utils.serde import to_dict
 
 
 class RolePermission(Enum):

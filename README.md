@@ -6,7 +6,6 @@ Terminology
 - **Catalog** - A collection of tables.
 - **Data File** - Files that contain the rows of the table.
 - **Manifest** - Files that list and describe data files in the table.
-- **Manifest List** - Files that contain pointers to Manifest files.
 - **Metadata** - Information used to manage and describe tables.
 - **Schema** - The structure defining the columns of the table.
 - **Snapshot** - The state of the table at a specific point in time.
@@ -16,8 +15,6 @@ Terminology
 ~~~python
 table/
  |- metadata
- |   |- manifest_lists/
- |   |   +- man_list-0000-0000.avro
  |   |- manifests/
  |   |   +- manifest-0000-0000.avro
  |   +- snapshots/
@@ -42,7 +39,6 @@ flowchart TD
         SNAPSHOT --> MAN_LIST(Manifest List)
     end
     MANIFEST --> DATA(Data Files)
-    style MAN_LIST stroke-width:1px,stroke-dasharray: 3 3
 ~~~
 
 The Catalog contains references to Schemas and Snapshots. 
@@ -57,7 +53,7 @@ When a table is read, we get the schema and the manifest. Each snapshot can only
 
 The catalog references the latest schema, latest snapshot and key information about the table.
 
-Large files (generally those which are continuous) have another manifest layer to split large manifest files into smaller files (less effort to update, less effort to prune). These contain consolidated statistics for all entries in the manifest they point to.
+Manifests are limited to 10,000 (TBC) rows (aiming for <2Mb files), when a manifest exceeds this number it is split and a Manifest list created. Manifest/Manifest Lists use B-Tree style management to help ensure reasonable sized files and efficient pruning. 
 
 ## API Definition
 

@@ -18,7 +18,9 @@ from uuid import uuid4
 import orjson
 from fastapi import APIRouter
 from fastapi import HTTPException
-from models import AddSnapshotRequest
+
+from tarchia import config
+from tarchia.models import AddSnapshotRequest
 
 router = APIRouter()
 
@@ -27,22 +29,36 @@ def generate_transaction_id():
     return str(uuid4())
 
 
-def encode_and_sign_transaction(transaction_data):
+def encode_and_sign_transaction(transaction_data: dict):
+    # We late import to allow code to override this
+    SIGNER = config.TRANSACTION_SIGNER
+    if not isinstance(SIGNER, bytes):
+        SIGNER = str(SIGNER).encode()
     # Placeholder for actual encoding and cryptographic signing
-    encoded = base64.b64encode(orjson.dumps(transaction_data).encode()).decode()
-    signature = hashlib.sha256(transaction_data).hexdigest()
+    transaction_bytes = orjson.dumps(transaction_data)
+    encoded = base64.b64encode(transaction_bytes).decode()
+    signature = hashlib.sha256(SIGNER + transaction_bytes).hexdigest()
     # You would add a cryptographic signature here
     return encoded + "." + signature
 
 
-def verify_and_decode_transaction(transaction_data):
+def verify_and_decode_transaction(transaction_data: str) -> dict:
+    # We late import to allow code to override this
+    SIGNER = config.TRANSACTION_SIGNER
+    if not isinstance(SIGNER, bytes):
+        SIGNER = str(SIGNER).encode()
+
+    if not transaction_data:
+        raise ValueError("No Transaction")
+
     transaction, signature = transaction_data.split(".")
 
     decoded = base64.b64decode(transaction)
-    recreated_signature = hashlib.sha256(decoded).hexdigest()
+    transaction = orjson.loads(decoded)
+    recreated_signature = hashlib.sha256(SIGNER + decoded).hexdigest()
     if signature != recreated_signature:
         raise ValueError("Signature doesn't match")
-    return decoded
+    return transaction
 
 
 def calculate_table_hash(data):
@@ -51,7 +67,6 @@ def calculate_table_hash(data):
 
 
 def calculate_dataset_hash(table_hashes):
-    # Simple XOR of hashes, could be replaced with more complex aggregation
     from binascii import unhexlify
     from functools import reduce
     from operator import xor

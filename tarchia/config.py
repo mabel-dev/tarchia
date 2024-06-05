@@ -61,6 +61,8 @@ STORAGE_PROVIDER: str = get("STORAGE_PROVIDER", "local")
 METADATA_ROOT: str = get("METADATA_ROOT", "warehouse")
 """The root of the metadata store."""
 
+TRANSACTION_SIGNER: str = get("TRANSACTION_SIGNER", "secret")
+"""The key used to sign transactions."""
 
 # GCP project ID - for Google Cloud Data
 GCP_PROJECT_ID: str = get("GCP_PROJECT_ID")

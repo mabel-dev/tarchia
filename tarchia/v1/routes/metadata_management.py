@@ -4,8 +4,9 @@
 """
 
 from fastapi import APIRouter
-from models import UpdateMetadataRequest
-from models import UpdateSchemaRequest
+
+from tarchia.models import UpdateMetadataRequest
+from tarchia.models import UpdateSchemaRequest
 
 router = APIRouter()
 

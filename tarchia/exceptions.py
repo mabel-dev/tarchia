@@ -31,3 +31,8 @@ class InvalidConfigurationError(Exception):
         else:
             message = f"Configuration value for {setting} does not contain a valid value"
         super().__init__(message)
+
+
+class InvalidFilterError(Exception):
+    def __init__(self, message: str):
+        super().__init__(message)
