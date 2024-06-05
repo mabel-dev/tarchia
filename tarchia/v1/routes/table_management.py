@@ -4,17 +4,20 @@
 
 import time
 import uuid
+from typing import List
 from typing import Optional
+from typing import Tuple
 
-from catalog import catalog_factory
 from fastapi import APIRouter
 from fastapi import Request
 from fastapi import Response
 from fastapi.responses import ORJSONResponse
-from models import CreateTableRequest
-from models import TableCloneRequest
-from models import TableMetadata
-from storage import storage_factory
+
+from tarchia.catalog import catalog_factory
+from tarchia.models import CreateTableRequest
+from tarchia.models import TableCloneRequest
+from tarchia.models import TableMetadata
+from tarchia.storage import storage_factory
 
 router = APIRouter()
 catalog_provider = catalog_factory()
@@ -92,6 +95,7 @@ async def get_table(
     tableIdentifier: str,
     as_at: Optional[int] = None,
     snapshotIdentifier: Optional[str] = None,
+    filters: Optional[List[Tuple[str, str, str]]] = None,
 ):
     """
     return the schema and the filelist
@@ -105,6 +109,10 @@ async def get_table(
     if as_at is not None:
         # get all the snapshots
         storage_provider.blob_list(prefix="prefix", as_at=as_at)
+
+    blobs = get_manifext(manifest, storage_provider, filters)
+
+    return {**table_data, "blobs": blobs}
 
 
 @router.delete("/tables/{tableIdentifier}", response_class=ORJSONResponse)

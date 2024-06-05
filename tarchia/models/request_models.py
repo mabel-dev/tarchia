@@ -5,10 +5,10 @@ from typing import Dict
 from typing import List
 from typing import Optional
 
-from models import DatasetPermissions
-from models import RolePermission
-from models import Schema
-from models import TableDisposition
+from .table_metadata import DatasetPermissions
+from .table_metadata import RolePermission
+from .table_metadata import Schema
+from .table_metadata import TableDisposition
 
 
 def default_permissions() -> List[DatasetPermissions]:

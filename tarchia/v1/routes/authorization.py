@@ -8,7 +8,8 @@ Routes:
 from typing import List
 
 from fastapi import APIRouter
-from models import DatasetPermissions
+
+from tarchia.models import DatasetPermissions
 
 router = APIRouter()
 

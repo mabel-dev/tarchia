@@ -1,5 +1,5 @@
-import config
-from exceptions import InvalidConfigurationError
+from tarchia import config
+from tarchia.exceptions import InvalidConfigurationError
 
 
 def storage_factory():

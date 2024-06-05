@@ -5,9 +5,9 @@ development, prototyping and for regression testing.
 
 from typing import List
 
-from catalog.provider_base import CatalogProvider
-from exceptions import MissingDependencyError
-from models import TableMetadata
+from tarchia.catalog.provider_base import CatalogProvider
+from tarchia.exceptions import MissingDependencyError
+from tarchia.models import TableMetadata
 
 
 class TinyDBCatalogProvider(CatalogProvider):
