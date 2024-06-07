@@ -41,19 +41,27 @@ flowchart TD
     MANIFEST --> DATA(Data Files)
 ~~~
 
-The Catalog contains references to Schemas and Snapshots. 
+The Catalog, hosted in a datastore like FireStore, contains references to Schemas and Snapshots. 
 
 When a table is created, it is created with a schema but no snapshot (it doesn't have any data yet).
 
-When a table is written to, the writer gets the latest schema (this may not be the same as the latest snapshot, if the schema was updated since), writes the data, and saves the snapshot.
+When a table is written to, the writer should obtain the latest schema (this may not be the same as the latest snapshot, if the schema was updated since), write the data, and saves the snapshot.
 
-Streaming datasets add new files to the dataset, create a new minfest and new snapshot; streaming data cannot change schemas beyond - adding and removing columns, and limited type converstions (int->float).
+Writers use a transaction system to ensure datasets/updates are complete before updating the catalog.
+
+Streaming datasets add new files to the dataset, create a new manifest streaming data cannot change schemas beyond - adding and removing columns, and limited type converstions (e.g. int->float). Larger changes are different datasets.
 
 When a table is read, we get the schema and the manifest. Each snapshot can only have one schema.
 
 The catalog references the latest schema, latest snapshot and key information about the table.
 
-Manifests are limited to 10,000 (TBC) rows (aiming for <2Mb files), when a manifest exceeds this number it is split and a Manifest list created. Manifest/Manifest Lists use B-Tree style management to help ensure reasonable sized files and efficient pruning. 
+Manifests are limited to 1000 rows (1000 = 1.6Mb, aiming for <2Mb files to fit in cache), when a manifest exceeds this number it is split and a Manifest list created. Manifest/Manifest Lists use B-Tree style management to help ensure efficient pruning. 
+
+Small and medium sized tables (roughly fewer than 10 million records [depends on entries per file]) are likely to only ever need one layer on manifests, larger tables (usually those which are streams) will have many manifests, each entry in a manifest can be another manifest or a blob. Creating a tree-like structure.
+
+The manifest and snapshot files do not need to be colocated with the data files.
+
+The data files don't need to be colocated with each other.
 
 ## API Definition
 

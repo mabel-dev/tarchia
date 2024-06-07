@@ -7,7 +7,7 @@ from typing import List
 
 from tarchia.catalog.provider_base import CatalogProvider
 from tarchia.exceptions import MissingDependencyError
-from tarchia.models import TableMetadata
+from tarchia.models import TableCatalogEntry
 
 
 class TinyDBCatalogProvider(CatalogProvider):
@@ -30,7 +30,7 @@ class TinyDBCatalogProvider(CatalogProvider):
         self.db = TinyDB(db_path)
         self.table = self.db.table("catalog")
 
-    def get_table(self, table_id: str) -> TableMetadata:
+    def get_table(self, table_id: str) -> TableCatalogEntry:
         """
         Retrieve metadata for a specified table, including its schema and manifest references.
 
@@ -46,7 +46,7 @@ class TinyDBCatalogProvider(CatalogProvider):
         result = self.table.search(Table.id == table_id)
         return result[0] if result else {}
 
-    def update_table_metadata(self, table_id: str, metadata: TableMetadata) -> None:
+    def update_table_metadata(self, table_id: str, metadata: TableCatalogEntry) -> None:
         """
         Update the metadata for a specified table.
 
@@ -59,7 +59,7 @@ class TinyDBCatalogProvider(CatalogProvider):
         Table = Query()
         self.table.upsert(metadata, Table.id == table_id)
 
-    def list_tables(self) -> List[TableMetadata]:
+    def list_tables(self) -> List[TableCatalogEntry]:
         """
         List all tables in the catalog along with their basic metadata.
 
