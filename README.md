@@ -49,6 +49,8 @@ When a table is written to, the writer should obtain the latest schema (this may
 
 Writers use a transaction system to ensure datasets/updates are complete before updating the catalog.
 
+Clashes are managed by ensuring the version (latest snapshot) of the dataset at the start of the transaction matches the version of the dataset at the end of the transaction - if these don't match someone else has made a change and the transaction should fail.
+
 Streaming datasets add new files to the dataset, create a new manifest streaming data cannot change schemas beyond - adding and removing columns, and limited type converstions (e.g. int->float). Larger changes are different datasets.
 
 When a table is read, we get the schema and the manifest. Each snapshot can only have one schema.
@@ -68,6 +70,8 @@ The data files don't need to be colocated with each other.
 Updates are atomic due to them being effected when the catalog is updated. Failed updates may leave artifacts (like orphan files), but the update was either successful or not, there is no partial success. As storage is cheap, if the cost of a failed commit is orphaned tables, that should be acceptable.
 
 Pruning is only effective for columns that are sorted, or nearly sorted, or columns with values that appear for limited periods of time. Attempting to prune on a column like Gender which has very few, highly recurrant values, is likely to be a waste of effort, pruning on dates when working with log entries, is likely to be quite effective.
+
+It's intended that indexes will operate at a leaf manifest level, providing a balance between too many indexes (one per blob) and too few indexes (one per dataset). This is still to be worked through.
 
 ## API Definition
 
