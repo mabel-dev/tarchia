@@ -1,3 +1,4 @@
+# isort: skip
 """
 Tarchia is the metadata store for Mabel and Opteryx.
 
@@ -8,19 +9,19 @@ import os
 import sys
 from os import environ
 
-import v1.routes
 from fastapi import FastAPI
-from middlewares import AuthorizationMiddleware
 from uvicorn import run
 
-import tarchia
+sys.path.insert(1, os.path.join(sys.path[0], ".."))  # isort: skip
 
-sys.path.insert(1, os.path.join(sys.path[0], ".."))
+import tarchia  # isort: skip
+from tarchia.middlewares import AuthorizationMiddleware  # isort: skip
+from tarchia.v1 import routes as v1_routes  # isort: skip
 
 
 application = FastAPI(title="Tarchia Metastore")
 
-application.include_router(v1.routes.v1_router)
+application.include_router(v1_routes.v1_router)
 application.add_middleware(AuthorizationMiddleware)
 
 
