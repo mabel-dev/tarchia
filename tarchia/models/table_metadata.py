@@ -66,7 +66,7 @@ class Snapshot:
 
 
 @dataclass
-class TableMetadata:
+class TableCatalogEntry:
     name: str
     location: str
     partitioning: List[str]

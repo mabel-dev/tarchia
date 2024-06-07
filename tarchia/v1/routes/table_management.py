@@ -15,8 +15,8 @@ from fastapi.responses import ORJSONResponse
 
 from tarchia.catalog import catalog_factory
 from tarchia.models import CreateTableRequest
+from tarchia.models import TableCatalogEntry
 from tarchia.models import TableCloneRequest
-from tarchia.models import TableMetadata
 from tarchia.storage import storage_factory
 
 router = APIRouter()
@@ -67,7 +67,7 @@ async def create_table(request: CreateTableRequest):
 
     # We create tables without any snapshot, at create-time the table has no data and some
     # table types (external) we never record snapshots for.
-    new_table = TableMetadata(
+    new_table = TableCatalogEntry(
         name=request.name,
         table_id=table_id,
         format_version=1,
@@ -98,19 +98,40 @@ async def get_table(
     filters: Optional[List[Tuple[str, str, str]]] = None,
 ):
     """
-    return the schema and the filelist
+    Return information required to access a table.
+
+    We must have a table identifier, this will return the current position
+    for the table. We can optionally specify a snotshot ID, with this we can
+    look at a fixed historic version. We can also optionally provide a
+    timestamp and we work out which snapshot to read. This is the least
+    preferred option and requires more work to resolve.
+
+    We also accept filters, these are conjunctive (ANDed) and used to
+    perform blob filtering based on statistics held for each blob.
+
+    We return the snapshot and the bloblist for the snapshot.
     """
+    # Do we have a valid request
+    if snapshotIdentifier is not None and as_at is not None:
+        raise DataEntryError(
+            endpoint="",
+            fields=["snapshotIdentifier", "as_at"],
+            message="Cannot provide a time-based search (as_at) and an index-based search (snapshotIdentifier) in the same request.",
+        )
 
-    quit()
+    # read the data from the catalog for this table
+    catalog_entry = catalog_provider.get_table(tableIdentifier)
 
-    latest_table = catalog_provider.get_table(tableIdentifier)
+    # if we have no snapshot or as_at, we want the current version
     if snapshotIdentifier is None and as_at is None:
-        snapshotIdentifier = latest_table.get("snapshot_id")
+        snapshotIdentifier = catalog_entry.get("snapshot_id")
+
     if as_at is not None:
+
         # get all the snapshots
         storage_provider.blob_list(prefix="prefix", as_at=as_at)
 
-    blobs = get_manifext(manifest, storage_provider, filters)
+    blobs = get_manifest(manifest, storage_provider, filters)
 
     return {**table_data, "blobs": blobs}
 
