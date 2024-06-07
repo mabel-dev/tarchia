@@ -57,11 +57,17 @@ The catalog references the latest schema, latest snapshot and key information ab
 
 Manifests are limited to 1000 rows (1000 = 1.6Mb, aiming for <2Mb files to fit in cache), when a manifest exceeds this number it is split and a Manifest list created. Manifest/Manifest Lists use B-Tree style management to help ensure efficient pruning. 
 
-Small and medium sized tables (roughly fewer than 10 million records [depends on entries per file]) are likely to only ever need one layer on manifests, larger tables (usually those which are streams) will have many manifests, each entry in a manifest can be another manifest or a blob. Creating a tree-like structure.
+B-Tree manifests will create read and write overheads when accessing and updating, assuming about 15k rows per file; 1 million row dataset would be in a single manifest, a 1 billion row dataset in 67 manifests (1 root and 1 layer with 66 children) and a 1 trillion row dataset in 66733 manifests in three layers. 
+
+1 trillion row's 66733 manifests would be about 16Gb of data, just manifests, this data could be accessed in parallel reducing the time to read and process all of this data. Pruning would very quickly reduce the reads - eliminating just one row from layer one would avoid reading about 4000 manifests.
 
 The manifest and snapshot files do not need to be colocated with the data files.
 
 The data files don't need to be colocated with each other.
+
+Updates are atomic due to them being effected when the catalog is updated. Failed updates may leave artifacts (like orphan files), but the update was either successful or not, there is no partial success. As storage is cheap, if the cost of a failed commit is orphaned tables, that should be acceptable.
+
+Pruning is only effective for columns that are sorted, or nearly sorted, or columns with values that appear for limited periods of time. Attempting to prune on a column like Gender which has very few, highly recurrant values, is likely to be a waste of effort, pruning on dates when working with log entries, is likely to be quite effective.
 
 ## API Definition
 
