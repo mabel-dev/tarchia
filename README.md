@@ -81,7 +81,7 @@ It's intended that indexes will operate at a leaf manifest level, providing a ba
     [GET]       /v1/tables
     [DELETE]    /v1/tables/{tableIdentifier}
     [GET]       /v1/tables/{tableIdentifier}?filter={filter}&as_at={timestamp}
-    [GET]       /v1/tables/{tableIdentifier}/{snapshotIdentifier}
+    [GET]       /v1/tables/{tableIdentifier}/{snapshotIdentifier}?filter={filter}
     [POST]      /v1/views/{viewIdentifier}/schemas
     [GET]       /v1/views/{viewIdentifier}/schemas
     [POST]      /v1/tables/{tableIdentifier}/files
