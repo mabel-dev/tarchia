@@ -1,6 +1,4 @@
-"""
-
-"""
+""" """
 
 import time
 import uuid
@@ -14,6 +12,7 @@ from fastapi import Response
 from fastapi.responses import ORJSONResponse
 
 from tarchia.catalog import catalog_factory
+from tarchia.exceptions import DataEntryError
 from tarchia.models import CreateTableRequest
 from tarchia.models import TableCatalogEntry
 from tarchia.models import TableCloneRequest
@@ -127,8 +126,7 @@ async def get_table(
         snapshotIdentifier = catalog_entry.get("snapshot_id")
 
     if as_at is not None:
-
-        # get all the snapshots
+        # get all the snapshots before a timestamp
         storage_provider.blob_list(prefix="prefix", as_at=as_at)
 
     blobs = get_manifest(manifest, storage_provider, filters)

@@ -17,22 +17,19 @@ from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
-from tarchia.exceptions import InvalidFilterError
+from tarchia.exceptions import DataEntryError
 
 
 class AuditMiddleware(BaseHTTPMiddleware):
-
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-
         try:
-
             start = time.monotonic_ns()
             result = await call_next(request)
             return result
 
-        except InvalidFilterError as e:
+        except DataEntryError as e:
             return Response(status_code=422, content=e)
 
         except Exception as e:

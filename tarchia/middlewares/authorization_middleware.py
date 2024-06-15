@@ -15,11 +15,9 @@ from starlette.responses import Response
 
 
 class AuthorizationMiddleware(BaseHTTPMiddleware):
-
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-
         if request.url.hostname not in ("127.0.0.1", "localhost"):
             print(request.url.hostname)
 
