@@ -38,7 +38,7 @@ def evaluate_tuple(predicate: Tuple[str, str, Any], record: Dict[str, Any]) -> b
         bool: The result of the predicate evaluation.
     """
     key, op, value = predicate
-    record_value = record.get(key, None)
+    record_value = record.get(key)
     if record_value is None:
         return False
     operator_func = FILTERABLE_OPERATORS.get(op)

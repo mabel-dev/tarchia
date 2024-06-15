@@ -45,11 +45,14 @@ async def check_permissions(
 
     # Determine if user has the necessary permission
     attribute_set = set(user_attributes)
-    if requested_permission == "read" and attribute_set.intersection(dataset_permissions.read):
-        permission_granted = True
-    elif requested_permission == "write" and attribute_set.intersection(dataset_permissions.write):
-        permission_granted = True
-    elif requested_permission == "own" and attribute_set.intersection(dataset_permissions.own):
+    if (
+        requested_permission == "read"
+        and attribute_set.intersection(dataset_permissions.read)
+        or requested_permission == "write"
+        and attribute_set.intersection(dataset_permissions.write)
+        or requested_permission == "own"
+        and attribute_set.intersection(dataset_permissions.own)
+    ):
         permission_granted = True
     else:
         permission_granted = False

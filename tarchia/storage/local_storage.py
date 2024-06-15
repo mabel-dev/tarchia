@@ -1,4 +1,5 @@
 import os
+from typing import List
 
 from .storage_provider import StorageProvider
 
@@ -10,7 +11,6 @@ if not hasattr(os, "O_BINARY"):
 
 
 class LocalStorage(StorageProvider):
-
     def write_blob(self, location: str, content: bytes):
         """
         Writes the given data to the specified file location.
@@ -32,7 +32,7 @@ class LocalStorage(StorageProvider):
         Read a blob (binary large object) from disk.
 
         We're using the low-level read, on the whole it's about 5% faster - not
-        much faster considering the effort to bench-mark different disk access
+        much faster considering the effort to benchmark different disk access
         methods, but as one of the slowest parts of the system we wanted to find
         if there was a faster way.
 
@@ -49,3 +49,29 @@ class LocalStorage(StorageProvider):
             return os.read(file_descriptor, size)
         finally:
             os.close(file_descriptor)
+
+    def blob_list(self, prefix: str, as_at: int) -> List[str]:
+        """
+        Get all file paths in the specified folder that match the given prefix.
+        If the prefix ends with a slash ("/" or "\\"), it is treated as a directory.
+
+        Parameters:
+            prefix (str): The prefix to match, including the folder path.
+
+        Returns:
+            List[str]: A list of file paths that match the prefix.
+        """
+        # Determine if the prefix is a folder or includes a filename part
+        if prefix.endswith(OS_SEP):
+            folder = prefix
+            file_prefix = ""
+        else:
+            folder = os.path.dirname(prefix)
+            file_prefix = os.path.basename(prefix)
+
+        files = []
+        with os.scandir(folder) as entries:
+            for entry in entries:
+                if entry.is_file() and entry.name.startswith(file_prefix):
+                    files.append(entry.path)
+        return files

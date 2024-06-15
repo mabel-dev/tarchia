@@ -136,3 +136,4 @@ tarchia/avro/**/*
 scratch/**
 docs/**
 .DS_Store
+_temp/**

@@ -21,11 +21,10 @@ class TinyDBCatalogProvider(CatalogProvider):
         try:
             from tinydb import TinyDB
         except ImportError as err:  # pragma: no cover
-
             raise MissingDependencyError(err.name) from err
 
         if not db_path:
-            db_path = "tarchia.db"
+            db_path = "tarchia.json"
 
         self.db = TinyDB(db_path)
         self.table = self.db.table("catalog")
