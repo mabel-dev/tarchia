@@ -77,11 +77,11 @@ It's intended that indexes will operate at a leaf manifest level, providing a ba
 
 ### Overview
 
-    [POST]      /v1/tables
-    [GET]       /v1/tables
-    [DELETE]    /v1/tables/{tableIdentifier}
-    [GET]       /v1/tables/{tableIdentifier}?filter={filter}&as_at={timestamp}
-    [GET]       /v1/tables/{tableIdentifier}/{snapshotIdentifier}?filter={filter}
+    [POST]      /v1/tables ✅
+    [GET]       /v1/tables ✅
+    [DELETE]    /v1/tables/{tableIdentifier} ✅
+    [GET]       /v1/tables/{tableIdentifier}?as_at={timestamp} ✅ &filter={filter}
+    [GET]       /v1/tables/{tableIdentifier}/{snapshotIdentifier} ✅ ?filter={filter}
     [POST]      /v1/tables/{tableIdentifier}/schemas
     [GET]       /v1/tables/{tableIdentifier}/schemas
     [POST]      /v1/tables/{tableIdentifier}/files

@@ -43,7 +43,7 @@ class TinyDBCatalogProvider(CatalogProvider):
 
         Table = Query()
         result = self.table.search((Table.table_id == table_id) | (Table.name == table_id))
-        return result[0] if result else {}
+        return result[0] if result else None
 
     def update_table_metadata(self, table_id: str, metadata: TableCatalogEntry) -> None:
         """

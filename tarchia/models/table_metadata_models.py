@@ -58,19 +58,28 @@ class Schema:
 @dataclass
 class Snapshot:
     snapshot_id: str
-    parent_snapshot_path: Optional[str]  # can be not for this dataset
-    last_updated_ns: int
+    parent_snapshot_path: Optional[str]
+    last_updated_ms: int
     manifest_path: Optional[str]
     schema: Schema
     encryption_details: EncryptionDetails
 
+    def serialize(self) -> dict:
+        return to_dict(self)
+
 
 @dataclass
 class TableCatalogEntry:
+    """
+    The Catalog entry for a table.
+
+    This is intended to be stored in a document store like FireStore or MongoDB.
+    """
+
     name: str
     location: str
     partitioning: List[str]
-    last_updated_ns: int
+    last_updated_ms: int
     permissions: List[DatasetPermissions]
     schema: Schema
     current_snapshot_id: Optional[str]
@@ -79,9 +88,8 @@ class TableCatalogEntry:
     disposition: TableDisposition = TableDisposition.SNAPSHOT
     metadata: dict = field(default_factory=dict)
 
-    def validate(self):
+    def validate(self) -> bool:
         return True
 
-    @property
-    def dic(self):
+    def serialize(self) -> dict:
         return to_dict(self)

@@ -2,12 +2,12 @@
 
 import time
 import uuid
-from typing import List
 from typing import Optional
-from typing import Tuple
 
 import orjson
 from fastapi import APIRouter
+from fastapi import Path
+from fastapi import Query
 from fastapi import Request
 from fastapi import Response
 from fastapi.responses import ORJSONResponse
@@ -15,10 +15,12 @@ from fastapi.responses import ORJSONResponse
 from tarchia.catalog import catalog_factory
 from tarchia.config import METADATA_ROOT
 from tarchia.exceptions import DataEntryError
+from tarchia.exceptions import TableHasNoDataError
+from tarchia.exceptions import TableNotFoundError
 from tarchia.manifest import get_manifest
+from tarchia.manifest import parse_filters
 from tarchia.models import CreateTableRequest
 from tarchia.models import TableCatalogEntry
-from tarchia.models import TableCloneRequest
 from tarchia.storage import storage_factory
 
 SNAPSHOT_ROOT = f"{METADATA_ROOT}/[table_id]/snapshots/"
@@ -29,7 +31,8 @@ catalog_provider = catalog_factory()
 storage_provider = storage_factory()
 
 
-def _uuid() -> str:
+def generate_uuid() -> str:
+    """Generate a new UUID."""
     return str(uuid.uuid4())
 
 
@@ -42,8 +45,7 @@ async def list_tables(request: Request):
     augments each table's data with the URL to its current snapshot, if available.
 
     Returns:
-    - List[Dict[str, Any]]:
-        A list of tables with their metadata, including the snapshot URL if applicable.
+        List[Dict[str, Any]]: A list of tables with their metadata, including the snapshot URL if applicable.
     """
     base_url = request.url.scheme + "://" + request.url.netloc
 
@@ -53,7 +55,7 @@ async def list_tables(request: Request):
         current_snapshot_id = table.get("current_snapshot_id")
         if current_snapshot_id is not None:
             # provide the URL to call to get the snapshot
-            table["snapshot"] = f"{base_url}/tables/{table_id}/{current_snapshot_id}"
+            table["snapshot_url"] = f"{base_url}/tables/{table_id}/{current_snapshot_id}"
     return tables
 
 
@@ -65,10 +67,8 @@ async def create_table(request: CreateTableRequest):
     This endpoint creates a new table with the specified metadata and stores it in the catalog.
 
     Parameters:
-    - request: CreateTableRequest
-        The request body containing the table metadata.
+        request: CreateTableRequest - The request body containing the table metadata.
     """
-    # call the object validator
     request.validate()
 
     # check if we have a table with that name already
@@ -76,7 +76,7 @@ async def create_table(request: CreateTableRequest):
     if catalog_entry:
         raise Exception("table name already exists")
 
-    table_id = _uuid()
+    table_id = generate_uuid()
 
     # We create tables without any snapshot, at create-time the table has no data and some
     # table types (external) we never record snapshots for.
@@ -91,11 +91,13 @@ async def create_table(request: CreateTableRequest):
         metadata=request.metadata,
         current_snapshot_id=None,
         schema=request.schema,
-        last_updated_ns=time.time_ns(),
+        last_updated_ms=int(time.time_ns() / 1e6),
     )
 
     # Save the table to the Catalog
-    catalog_provider.update_table_metadata(table_id=new_table.table_id, metadata=new_table.dic)
+    catalog_provider.update_table_metadata(
+        table_id=new_table.table_id, metadata=new_table.serialize()
+    )
     # create the metadata folder, put a file with the table name in there
     storage_provider.write_blob(f"{METADATA_ROOT}/{table_id}/{request.name}", b"")
 
@@ -106,10 +108,20 @@ async def create_table(request: CreateTableRequest):
 @router.get("/tables/{tableIdentifier}", response_class=ORJSONResponse)
 @router.get("/tables/{tableIdentifier}/{snapshotIdentifier}", response_class=ORJSONResponse)
 async def get_table(
-    tableIdentifier: str,
-    as_at: Optional[int] = None,
-    snapshotIdentifier: Optional[str] = None,
-    filters: Optional[List[Tuple[str, str, str]]] = None,
+    tableIdentifier: str = Path(description="The unique identifier of the table."),
+    snapshotIdentifier: Optional[str] = Path(
+        description="The unique identifier of the snapshot to retrieve."
+    ),
+    as_at: Optional[int] = Query(
+        None,
+        description="Retrieve the table state as of this timestamp, in nanoseconds after Linux epoch.",
+        example=1625097600,
+    ),
+    #    filters: Optional[str] = Query(
+    #        None,
+    #        description="List of filters to apply in the format (field, operator, value).",
+    #        example="column1=value1,column2>value2"
+    #    ),
 ):
     """
     Return information required to access a table.
@@ -123,21 +135,27 @@ async def get_table(
     We also accept filters, these are conjunctive (ANDed) and used to
     perform blob filtering based on statistics held for each blob.
 
-    We return the snapshot and the bloblist for the snapshot.
+    Parameters:
+        tableIdentifier: str - The unique identifier of the table.
+        as_at: Optional[int] - Timestamp to retrieve the table state as of this time.
+        snapshotIdentifier: Optional[str] - The unique identifier of the snapshot to retrieve.
+        filters: Optional[str] - Comma separated list of filters to apply in the format (field=value).
+
+    Returns:
+        Dict[str, Any]: The table definition along with the snapshot and the list of blobs.
     """
     # read the data from the catalog for this table
     catalog_entry = catalog_provider.get_table(tableIdentifier)
     if catalog_entry is None:
-        raise Exception("Table not found")
+        raise TableNotFoundError(table=tableIdentifier)
 
     # if the table has no snapshots, return only the table information
     if catalog_entry.get("current_snapshot_id") is None:
         if snapshotIdentifier is not None or as_at is not None:
-            raise Exception("Table has no data")
-        return catalog_entry
+            raise TableHasNoDataError(table=tableIdentifier)
+        return catalog_entry.serialize()
 
     tableIdentifier = catalog_entry.get("table_id")
-
     my_snapshot_root = SNAPSHOT_ROOT.replace("[table_id]", tableIdentifier)
 
     # Do we have a valid request
@@ -156,29 +174,35 @@ async def get_table(
         # Get the snapshot before a given timestamp
         candidates = storage_provider.blob_list(prefix=my_snapshot_root, as_at=as_at)
         if len(candidates) != 1:
-            raise Exception("dslkfjdl")
+            raise TableHasNoDataError(table=tableIdentifier, as_at=as_at)
         snapshotIdentifier = candidates[0].split("-")[-1].split(".")[0]
 
-    print(snapshotIdentifier)
     snapshot_file = storage_provider.read_blob(
         f"{SNAPSHOT_ROOT}/snapshot-{snapshotIdentifier}.json"
     )
     snapshot = orjson.loads(snapshot_file)
 
-    blobs = get_manifest(snapshot.get("manifest_path"), storage_provider, filters)
+    # retrieve the list of blobs from the manifests
+    filter_conditions = parse_filters(filters)
+    blobs = get_manifest(snapshot.get("manifest_path"), storage_provider, filter_conditions)
 
+    # build the response
+    table_definition = catalog_entry.serialize()
+    table_definition.update(snapshot)
+    table_definition["blobs"] = blobs
 
-#    return {**table_data, "blobs": blobs}
+    return table_definition
 
 
 @router.delete("/tables/{tableIdentifier}", response_class=ORJSONResponse)
 async def delete_table(tableIdentifier: str):
+    """
+    Delete a table from the catalog.
+
+    Parameters:
+        tableIdentifier: str - The identifier of the table to be deleted.
+
+    Note:
+        The metadata and data files for this table is NOT deleted.
+    """
     catalog_provider.delete_table_metadata(tableIdentifier)
-
-
-@router.post("/tables/{tableIdentifier}/clone", response_class=ORJSONResponse)
-@router.post("/tables/{tableIdentifier}/{snapshotIdentifier}/clone", response_class=ORJSONResponse)
-async def clone_table(
-    tableIdentifier: str, request: TableCloneRequest, snapshotIdentifier: Optional[str] = None
-):
-    return {"message": "clone updated", "identifier": tableIdentifier}

@@ -27,10 +27,10 @@ class InvalidConfigurationError(Exception):
         self.source = source
         if source:
             message = (
-                f"Configuration value for {setting} in {source} does not contain a valid value"
+                f"Configuration value for {setting} in {source} does not contain a valid value."
             )
         else:
-            message = f"Configuration value for {setting} does not contain a valid value"
+            message = f"Configuration value for {setting} does not contain a valid value."
         super().__init__(message)
 
 
@@ -44,5 +44,26 @@ class DataEntryError(Exception):
         self.endpoint = endpoint
         self.fields = fields
         self.message = message
+
+        super().__init__(message)
+
+
+class TableNotFoundError(Exception):
+    def __init__(self, table: str):
+        self.table = table
+
+        message = f"Table with reference {table} could not be found."
+        super().__init__(message)
+
+
+class TableHasNoDataError(Exception):
+    def __init__(self, table: str, as_at: Optional[int] = None):
+        self.table = table
+        self.as_at = as_at
+
+        if not as_at:
+            message = f"Table with reference {table} has no data."
+        else:
+            message = f"Table with reference {table} had no data at {as_at}."
 
         super().__init__(message)
