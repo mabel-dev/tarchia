@@ -101,6 +101,8 @@ async def start_transaction(tableIdentifier: str, snapshotIdentifier: str):
         raise TableNotFoundError(table=tableIdentifier)
     table_id = catalog_entry.get("table_id")
 
+    print("TODO: check the snapshot exists")
+
     transaction_id = generate_uuid()
     transaction_data = {
         "transaction_id": transaction_id,
@@ -108,16 +110,13 @@ async def start_transaction(tableIdentifier: str, snapshotIdentifier: str):
         "parent_snapshot": snapshotIdentifier,
         "additions": [],
         "deletions": [],
+        "truncate": False,
     }
     encoded_data = encode_and_sign_transaction(transaction_data)
-    print(
-        {
-            "message": "Transaction started",
-            "encoded_transaction": encoded_data,
-            "transaction_id": transaction_id,
-        }
-    )
-    return {"transaction": encoded_data}
+    return {
+        "message": "Transaction started",
+        "encoded_transaction": encoded_data,
+    }
 
 
 @router.post("/transactions/commit")
@@ -137,8 +136,13 @@ async def commit_transaction(encoded_transaction: str):
 async def add_files_to_transaction(
     tableIdentifier: str, file_paths: List[str], encoded_transaction: str
 ):
+    catalog_entry = catalog_provider.get_table(tableIdentifier)
+    if catalog_entry is None:
+        raise TableNotFoundError(table=tableIdentifier)
+    table_id = catalog_entry.get("table_id")
+
     transaction_data = verify_and_decode_transaction(encoded_transaction)
-    if not transaction_data or transaction_data["dataset"] != tableIdentifier:
+    if not transaction_data or transaction_data["table_id"] != table_id:
         raise HTTPException(status_code=400, detail="Invalid transaction data")
 
     # Add file paths to the transaction's addition list
@@ -151,12 +155,17 @@ async def add_files_to_transaction(
 
 @router.post("/tables/{tableIdentifier}/files/truncate")
 async def truncate_all_files(tableIdentifier: str, file_paths: List[str], encoded_transaction: str):
+    catalog_entry = catalog_provider.get_table(tableIdentifier)
+    if catalog_entry is None:
+        raise TableNotFoundError(table=tableIdentifier)
+    table_id = catalog_entry.get("table_id")
+
     transaction_data = verify_and_decode_transaction(encoded_transaction)
-    if not transaction_data or transaction_data["dataset"] != tableIdentifier:
+    if not transaction_data or transaction_data["table_id"] != table_id:
         raise HTTPException(status_code=400, detail="Invalid transaction data")
 
-    # Add file paths to the transaction's addition list
-    transaction_data["additions"].extend(file_paths)
+    transaction_data["truncate"] = True
+    transaction_data["additions"] = []
 
     # Reissue the updated transaction token
     new_encoded_transaction = encode_and_sign_transaction(transaction_data)
