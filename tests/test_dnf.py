@@ -151,5 +151,9 @@ def test_dnf_filters_call():
     assert filters(record2) == False
 
 
-if __name__ == "__main__":
-    pytest.main()
+
+if __name__ == "__main__":  # pragma: no cover
+    from tests.tools import run_tests
+
+    run_tests()
+

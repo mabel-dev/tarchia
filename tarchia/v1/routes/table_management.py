@@ -6,17 +6,23 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
+import orjson
 from fastapi import APIRouter
 from fastapi import Request
 from fastapi import Response
 from fastapi.responses import ORJSONResponse
 
 from tarchia.catalog import catalog_factory
+from tarchia.config import METADATA_ROOT
 from tarchia.exceptions import DataEntryError
+from tarchia.manifest import get_manifest
 from tarchia.models import CreateTableRequest
 from tarchia.models import TableCatalogEntry
 from tarchia.models import TableCloneRequest
 from tarchia.storage import storage_factory
+
+SNAPSHOT_ROOT = f"{METADATA_ROOT}/[table_id]/snapshots/"
+MANIFEST_ROOT = f"{METADATA_ROOT}/[table_id]/manifests/"
 
 router = APIRouter()
 catalog_provider = catalog_factory()
@@ -62,6 +68,14 @@ async def create_table(request: CreateTableRequest):
     - request: CreateTableRequest
         The request body containing the table metadata.
     """
+    # call the object validator
+    request.validate()
+
+    # check if we have a table with that name already
+    catalog_entry = catalog_provider.get_table(request.name)
+    if catalog_entry:
+        raise Exception("table name already exists")
+
     table_id = _uuid()
 
     # We create tables without any snapshot, at create-time the table has no data and some
@@ -79,10 +93,11 @@ async def create_table(request: CreateTableRequest):
         schema=request.schema,
         last_updated_ns=time.time_ns(),
     )
-    new_table.validate()
 
     # Save the table to the Catalog
     catalog_provider.update_table_metadata(table_id=new_table.table_id, metadata=new_table.dic)
+    # create the metadata folder, put a file with the table name in there
+    storage_provider.write_blob(f"{METADATA_ROOT}/{table_id}/{request.name}", b"")
 
     # 204 (No Content)
     return Response(status_code=204)
@@ -110,6 +125,21 @@ async def get_table(
 
     We return the snapshot and the bloblist for the snapshot.
     """
+    # read the data from the catalog for this table
+    catalog_entry = catalog_provider.get_table(tableIdentifier)
+    if catalog_entry is None:
+        raise Exception("Table not found")
+
+    # if the table has no snapshots, return only the table information
+    if catalog_entry.get("current_snapshot_id") is None:
+        if snapshotIdentifier is not None or as_at is not None:
+            raise Exception("Table has no data")
+        return catalog_entry
+
+    tableIdentifier = catalog_entry.get("table_id")
+
+    my_snapshot_root = SNAPSHOT_ROOT.replace("[table_id]", tableIdentifier)
+
     # Do we have a valid request
     if snapshotIdentifier is not None and as_at is not None:
         raise DataEntryError(
@@ -118,20 +148,27 @@ async def get_table(
             message="Cannot provide a time-based search (as_at) and an index-based search (snapshotIdentifier) in the same request.",
         )
 
-    # read the data from the catalog for this table
-    catalog_entry = catalog_provider.get_table(tableIdentifier)
-
     # if we have no snapshot or as_at, we want the current version
     if snapshotIdentifier is None and as_at is None:
         snapshotIdentifier = catalog_entry.get("snapshot_id")
 
     if as_at is not None:
-        # get all the snapshots before a timestamp
-        storage_provider.blob_list(prefix="prefix", as_at=as_at)
+        # Get the snapshot before a given timestamp
+        candidates = storage_provider.blob_list(prefix=my_snapshot_root, as_at=as_at)
+        if len(candidates) != 1:
+            raise Exception("dslkfjdl")
+        snapshotIdentifier = candidates[0].split("-")[-1].split(".")[0]
 
-    blobs = get_manifest(manifest, storage_provider, filters)
+    print(snapshotIdentifier)
+    snapshot_file = storage_provider.read_blob(
+        f"{SNAPSHOT_ROOT}/snapshot-{snapshotIdentifier}.json"
+    )
+    snapshot = orjson.loads(snapshot_file)
 
-    return {**table_data, "blobs": blobs}
+    blobs = get_manifest(snapshot.get("manifest_path"), storage_provider, filters)
+
+
+#    return {**table_data, "blobs": blobs}
 
 
 @router.delete("/tables/{tableIdentifier}", response_class=ORJSONResponse)

@@ -37,5 +37,7 @@ def test_transaction_signing_very_wrong_transactions():
         verify_and_decode_transaction(signed_transaction + ".0")
 
 
-if __name__ == "__main__":
-    pytest.main()
+if __name__ == "__main__":  # pragma: no cover
+    from tests.tools import run_tests
+
+    run_tests()

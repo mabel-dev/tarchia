@@ -1,5 +1,6 @@
 import os
 from typing import List
+from typing import Optional
 
 from .storage_provider import StorageProvider
 
@@ -21,6 +22,7 @@ class LocalStorage(StorageProvider):
             data: bytes
                 The data to be written to the file.
         """
+        os.makedirs(os.path.dirname(location), exist_ok=True)
         file_descriptor = os.open(location, os.O_WRONLY | os.O_BINARY | os.O_CREAT | os.O_TRUNC)
         try:
             os.write(file_descriptor, content)
@@ -50,7 +52,7 @@ class LocalStorage(StorageProvider):
         finally:
             os.close(file_descriptor)
 
-    def blob_list(self, prefix: str, as_at: int) -> List[str]:
+    def blob_list(self, prefix: str, as_at: Optional[int] = None) -> List[str]:
         """
         Get all file paths in the specified folder that match the given prefix.
         If the prefix ends with a slash ("/" or "\\"), it is treated as a directory.
@@ -70,8 +72,35 @@ class LocalStorage(StorageProvider):
             file_prefix = os.path.basename(prefix)
 
         files = []
-        with os.scandir(folder) as entries:
-            for entry in entries:
-                if entry.is_file() and entry.name.startswith(file_prefix):
-                    files.append(entry.path)
+        try:
+            with os.scandir(folder) as entries:
+                for entry in entries:
+                    if entry.is_file() and entry.name.startswith(file_prefix):
+                        files.append(entry.path)
+        except FileNotFoundError:
+            return []
+
+        # If as_at is specified, filter and return the most recent file before the given timestamp
+        if as_at is not None:
+            filtered_files = []
+            for file_path in sorted(files):
+                # Extract the timestamp part from the filename
+                filename = os.path.basename(file_path)
+                try:
+                    # Assuming the timestamp is part of the filename, for example, 'file-20220101.txt'
+                    timestamp_str = filename.split("-")[-1].split(".")[0]
+                    timestamp = int(timestamp_str)
+                    if timestamp > as_at:
+                        break
+                    filtered_files.append((timestamp, file_path))
+                except ValueError:
+                    continue
+
+            if not filtered_files:
+                return []
+
+            # Sort by timestamp and get the most recent one
+            filtered_files.sort(key=lambda x: x[0], reverse=True)
+            return [filtered_files[0][1]]
+
         return files

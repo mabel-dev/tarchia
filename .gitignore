@@ -137,3 +137,5 @@ scratch/**
 docs/**
 .DS_Store
 _temp/**
+warehouse/**
+tarchia.json
