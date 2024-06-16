@@ -42,7 +42,7 @@ class TinyDBCatalogProvider(CatalogProvider):
         from tinydb import Query
 
         Table = Query()
-        result = self.table.search(Table.id == table_id)
+        result = self.table.search((Table.table_id == table_id) | (Table.name == table_id))
         return result[0] if result else {}
 
     def update_table_metadata(self, table_id: str, metadata: TableCatalogEntry) -> None:
@@ -56,7 +56,7 @@ class TinyDBCatalogProvider(CatalogProvider):
         from tinydb import Query
 
         Table = Query()
-        self.table.upsert(metadata, Table.id == table_id)
+        self.table.upsert(metadata, Table.table_id == table_id)
 
     def list_tables(self) -> List[TableCatalogEntry]:
         """
@@ -77,7 +77,7 @@ class TinyDBCatalogProvider(CatalogProvider):
         from tinydb import Query
 
         Table = Query()
-        self.table.remove(Table.id == table_id)
+        self.table.remove(Table.table_id == table_id)
 
 
 # Example of how to use this class

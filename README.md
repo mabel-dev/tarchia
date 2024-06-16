@@ -16,9 +16,9 @@ Terminology
 table/
  |- metadata
  |   |- manifests/
- |   |   +- manifest-0000-0000.avro
+ |   |   +- manifest-00000000.avro
  |   +- snapshots/
- |       +- snapshot-0000-0000.json
+ |       +- snapshot-00000000.json
  +- data/
      +- year=2000/
          +- month=01/

@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 from dataclasses import field
 from typing import Any
@@ -33,6 +34,12 @@ class CreateTableRequest:
     disposition: TableDisposition = TableDisposition.SNAPSHOT
     permissions: List[DatasetPermissions] = field(default=default_permissions)
     metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def validate(self):
+        if not self.name or not re.match(r"^[A-Za-z_]\w*$", self.name):
+            return False
+
+        return True
 
 
 @dataclass

@@ -1,5 +1,6 @@
 import inspect
 from typing import List
+from typing import Optional
 
 
 class StorageProvider:
@@ -13,7 +14,7 @@ class StorageProvider:
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name} is not implemented."
         )
 
-    def blob_list(self, prefix: str, as_at: int) -> List[str]:
+    def blob_list(self, prefix: str, as_at: Optional[int] = None) -> List[str]:
         raise NotImplementedError(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name} is not implemented."
         )
