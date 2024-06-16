@@ -6,10 +6,10 @@ from typing import Dict
 from typing import List
 from typing import Optional
 
-from .table_metadata import DatasetPermissions
-from .table_metadata import RolePermission
-from .table_metadata import Schema
-from .table_metadata import TableDisposition
+from .table_metadata_models import DatasetPermissions
+from .table_metadata_models import RolePermission
+from .table_metadata_models import Schema
+from .table_metadata_models import TableDisposition
 
 
 def default_permissions() -> List[DatasetPermissions]:
@@ -44,15 +44,15 @@ class CreateTableRequest:
 
 @dataclass
 class TableCloneRequest:
-    metadata: str
     name: str
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class UpdateMetadataRequest:
-    metadata: str
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class UpdateSchemaRequest:
-    metadata: str
+    metadata: Dict[str, Any] = field(default_factory=dict)

@@ -12,21 +12,39 @@ Routes:
 
 import base64
 import hashlib
+import uuid
 from typing import List
-from uuid import uuid4
 
 import orjson
 from fastapi import APIRouter
 from fastapi import HTTPException
 
 from tarchia import config
+from tarchia.catalog import catalog_factory
+from tarchia.config import METADATA_ROOT
+from tarchia.exceptions import DataEntryError
+from tarchia.exceptions import TableHasNoDataError
+from tarchia.exceptions import TableNotFoundError
+from tarchia.manifest import get_manifest
+from tarchia.manifest import parse_filters
 from tarchia.models import AddSnapshotRequest
+from tarchia.models import CreateTableRequest
+from tarchia.models import TableCatalogEntry
+from tarchia.storage import storage_factory
+
+SNAPSHOT_ROOT = f"{METADATA_ROOT}/[table_id]/snapshots/"
+MANIFEST_ROOT = f"{METADATA_ROOT}/[table_id]/manifests/"
+
 
 router = APIRouter()
 
+catalog_provider = catalog_factory()
+storage_provider = storage_factory()
 
-def generate_transaction_id():
-    return str(uuid4())
+
+def generate_uuid() -> str:
+    """Generate a new UUID."""
+    return str(uuid.uuid4())
 
 
 def encode_and_sign_transaction(transaction_data: dict):
@@ -77,21 +95,29 @@ def calculate_dataset_hash(table_hashes):
 
 
 @router.post("/transactions/start")
-async def start_transaction(dataset: str, parent_snapshot: str):
-    transaction_id = generate_transaction_id()
+async def start_transaction(tableIdentifier: str, snapshotIdentifier: str):
+    catalog_entry = catalog_provider.get_table(tableIdentifier)
+    if catalog_entry is None:
+        raise TableNotFoundError(table=tableIdentifier)
+    table_id = catalog_entry.get("table_id")
+
+    transaction_id = generate_uuid()
     transaction_data = {
         "transaction_id": transaction_id,
-        "dataset": dataset,
-        "parent_snapshot": parent_snapshot,
+        "table_id": table_id,
+        "parent_snapshot": snapshotIdentifier,
         "additions": [],
         "deletions": [],
     }
     encoded_data = encode_and_sign_transaction(transaction_data)
-    return {
-        "message": "Transaction started",
-        "encoded_transaction": encoded_data,
-        "transaction_id": transaction_id,
-    }
+    print(
+        {
+            "message": "Transaction started",
+            "encoded_transaction": encoded_data,
+            "transaction_id": transaction_id,
+        }
+    )
+    return {"transaction": encoded_data}
 
 
 @router.post("/transactions/commit")

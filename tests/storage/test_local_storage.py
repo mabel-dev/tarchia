@@ -37,7 +37,7 @@ def test_local_storage_no_as_at():
         "pluto",
     ]
     for planet in planets:
-        local_storage.write_blob(f"{TEMP_FOLDER}/{planet}-{int(time.time_ns()//1e3)}", planet.encode())
+        local_storage.write_blob(f"{TEMP_FOLDER}/{planet}-{int(time.time_ns()//1e6)}", planet.encode())
 
     # Reading a blob from a file
     mercury = local_storage.blob_list(f"{TEMP_FOLDER}/mercury")[0]
