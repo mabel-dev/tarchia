@@ -1,7 +1,7 @@
 # tarchia
 Opteryx Metastore
 
-Terminology
+**Terminology**
 
 - **Catalog** - A collection of tables.
 - **Data File** - Files that contain the rows of the table.
@@ -11,6 +11,7 @@ Terminology
 - **Snapshot** - The state of the table at a specific point in time.
 - **Table** - A dataset stored in a structured and managed way.
 
+**Physical Structure**
 
 ~~~python
 table/
@@ -57,11 +58,11 @@ When a table is read, we get the schema and the manifest. Each snapshot can only
 
 The catalog references the latest schema, latest snapshot and key information about the table.
 
-Manifests are limited to 1000 rows (1000 = 1.6Mb, aiming for <2Mb files to fit in cache), when a manifest exceeds this number it is split and a Manifest list created. Manifest/Manifest Lists use B-Tree style management to help ensure efficient pruning. 
+Manifests are limited to 2048 rows (aiming for most files to be <2Mb files to fit in cache), when a manifest exceeds this number it is split and a Manifest list created. Manifest/Manifest Lists use B-Tree style management to help ensure efficient pruning. 
 
-B-Tree manifests will create read and write overheads when accessing and updating, assuming about 15k rows per file; 1 million row dataset would be in a single manifest, a 1 billion row dataset in 67 manifests (1 root and 1 layer with 66 children) and a 1 trillion row dataset in 66733 manifests in three layers. 
+B-Tree manifests will create read and write overheads when accessing and updating, assuming about 15k rows per file; 1 million row dataset would be in a single manifest, a 1 billion row dataset in 33 manifests (1 root and 1 layer with 32 children) and a 1 trillion row dataset in 32568 manifests in three layers. 
 
-1 trillion row's 66733 manifests would be about 16Gb of data, just manifests, this data could be accessed in parallel reducing the time to read and process all of this data. Pruning would very quickly reduce the reads - eliminating just one row from layer one would avoid reading about 4000 manifests.
+1 trillion row's 32568 manifests would be about 16Gb of data, just manifests, this data could be accessed in parallel reducing the time to read and process all of this data. Pruning would very quickly reduce the reads - eliminating just one row from layer one would avoid reading thousands of manifests. (Data files with 50k rows would only have 9770 Manifests)
 
 The manifest and snapshot files do not need to be colocated with the data files.
 
@@ -72,6 +73,15 @@ Updates are atomic due to them being effected when the catalog is updated. Faile
 Pruning is only effective for columns that are sorted, or nearly sorted, or columns with values that appear for limited periods of time. Attempting to prune on a column like Gender which has very few, highly recurrant values, is likely to be a waste of effort, pruning on dates when working with log entries, is likely to be quite effective.
 
 It's intended that indexes will operate at a leaf manifest level, providing a balance between too many indexes (one per blob) and too few indexes (one per dataset). This is still to be worked through.
+
+## Git-Like Semantics
+
+`init`: Initialize a new dataset.  
+`add`: Stage changes to be included in the next commit.  
+`commit`: Save the staged changes to the dataset.  
+`branch`: Create a new branch of the dataset.  
+`push`: Send committed changes to dataset.  
+`fork`: Create a copy of a dataset.
 
 ## API Definition
 
@@ -88,10 +98,11 @@ It's intended that indexes will operate at a leaf manifest level, providing a ba
     [POST]      /v1/tables/{tableIdentifier}/files/truncate ✅
     [POST]      /v1/transactions/start ✅
     [POST]      /v1/transactions/commit 
+
+<!---
     [POST]      /v1/tables/{tableIdentifier}/metadata
     [POST]      /v1/tables/{tableIdentifier}/clone
 
-<!---
     [POST]      /v1/tables/{tableIdentifier}/permissions
     [GET]       /v1/tables/{tableIdentifier}/permissions/check
     [POST]      /v1/tables/{tableIdentifier}/maintenance/compact
@@ -164,3 +175,8 @@ It's intended that indexes will operate at a leaf manifest level, providing a ba
 **I want to copy a dataset**
 
     [POST]      /v1/tables/{tableIdentifier}/clone
+
+**I want to make a new version the latest**
+
+    [POST]      /v1/tables/{tableIdentifier}/promote
+
