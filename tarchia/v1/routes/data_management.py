@@ -12,12 +12,15 @@ Routes:
 
 import base64
 import hashlib
-import uuid
 from typing import List
+from typing import Optional
 
 import orjson
 from fastapi import APIRouter
 from fastapi import HTTPException
+from fastapi import Path
+from fastapi import Query
+from fastapi.responses import ORJSONResponse
 
 from tarchia import config
 from tarchia.catalog import catalog_factory
@@ -31,6 +34,8 @@ from tarchia.models import AddSnapshotRequest
 from tarchia.models import CreateTableRequest
 from tarchia.models import TableCatalogEntry
 from tarchia.storage import storage_factory
+from tarchia.utils.helpers import generate_uuid
+from tarchia.utils.helpers import identify_table
 
 SNAPSHOT_ROOT = f"{METADATA_ROOT}/[table_id]/snapshots/"
 MANIFEST_ROOT = f"{METADATA_ROOT}/[table_id]/manifests/"
@@ -40,11 +45,6 @@ router = APIRouter()
 
 catalog_provider = catalog_factory()
 storage_provider = storage_factory()
-
-
-def generate_uuid() -> str:
-    """Generate a new UUID."""
-    return str(uuid.uuid4())
 
 
 def encode_and_sign_transaction(transaction_data: dict):
@@ -96,10 +96,8 @@ def calculate_dataset_hash(table_hashes):
 
 @router.post("/transactions/start")
 async def start_transaction(tableIdentifier: str, snapshotIdentifier: str):
-    catalog_entry = catalog_provider.get_table(tableIdentifier)
-    if catalog_entry is None:
-        raise TableNotFoundError(table=tableIdentifier)
-    table_id = catalog_entry.get("table_id")
+    catalog_entry = identify_table(tableIdentifier)
+    table_id = catalog_entry.table_id
 
     print("TODO: check the snapshot exists")
 
@@ -132,13 +130,11 @@ async def commit_transaction(encoded_transaction: str):
     }
 
 
-@router.post("/tables/{tableIdentifier}/files")
+@router.post("/tables/{tableIdentifier}/stage")
 async def add_files_to_transaction(
     tableIdentifier: str, file_paths: List[str], encoded_transaction: str
 ):
-    catalog_entry = catalog_provider.get_table(tableIdentifier)
-    if catalog_entry is None:
-        raise TableNotFoundError(table=tableIdentifier)
+    catalog_entry = identify_table(tableIdentifier)
     table_id = catalog_entry.get("table_id")
 
     transaction_data = verify_and_decode_transaction(encoded_transaction)
@@ -153,12 +149,10 @@ async def add_files_to_transaction(
     return {"message": "Files added to transaction", "encoded_transaction": new_encoded_transaction}
 
 
-@router.post("/tables/{tableIdentifier}/files/truncate")
+@router.post("/tables/{tableIdentifier}/truncate")
 async def truncate_all_files(tableIdentifier: str, file_paths: List[str], encoded_transaction: str):
-    catalog_entry = catalog_provider.get_table(tableIdentifier)
-    if catalog_entry is None:
-        raise TableNotFoundError(table=tableIdentifier)
-    table_id = catalog_entry.get("table_id")
+    catalog_entry = identify_table(tableIdentifier)
+    table_id = catalog_entry.table_id
 
     transaction_data = verify_and_decode_transaction(encoded_transaction)
     if not transaction_data or transaction_data["table_id"] != table_id:
@@ -170,3 +164,13 @@ async def truncate_all_files(tableIdentifier: str, file_paths: List[str], encode
     # Reissue the updated transaction token
     new_encoded_transaction = encode_and_sign_transaction(transaction_data)
     return {"message": "Files added to transaction", "encoded_transaction": new_encoded_transaction}
+
+
+@router.post("/tables/{tableIdentifier}/push/{snapshotIdentifier}", response_class=ORJSONResponse)
+async def promote_snaphow(
+    tableIdentifier: str = Path(description="The unique identifier of the table."),
+    snapshotIdentifier: Optional[str] = Path(
+        description="The unique identifier of the snapshot to promote to the head."
+    ),
+):
+    return False

@@ -1,7 +1,6 @@
 """ """
 
 import time
-import uuid
 from typing import Optional
 
 import orjson
@@ -16,12 +15,13 @@ from tarchia.catalog import catalog_factory
 from tarchia.config import METADATA_ROOT
 from tarchia.exceptions import DataEntryError
 from tarchia.exceptions import TableHasNoDataError
-from tarchia.exceptions import TableNotFoundError
 from tarchia.manifest import get_manifest
 from tarchia.manifest import parse_filters
 from tarchia.models import CreateTableRequest
 from tarchia.models import TableCatalogEntry
 from tarchia.storage import storage_factory
+from tarchia.utils.helpers import generate_uuid
+from tarchia.utils.helpers import identify_table
 
 SNAPSHOT_ROOT = f"{METADATA_ROOT}/[table_id]/snapshots/"
 MANIFEST_ROOT = f"{METADATA_ROOT}/[table_id]/manifests/"
@@ -29,11 +29,6 @@ MANIFEST_ROOT = f"{METADATA_ROOT}/[table_id]/manifests/"
 router = APIRouter()
 catalog_provider = catalog_factory()
 storage_provider = storage_factory()
-
-
-def generate_uuid() -> str:
-    """Generate a new UUID."""
-    return str(uuid.uuid4())
 
 
 @router.get("/tables", response_class=ORJSONResponse)
@@ -74,7 +69,7 @@ async def create_table(request: CreateTableRequest):
     # check if we have a table with that name already
     catalog_entry = catalog_provider.get_table(request.name)
     if catalog_entry:
-        raise Exception("table name already exists")
+        raise ValueError("table name already exists")
 
     table_id = generate_uuid()
 
@@ -101,16 +96,17 @@ async def create_table(request: CreateTableRequest):
     # create the metadata folder, put a file with the table name in there
     storage_provider.write_blob(f"{METADATA_ROOT}/{table_id}/{request.name}", b"")
 
-    # 204 (No Content)
-    return Response(status_code=204)
+    return {
+        "message": "Table Created",
+        "table": table_id,
+    }
 
 
 @router.get("/tables/{tableIdentifier}", response_class=ORJSONResponse)
-@router.get("/tables/{tableIdentifier}/{snapshotIdentifier}", response_class=ORJSONResponse)
 async def get_table(
     tableIdentifier: str = Path(description="The unique identifier of the table."),
-    snapshotIdentifier: Optional[str] = Path(
-        description="The unique identifier of the snapshot to retrieve."
+    snapshotIdentifier: Optional[str] = Query(
+        None, description="The unique identifier of the snapshot to retrieve."
     ),
     as_at: Optional[int] = Query(
         None,
@@ -145,18 +141,16 @@ async def get_table(
         Dict[str, Any]: The table definition along with the snapshot and the list of blobs.
     """
     # read the data from the catalog for this table
-    catalog_entry = catalog_provider.get_table(tableIdentifier)
-    if catalog_entry is None:
-        raise TableNotFoundError(table=tableIdentifier)
+    catalog_entry = identify_table(tableIdentifier)
 
     # if the table has no snapshots, return only the table information
-    if catalog_entry.get("current_snapshot_id") is None:
+    if catalog_entry.current_snapshot_id is None:
         if snapshotIdentifier is not None or as_at is not None:
             raise TableHasNoDataError(table=tableIdentifier)
         return catalog_entry.serialize()
 
-    tableIdentifier = catalog_entry.get("table_id")
-    my_snapshot_root = SNAPSHOT_ROOT.replace("[table_id]", tableIdentifier)
+    table_id = catalog_entry.table_id
+    my_snapshot_root = SNAPSHOT_ROOT.replace("[table_id]", table_id)
 
     # Do we have a valid request
     if snapshotIdentifier is not None and as_at is not None:
@@ -168,7 +162,7 @@ async def get_table(
 
     # if we have no snapshot or as_at, we want the current version
     if snapshotIdentifier is None and as_at is None:
-        snapshotIdentifier = catalog_entry.get("snapshot_id")
+        snapshotIdentifier = catalog_entry.snapshot_id
 
     if as_at is not None:
         # Get the snapshot before a given timestamp
@@ -205,4 +199,11 @@ async def delete_table(tableIdentifier: str):
     Note:
         The metadata and data files for this table is NOT deleted.
     """
-    catalog_provider.delete_table_metadata(tableIdentifier)
+    catalog_entry = identify_table(tableIdentifier)
+    table_id = catalog_entry.table_id
+    catalog_provider.delete_table_metadata(table_id)
+
+    return {
+        "message": "Table Deleted",
+        "table": table_id,
+    }

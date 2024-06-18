@@ -16,6 +16,7 @@ sys.path.insert(1, os.path.join(sys.path[0], ".."))  # isort: skip
 
 import tarchia  # isort: skip
 from tarchia.middlewares import AuthorizationMiddleware  # isort: skip
+from tarchia.middlewares import AuditMiddleware  # isort: skip
 from tarchia.v1 import routes as v1_routes  # isort: skip
 
 
@@ -23,6 +24,7 @@ application = FastAPI(title="Tarchia Metastore")
 
 application.include_router(v1_routes.v1_router)
 application.add_middleware(AuthorizationMiddleware)
+application.add_middleware(AuditMiddleware)
 
 
 if __name__ == "__main__":

@@ -56,6 +56,14 @@ class TableNotFoundError(Exception):
         super().__init__(message)
 
 
+class AmbiguousTableError(Exception):
+    def __init__(self, table: str):
+        self.table = table
+
+        message = f"Multiple tables with reference {table} were found."
+        super().__init__(message)
+
+
 class TableHasNoDataError(Exception):
     def __init__(self, table: str, as_at: Optional[int] = None):
         self.table = table
