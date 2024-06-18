@@ -94,14 +94,15 @@ It's intended that indexes will operate at a leaf manifest level, providing a ba
     [GET]       /v1/tables/{tableIdentifier}/{snapshotIdentifier} ✅ ?filter={filter}
     [POST]      /v1/tables/{tableIdentifier}/schemas
     [GET]       /v1/tables/{tableIdentifier}/schemas
-    [POST]      /v1/tables/{tableIdentifier}/files ✅
-    [POST]      /v1/tables/{tableIdentifier}/files/truncate ✅
+    [POST]      /v1/tables/{tableIdentifier}/stage ✅ **
+    [POST]      /v1/tables/{tableIdentifier}/truncate ✅ **
     [POST]      /v1/transactions/start ✅
     [POST]      /v1/transactions/commit 
 
+    [POST]      /v1/tables/{tableIdentifier}/push/{snapshotIdentifier}
+
 <!---
-    [POST]      /v1/tables/{tableIdentifier}/metadata
-    [POST]      /v1/tables/{tableIdentifier}/clone
+    [POST]      /v1/tables/{tableIdentifier}/fork
 
     [POST]      /v1/tables/{tableIdentifier}/permissions
     [GET]       /v1/tables/{tableIdentifier}/permissions/check
@@ -112,8 +113,6 @@ It's intended that indexes will operate at a leaf manifest level, providing a ba
     [GET]       /v1/views
     [GET]       /v1/views/{viewIdentifier}
     [DELETE]    /v1/views/{viewIdentifier}
-    [GET]       /v1/views/{viewIdentifier}/metadata
-    [POST]      /v1/views/{viewIdentifier}/metadata
 
     [GET]       /v1/search?query=searchTerm
 

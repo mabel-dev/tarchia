@@ -17,7 +17,9 @@ from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
+from tarchia.exceptions import AmbiguousTableError
 from tarchia.exceptions import DataEntryError
+from tarchia.exceptions import TableNotFoundError
 
 
 class AuditMiddleware(BaseHTTPMiddleware):
@@ -30,8 +32,11 @@ class AuditMiddleware(BaseHTTPMiddleware):
             return result
 
         except DataEntryError as e:
-            return Response(status_code=422, content=e)
-
+            return Response(status_code=422, content=se)
+        except TableNotFoundError as e:
+            return Response(status_code=404, content=str(e))
+        except ValueError as e:
+            return Response(status_code=400, content=str(e))
         except Exception as e:
             from uuid import uuid4
 
