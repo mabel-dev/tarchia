@@ -1,11 +1,14 @@
 import re
-from dataclasses import dataclass
-from dataclasses import field
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
 
+from pydantic import BaseModel
+from pydantic import Field
+from pydantic import field_validator
+
+from .table_metadata_models import Column
 from .table_metadata_models import DatasetPermissions
 from .table_metadata_models import RolePermission
 from .table_metadata_models import Schema
@@ -13,46 +16,95 @@ from .table_metadata_models import TableDisposition
 
 
 def default_permissions() -> List[DatasetPermissions]:
+    """
+    Default permissions for a dataset.
+
+    Returns:
+        List[DatasetPermissions]: A list containing default read permission for all roles.
+    """
     return [DatasetPermissions(role="*", permission=RolePermission.READ)]
 
 
 def default_partitioning() -> List[str]:
+    """
+    Default partitioning fields.
+
+    Returns:
+        List[str]: A list containing default partitioning fields (year, month, day).
+    """
     return ["year", "month", "day"]
 
 
-@dataclass
-class AddSnapshotRequest:
+class AddSnapshotRequest(BaseModel):
+    """
+    Model for adding a snapshot request.
+
+    Attributes:
+        parent (str): The parent snapshot identifier.
+    """
+
     parent: str
 
 
-@dataclass
-class CreateTableRequest:
+class CreateTableRequest(BaseModel):
+    """
+    Model for creating a table request.
+
+    Attributes:
+        name (str): The name of the table.
+        location (str): The location of the table data.
+        table_schema (Schema): The schema of the table.
+        partitioning (Optional[List[str]]): The partitioning information, default is ["year", "month", "day"].
+        disposition (TableDisposition): The disposition of the table, default is SNAPSHOT.
+        permissions (List[DatasetPermissions]): The permissions associated with the table, default is read permission for all roles.
+        metadata (Dict[str, Any]): Additional metadata for the table, default is an empty dictionary.
+    """
+
     name: str
     location: str
-    schema: Schema
-    paritioning: Optional[List[str]] = field(default=default_partitioning)
+    table_schema: Schema
+    partitioning: Optional[List[str]] = Field(default_factory=default_partitioning)
     disposition: TableDisposition = TableDisposition.SNAPSHOT
-    permissions: List[DatasetPermissions] = field(default=default_permissions)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    permissions: List[DatasetPermissions] = Field(default_factory=default_permissions)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
-    def validate(self):
-        if not self.name or not re.match(r"^[A-Za-z_]\w*$", self.name):
-            return False
+    @field_validator("name")
+    def validate_name(cls, name):
+        """
+        Validate the table name to ensure it matches the required pattern.
 
-        return True
+        Args:
+            name (str): The name of the table.
+
+        Returns:
+            str: The validated table name.
+
+        Raises:
+            ValueError: If the name does not match the required pattern.
+        """
+        if not name or not re.match(r"^[A-Za-z_]\w*$", name):
+            raise ValueError("Invalid table name")
+        return name
 
 
-@dataclass
-class TableCloneRequest:
+class TableCloneRequest(BaseModel):
+    """
+    Model for table clone request.
+
+    Attributes:
+        name (str): The name of the cloned table.
+        metadata (Dict[str, Any]): Additional metadata for the cloned table, default is an empty dictionary.
+    """
+
     name: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
-@dataclass
-class UpdateMetadataRequest:
-    metadata: Dict[str, Any] = field(default_factory=dict)
+class UpdateSchemaRequest(BaseModel):
+    """
+    Model for updating schema request.
 
+    Attributes:
+        columns (List[Column]): The list of columns in the schema.
+    """
 
-@dataclass
-class UpdateSchemaRequest:
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    columns: List[Column]

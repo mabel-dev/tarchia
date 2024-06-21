@@ -2,7 +2,6 @@ cityhash
 fastapi
 fastavro
 numpy
-opteryx
 orjson
 pyarrow
 pydantic

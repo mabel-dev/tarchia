@@ -59,7 +59,7 @@ class TinyDBCatalogProvider(CatalogProvider):
         from tinydb import Query
 
         Table = Query()
-        self.table.upsert(metadata, Table.table_id == table_id)
+        self.table.upsert(metadata.serialize(), Table.table_id == table_id)
         self.db.clear_cache()
 
     def list_tables(self) -> List[TableCatalogEntry]:
