@@ -1,16 +1,15 @@
-from dataclasses import fields
-from dataclasses import is_dataclass
 from enum import Enum
 from typing import Any
 from typing import Dict
 
 import orjson
+from pydantic import BaseModel
 
 
 def to_json(self) -> bytes:
     def default_serializer(o):
         if isinstance(o, Enum):
-            return o.__name__
+            return o.__value__
         raise TypeError(f"Object of type {o.__class__.__name__} is not JSON serializable")
 
     return orjson.dumps(to_dict(self), default=default_serializer)
@@ -27,14 +26,14 @@ def to_dict(obj: Any) -> Dict[str, Any]:
     Returns:
         A dictionary representation of the dataclass.
     """
-    if not is_dataclass(obj):
-        raise ValueError("Provided object is not a dataclass instance")
+    if not isinstance(obj, BaseModel):
+        raise ValueError("Provided object is not a BaseModel instance")
 
     def convert_value(value: Any) -> Any:
         """
         Recursively converts values to appropriate types.
         """
-        if is_dataclass(value):
+        if isinstance(value, BaseModel):
             return to_dict(value)
         elif isinstance(value, list):
             return [convert_value(item) for item in value]
@@ -45,4 +44,4 @@ def to_dict(obj: Any) -> Dict[str, Any]:
         else:
             return value
 
-    return {field.name: convert_value(getattr(obj, field.name)) for field in fields(obj)}
+    return {field: convert_value(getattr(obj, field)) for field in obj.model_fields_set}

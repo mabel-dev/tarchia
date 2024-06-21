@@ -8,7 +8,6 @@ from fastapi import APIRouter
 from fastapi import Path
 from fastapi import Query
 from fastapi import Request
-from fastapi import Response
 from fastapi.responses import ORJSONResponse
 
 from tarchia.catalog import catalog_factory
@@ -64,8 +63,6 @@ async def create_table(request: CreateTableRequest):
     Parameters:
         request: CreateTableRequest - The request body containing the table metadata.
     """
-    request.validate()
-
     # check if we have a table with that name already
     catalog_entry = catalog_provider.get_table(request.name)
     if catalog_entry:
@@ -80,19 +77,17 @@ async def create_table(request: CreateTableRequest):
         table_id=table_id,
         format_version=1,
         location=request.location,
-        partitioning=request.paritioning,
+        partitioning=request.partitioning,
         permissions=request.permissions,
         disposition=request.disposition,
         metadata=request.metadata,
         current_snapshot_id=None,
-        schema=request.schema,
+        current_schema=request.table_schema,
         last_updated_ms=int(time.time_ns() / 1e6),
     )
 
     # Save the table to the Catalog
-    catalog_provider.update_table_metadata(
-        table_id=new_table.table_id, metadata=new_table.serialize()
-    )
+    catalog_provider.update_table_metadata(table_id=new_table.table_id, metadata=new_table)
     # create the metadata folder, put a file with the table name in there
     storage_provider.write_blob(f"{METADATA_ROOT}/{table_id}/{request.name}", b"")
 

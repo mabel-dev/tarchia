@@ -36,7 +36,8 @@ class AuditMiddleware(BaseHTTPMiddleware):
         except TableNotFoundError as e:
             return Response(status_code=404, content=str(e))
         except ValueError as e:
-            return Response(status_code=400, content=str(e))
+            print("Validation Error", e)
+            return Response(status_code=422, content=str(e))
         except Exception as e:
             from uuid import uuid4
 

@@ -8,5 +8,4 @@ from .table_metadata_models import TableCatalogEntry  # isort: skip
 from .request_models import AddSnapshotRequest
 from .request_models import CreateTableRequest
 from .request_models import TableCloneRequest
-from .request_models import UpdateMetadataRequest
 from .request_models import UpdateSchemaRequest

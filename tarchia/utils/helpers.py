@@ -20,7 +20,6 @@ def generate_uuid() -> str:
 
 def identify_table(identifier) -> TableCatalogEntry:
     catalog_entry = catalog_provider.get_table(identifier)
-    print(catalog_entry)
     if catalog_entry is None:
         raise TableNotFoundError(table=identifier)
     return TableCatalogEntry(**catalog_entry)
