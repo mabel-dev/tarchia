@@ -3,8 +3,12 @@ from typing import Any
 from typing import List
 from typing import Optional
 
+from orso.schema import FlatColumn
+from orso.schema import OrsoTypes
 from pydantic import BaseModel
 from pydantic import Field
+
+from tarchia.utils import is_valid_sql_identifier
 
 
 class RolePermission(Enum):
@@ -67,9 +71,23 @@ class Column(BaseModel):
     """
 
     name: str
-    required: bool
-    type: str
-    default: Optional[Any] = None
+    default: Optional[Any]
+    type: OrsoTypes = OrsoTypes.VARCHAR
+    description: Optional[str] = ""
+    aliases: List[str] = []
+
+    def validate(self):
+        # The name must be valid SQL
+        if not is_valid_sql_identifier(self.name):
+            raise ValueError(f"Invalid column name '{self.name}'.")
+
+        # We need to be able to build valid Orso FlatColumns
+        # it has validation we can leverage
+        try:
+            column = FlatColumn(**self.model_dump())
+        except Exception as load_error:
+            print(load_error)
+            raise ValueError(f"Column definition for '{self.name}' is invalid.") from load_error
 
 
 class Schema(BaseModel):

@@ -43,6 +43,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
 
             code = str(uuid4())
             print(f"{code}\n{e}")
+            raise e
             return Response(status_code=500, content=f"Unexpected Error ({code})")
         finally:
             print(time.monotonic_ns() - start)

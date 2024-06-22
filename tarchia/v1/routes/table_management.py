@@ -19,8 +19,8 @@ from tarchia.manifest import parse_filters
 from tarchia.models import CreateTableRequest
 from tarchia.models import TableCatalogEntry
 from tarchia.storage import storage_factory
-from tarchia.utils.helpers import generate_uuid
-from tarchia.utils.helpers import identify_table
+from tarchia.utils import generate_uuid
+from tarchia.utils.catalog import identify_table
 
 SNAPSHOT_ROOT = f"{METADATA_ROOT}/[table_id]/snapshots/"
 MANIFEST_ROOT = f"{METADATA_ROOT}/[table_id]/manifests/"

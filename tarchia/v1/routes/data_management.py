@@ -19,23 +19,14 @@ import orjson
 from fastapi import APIRouter
 from fastapi import HTTPException
 from fastapi import Path
-from fastapi import Query
 from fastapi.responses import ORJSONResponse
 
 from tarchia import config
 from tarchia.catalog import catalog_factory
 from tarchia.config import METADATA_ROOT
-from tarchia.exceptions import DataEntryError
-from tarchia.exceptions import TableHasNoDataError
-from tarchia.exceptions import TableNotFoundError
-from tarchia.manifest import get_manifest
-from tarchia.manifest import parse_filters
-from tarchia.models import AddSnapshotRequest
-from tarchia.models import CreateTableRequest
-from tarchia.models import TableCatalogEntry
 from tarchia.storage import storage_factory
-from tarchia.utils.helpers import generate_uuid
-from tarchia.utils.helpers import identify_table
+from tarchia.utils import generate_uuid
+from tarchia.utils.catalog import identify_table
 
 SNAPSHOT_ROOT = f"{METADATA_ROOT}/[table_id]/snapshots/"
 MANIFEST_ROOT = f"{METADATA_ROOT}/[table_id]/manifests/"
