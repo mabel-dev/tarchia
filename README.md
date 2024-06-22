@@ -1,5 +1,12 @@
-# tarchia
-Opteryx Metastore
+# Tarchia
+
+Tarchia is a table format for huge analytic tables.
+
+Resource      | Location
+------------- | -------------
+Source Code   | https://github.com/mabel-dev/tarchia
+Documentation | https://github.com/mabel-dev/tarchia
+Download      | https://github.com/mabel-dev/tarchia
 
 **Terminology**
 
@@ -7,6 +14,7 @@ Opteryx Metastore
 - **Data File** - Files that contain the rows of the table.
 - **Manifest** - Files that list and describe data files in the table.
 - **Metadata** - Information used to manage and describe tables.
+- **Owner** - Namespace for table.
 - **Schema** - The structure defining the columns of the table.
 - **Snapshot** - The state of the table at a specific point in time.
 - **Table** - A dataset stored in a structured and managed way.
@@ -50,7 +58,7 @@ When a table is written to, the writer should obtain the latest schema (this may
 
 Writers use a transaction system to ensure datasets/updates are complete before updating the catalog.
 
-Clashes are managed by ensuring the version (latest snapshot) of the dataset at the start of the transaction matches the version of the dataset at the end of the transaction - if these don't match someone else has made a change and the transaction should fail.
+Clashes are managed by ensuring the version (latest snapshot) of the dataset at the start of the transaction matches the version of the dataset at the end of the transaction - if these don't match someone else has made a change and the transaction should fail or require a hard override.
 
 Streaming datasets add new files to the dataset, create a new manifest streaming data cannot change schemas beyond - adding and removing columns, and limited type converstions (e.g. int->float). Larger changes are different datasets.
 
@@ -62,7 +70,7 @@ Manifests are limited to 2048 rows (aiming for most files to be <2Mb files to fi
 
 B-Tree manifests will create read and write overheads when accessing and updating, assuming about 15k rows per file; 1 million row dataset would be in a single manifest, a 1 billion row dataset in 33 manifests (1 root and 1 layer with 32 children) and a 1 trillion row dataset in 32568 manifests in three layers. 
 
-1 trillion row's 32568 manifests would be about 16Gb of data, just manifests, this data could be accessed in parallel reducing the time to read and process all of this data. Pruning would very quickly reduce the reads - eliminating just one row from layer one would avoid reading thousands of manifests. (Data files with 50k rows would only have 9770 Manifests)
+1 trillion row's 32568 manifests would be about 16Gb of data, this data could be accessed in parallel reducing the time to read and process all of this data. Pruning would very quickly reduce the reads - eliminating just one row from layer one would avoid reading thousands of manifests. (Data files with 50k rows would only have 9770 Manifests)
 
 The manifest and snapshot files do not need to be colocated with the data files.
 
@@ -74,14 +82,16 @@ Pruning is only effective for columns that are sorted, or nearly sorted, or colu
 
 It's intended that indexes will operate at a leaf manifest level, providing a balance between too many indexes (one per blob) and too few indexes (one per dataset). This is still to be worked through.
 
-## Git-Like Functionality
+## Git-Like Management
 
-`init`: Initialize a new dataset.  
-`add`: Stage changes to be included in the next commit.  
-`commit`: Save the staged changes to the dataset.  
-`branch`: Create a new branch of the dataset.  
-`push`: Send committed changes to dataset.  
-`fork`: Create a copy of a dataset.
+Git      | Function                               | Tarchia
+-------- | -------------------------------------- | -------
+`init`   | Initialize a new dataset               | [POST] /v1/tables/{owner} 
+`add`    | Stage changes to be included in commit | [POST] /v1/tables/{owner}/{table}/stage
+`commit` | Save the staged changes to the dataset | [POST] /v1/transactions/commit 
+`branch` | Create a new branch of the dataset     | [POST] /v1/transactions/start
+`push`   | Send committed changes to dataset      | [POST] /v1/tables/{owner}/{table}/push/{snapshot}
+`fork`   | Create a copy of a dataset             | [POST] /v1/tables/{owner}/{table}/fork
 
 ## Backing DB Structure
 
@@ -110,52 +120,57 @@ erDiagram
 
 ### Overview
 
-    [POST]      /v1/owners
-    [PATCH]     /v1/owners/{owner}
-    [POST]      /v1/tables/{owner}
-    [GET]       /v1/tables/{owner}
-    [PATCH]     /v1/tables/{owner}/{table}
-    [DELETE]    /v1/tables/{owner}/{table}
-    [GET]       /v1/tables/{owner}/{table}?as_at={timestamp}&filter={filter}
-    [GET]       /v1/tables/{owner}/{table}/snaphots/{snapshot}?filter={filter}
-    [POST]      /v1/tables/{owner}/{table}/schemas
-    [GET]       /v1/tables/{owner}/{table}/schemas
-    [POST]      /v1/tables/{owner}/{table}/stage
-    [POST]      /v1/tables/{owner}/{table}/truncate
-    [POST]      /v1/transactions/start
-    [POST]      /v1/transactions/commit 
+**Owner Management**
 
-    [POST]      /v1/tables/{owner}/{table}/push/{snapshot}
+End Point            | GET | POST | PATCH | DELETE
+-------------------- | --- | ---- | ----- | ------
+/v1/**owners**           | -   | Create Owner | -     | -
+/v1/**owners**/_{owner}_ | -   | -    | Update Owner | -
+
+**Table Management**
+
+**[POST]**      /v1/tables/{owner}  
+**[GET]**       /v1/tables/{owner}  
+**[PATCH]**     /v1/tables/{owner}/{table}  
+**[DELETE]**    /v1/tables/{owner}/{table}  
+**[GET]**       /v1/tables/{owner}/{table}?as_at={timestamp}&filter={filter}  
+**[GET]**       /v1/tables/{owner}/{table}/snaphots/{snapshot}?filter={filter}  
+
+**Schema Management**
+
+[POST]      /v1/tables/{owner}/{table}/schemas
+[GET]       /v1/tables/{owner}/{table}/schemas
+[POST]      /v1/tables/{owner}/{table}/stage
+[POST]      /v1/tables/{owner}/{table}/truncate
+[POST]      /v1/transactions/start
+[POST]      /v1/transactions/commit 
+
+[POST]      /v1/tables/{owner}/{table}/push/{snapshot}
+[POST]      /v1/tables/{owner}/{table}/fork
 
 <!---
-    [POST]      /v1/tables/{tableIdentifier}/fork
+    
 
-    [POST]      /v1/tables/{tableIdentifier}/permissions
-    [GET]       /v1/tables/{tableIdentifier}/permissions/check
-    [POST]      /v1/tables/{tableIdentifier}/maintenance/compact
-    [POST]      /v1/tables/{tableIdentifier}/maintenance/refresh_metadata
+    [POST]      /v1/tables/{owner}/{table}/permissions
+    [GET]       /v1/tables/{owner}/{table}/permissions/check
+    [POST]      /v1/tables/{owner}/{table}/maintenance/compact
+    [POST]      /v1/tables/{owner}/{table}/maintenance/refresh_metadata
 
-    [POST]      /v1/views
-    [GET]       /v1/views
-    [GET]       /v1/views/{viewIdentifier}
-    [DELETE]    /v1/views/{viewIdentifier}
+    [POST]      /v1/views/{owner}
+    [GET]       /v1/views/{owner}
+    [GET]       /v1/views/{owner}/{view}
+    [DELETE]    /v1/views/{owner}/{view}
 
     [GET]       /v1/search?query=searchTerm
 
-    [POST]      /v1/tables/{tableIdentifier}/quality-rules
-    [GET]       /v1/tables/{tableIdentifier}/quality-rules
-    [DELETE]    /v1/tables/{tableIdentifier}/quality-rules/{ruleIdentifier}
-    [POST]      /v1/tables/{tableIdentifier}/quality-rules/{ruleIdentifier}/validate
+    [GET]       /v1/tables/{owner}/{table}/lineage
+    [GET]       /v1/tables/{owner}/{table}/audit-logs
+    [GET]       /v1/views/{owner}/{view}/audit-logs
 
-    [GET]       /v1/tables/{tableIdentifier}/lineage
-    [GET]       /v1/tables/{tableIdentifier}/audit-logs
-    [GET]       /v1/views/{viewIdentifier}/audit-logs
+    [POST]      /v1/tables/{owner}/{table}/actions
+    [GET]       /v1/tables/{owner}/{table}/actions
+    [DELETE]    /v1/tables/{owner}/{table}/actions/{action}
 
-    [POST]      /v1/tables/{tableIdentifier}/triggers
-    [GET]       /v1/tables/{tableIdentifier}/triggers
-    [DELETE]    /v1/tables/{tableIdentifier}/triggers/{triggerIdentifier}
-
-    INDEX APIs
 --->
 
 ## Request Fulfillment
@@ -166,7 +181,7 @@ erDiagram
 
 **I want to retrive the current instance of a dataset**
 
-    [GET]       /v1/tables/{tableIdentifier}?
+    [GET]       /v1/tables/{owner}/{table}?
 
 **I want to create a new dataset**
 
@@ -174,7 +189,7 @@ erDiagram
 
 **I want to retrieve a dataset as at a date in the past**
 
-    [GET]       /v1/tables/{tableIdentifier}?
+    [GET]       /v1/tables/{owner}/{table}?
 
 **I want to update the schema for a dataset**
 
@@ -182,26 +197,26 @@ erDiagram
 
 **I want to update the metadata for a dataset**
 
-    [POST]      /v1/tables/{tableIdentifier}/metadata
+    [POST]      /v1/tables/{owner}/{table}/metadata
 
 **I want to add another file to a dataset**
 
     [POST]      /v1/transactions/start
-    [POST]      /v1/tables/{tableIdentifier}/files
+    [POST]      /v1/tables/{owner}/{table}/files
     [POST]      /v1/transactions/commit
 
 **I want to write a new instance of a dataset**
 
     [POST]      /v1/transactions/start
-    [POST]      /v1/tables/{tableIdentifier}/files/truncate
-    [POST]      /v1/tables/{tableIdentifier}/files
+    [POST]      /v1/tables/{owner}/{table}/files/truncate
+    [POST]      /v1/tables/{owner}/{table}/files
     [POST]      /v1/transactions/commit
 
 **I want to copy a dataset**
 
-    [POST]      /v1/tables/{tableIdentifier}/clone
+    [POST]      /v1/tables/{owner}/{table}/clone
 
 **I want to make a new version the latest**
 
-    [POST]      /v1/tables/{tableIdentifier}/promote
+    [POST]      /v1/tables/{owner}/{table}/promote
 
