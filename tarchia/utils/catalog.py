@@ -1,7 +1,7 @@
-from tarchia.catalog import catalog_factory
 from tarchia.config import METADATA_ROOT
 from tarchia.exceptions import TableNotFoundError
 from tarchia.models import TableCatalogEntry
+from tarchia.repositories.catalog import catalog_factory
 from tarchia.storage import storage_factory
 
 SNAPSHOT_ROOT = f"{METADATA_ROOT}/[table_id]/snapshots/"

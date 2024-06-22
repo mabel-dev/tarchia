@@ -22,8 +22,8 @@ from fastapi import Path
 from fastapi.responses import ORJSONResponse
 
 from tarchia import config
-from tarchia.catalog import catalog_factory
 from tarchia.config import METADATA_ROOT
+from tarchia.repositories.catalog import catalog_factory
 from tarchia.storage import storage_factory
 from tarchia.utils import generate_uuid
 from tarchia.utils.catalog import identify_table

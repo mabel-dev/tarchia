@@ -74,7 +74,7 @@ Pruning is only effective for columns that are sorted, or nearly sorted, or colu
 
 It's intended that indexes will operate at a leaf manifest level, providing a balance between too many indexes (one per blob) and too few indexes (one per dataset). This is still to be worked through.
 
-## Git-Like Semantics
+## Git-Like Functionality
 
 `init`: Initialize a new dataset.  
 `add`: Stage changes to be included in the next commit.  
@@ -83,23 +83,49 @@ It's intended that indexes will operate at a leaf manifest level, providing a ba
 `push`: Send committed changes to dataset.  
 `fork`: Create a copy of a dataset.
 
+## Backing DB Structure
+
+~~~mermaid
+erDiagram
+    OWNER {
+        string name
+        string user
+    }
+    
+    CATALOG {
+        string name
+        int owner_id
+    }
+    
+    VIEWS {
+        string name
+        string owner_id
+    }
+
+    OWNER ||--o{ CATALOG : "owns"
+    OWNER ||--o{ VIEWS : "owns"
+~~~
+
 ## API Definition
 
 ### Overview
 
-    [POST]      /v1/tables ✅
-    [GET]       /v1/tables ✅
-    [DELETE]    /v1/tables/{tableIdentifier} ✅
-    [GET]       /v1/tables/{tableIdentifier}?as_at={timestamp} ✅ &filter={filter}
-    [GET]       /v1/tables/{tableIdentifier}/{snapshotIdentifier} ✅ ?filter={filter}
-    [POST]      /v1/tables/{tableIdentifier}/schemas
-    [GET]       /v1/tables/{tableIdentifier}/schemas
-    [POST]      /v1/tables/{tableIdentifier}/stage ✅ **
-    [POST]      /v1/tables/{tableIdentifier}/truncate ✅ **
-    [POST]      /v1/transactions/start ✅
+    [POST]      /v1/owners
+    [PATCH]     /v1/owners/{owner}
+    [POST]      /v1/tables/{owner}
+    [GET]       /v1/tables/{owner}
+    [PATCH]     /v1/tables/{owner}/{table}
+    [DELETE]    /v1/tables/{owner}/{table}
+    [GET]       /v1/tables/{owner}/{table}?as_at={timestamp}&filter={filter}
+    [GET]       /v1/tables/{owner}/{table}/snaphots/{snapshot}?filter={filter}
+    [POST]      /v1/tables/{owner}/{table}/schemas
+    [GET]       /v1/tables/{owner}/{table}/schemas
+    [POST]      /v1/tables/{owner}/{table}/stage
+    [POST]      /v1/tables/{owner}/{table}/truncate
+    [POST]      /v1/transactions/start
     [POST]      /v1/transactions/commit 
 
-    [POST]      /v1/tables/{tableIdentifier}/push/{snapshotIdentifier}
+    [POST]      /v1/tables/{owner}/{table}/push/{snapshot}
 
 <!---
     [POST]      /v1/tables/{tableIdentifier}/fork

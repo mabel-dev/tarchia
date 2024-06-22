@@ -31,6 +31,16 @@ class TableDisposition(Enum):
     EXTERNAL = "EXTERNAL"
 
 
+class TableVisibility(Enum):
+    """
+    Enum for table visibility.
+    """
+
+    PRIVATE = "PRIVATE"  # visibility granted explicitly
+    INTERNAL = "INTERNAL"  # restricted to group members
+    PUBLIC = "PUBLIC"  # no restrictions
+
+
 class EncryptionDetails(BaseModel):
     """
     Model representing encryption details.
@@ -71,7 +81,7 @@ class Column(BaseModel):
     """
 
     name: str
-    default: Optional[Any]
+    default: Optional[Any] = None
     type: OrsoTypes = OrsoTypes.VARCHAR
     description: Optional[str] = ""
     aliases: List[str] = []
@@ -148,6 +158,7 @@ class TableCatalogEntry(BaseModel):
 
     Attributes:
         name (str): The name of the table.
+        owner (str): The namespace of the table.
         location (str): The location of the table data.
         partitioning (List[str]): The partitioning information.
         last_updated_ms (int): The last update timestamp in milliseconds.
@@ -161,6 +172,7 @@ class TableCatalogEntry(BaseModel):
     """
 
     name: str
+    owner: str
     table_id: str
     location: str
     partitioning: List[str]
@@ -171,15 +183,6 @@ class TableCatalogEntry(BaseModel):
     format_version: int = Field(default=1)
     disposition: TableDisposition = Field(default=TableDisposition.SNAPSHOT)
     metadata: dict = Field(default_factory=dict)
-
-    def validate(self) -> bool:
-        """
-        Validate the table catalog entry.
-
-        Returns:
-            bool: True if the entry is valid, False otherwise.
-        """
-        return True
 
     def serialize(self) -> dict:
         """
