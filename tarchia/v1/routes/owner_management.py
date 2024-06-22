@@ -10,3 +10,18 @@ router = APIRouter()
 @router.post("/owners", response_class=ORJSONResponse)
 async def create_table(request: CreateOwnerRequest):
     pass
+
+
+@router.get("/owners/{owner}", response_class=ORJSONResponse)
+async def create_table(request: CreateOwnerRequest):
+    pass
+
+
+@router.patch("/owners/{owner}", response_class=ORJSONResponse)
+async def create_table(request: CreateOwnerRequest):
+    pass
+
+
+@router.delete("/owners/{owner}", response_class=ORJSONResponse)
+async def create_table(request: CreateOwnerRequest):
+    pass
