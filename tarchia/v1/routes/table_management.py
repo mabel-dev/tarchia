@@ -10,14 +10,15 @@ from fastapi import Query
 from fastapi import Request
 from fastapi.responses import ORJSONResponse
 
-from tarchia.catalog import catalog_factory
 from tarchia.config import METADATA_ROOT
+from tarchia.constants import identifier_validation
 from tarchia.exceptions import DataEntryError
 from tarchia.exceptions import TableHasNoDataError
 from tarchia.manifest import get_manifest
 from tarchia.manifest import parse_filters
 from tarchia.models import CreateTableRequest
 from tarchia.models import TableCatalogEntry
+from tarchia.repositories.catalog import catalog_factory
 from tarchia.storage import storage_factory
 from tarchia.utils import generate_uuid
 from tarchia.utils.catalog import identify_table
@@ -30,8 +31,8 @@ catalog_provider = catalog_factory()
 storage_provider = storage_factory()
 
 
-@router.get("/tables", response_class=ORJSONResponse)
-async def list_tables(request: Request):
+@router.get("/tables/{owner}", response_class=ORJSONResponse)
+async def list_tables(owner: str, request: Request):
     """
     Retrieve a list of tables and their current snapshots.
 
@@ -43,17 +44,17 @@ async def list_tables(request: Request):
     """
     base_url = request.url.scheme + "://" + request.url.netloc
 
-    tables = catalog_provider.list_tables()
+    tables = catalog_provider.list_tables(owner)
     for table in tables:
         table_id = table["table_id"]
         current_snapshot_id = table.get("current_snapshot_id")
         if current_snapshot_id is not None:
             # provide the URL to call to get the snapshot
-            table["snapshot_url"] = f"{base_url}/tables/{table_id}/{current_snapshot_id}"
+            table["snapshot_url"] = f"{base_url}/tables/{owner}/{table_id}/{current_snapshot_id}"
     return tables
 
 
-@router.post("/tables", response_class=ORJSONResponse)
+@router.post("/tables/{owner}", response_class=ORJSONResponse)
 async def create_table(request: CreateTableRequest):
     """
     Create a new table in the catalog.
@@ -74,6 +75,7 @@ async def create_table(request: CreateTableRequest):
     # table types (external) we never record snapshots for.
     new_table = TableCatalogEntry(
         name=request.name,
+        owner=request.owner,
         table_id=table_id,
         format_version=1,
         location=request.location,
@@ -97,16 +99,23 @@ async def create_table(request: CreateTableRequest):
     }
 
 
-@router.get("/tables/{tableIdentifier}", response_class=ORJSONResponse)
+@router.patch("/tables/{owner}/{table}", response_class=ORJSONResponse)
+async def update_table(
+    owner: str = Path(description="The owner of the table.", regex=identifier_validation),
+    table: str = Path(description="The name of the table.", regex=identifier_validation),
+):
+    # update visibility
+    # rename
+    # metadata
+    pass
+
+
+@router.get("/tables/{owner}/{table}", response_class=ORJSONResponse)
 async def get_table(
-    tableIdentifier: str = Path(description="The unique identifier of the table."),
-    snapshotIdentifier: Optional[str] = Query(
-        None, description="The unique identifier of the snapshot to retrieve."
-    ),
+    owner: str = Path(description="The owner of the table.", regex=identifier_validation),
+    table: str = Path(description="The name of the table.", regex=identifier_validation),
     as_at: Optional[int] = Query(
-        None,
         description="Retrieve the table state as of this timestamp, in nanoseconds after Linux epoch.",
-        example=1625097600,
     ),
     #    filters: Optional[str] = Query(
     #        None,
@@ -136,12 +145,12 @@ async def get_table(
         Dict[str, Any]: The table definition along with the snapshot and the list of blobs.
     """
     # read the data from the catalog for this table
-    catalog_entry = identify_table(tableIdentifier)
+    catalog_entry = identify_table(owner, table)
 
     # if the table has no snapshots, return only the table information
     if catalog_entry.current_snapshot_id is None:
         if snapshotIdentifier is not None or as_at is not None:
-            raise TableHasNoDataError(table=tableIdentifier)
+            raise TableHasNoDataError(owner=owner, table=table)
         return catalog_entry.serialize()
 
     table_id = catalog_entry.table_id
@@ -163,7 +172,7 @@ async def get_table(
         # Get the snapshot before a given timestamp
         candidates = storage_provider.blob_list(prefix=my_snapshot_root, as_at=as_at)
         if len(candidates) != 1:
-            raise TableHasNoDataError(table=tableIdentifier, as_at=as_at)
+            raise TableHasNoDataError(owner=owner, table=table, as_at=as_at)
         snapshotIdentifier = candidates[0].split("-")[-1].split(".")[0]
 
     snapshot_file = storage_provider.read_blob(
@@ -183,8 +192,20 @@ async def get_table(
     return table_definition
 
 
-@router.delete("/tables/{tableIdentifier}", response_class=ORJSONResponse)
-async def delete_table(tableIdentifier: str):
+@router.get("/tables/{owner}/{table}/snapshots/{snapshot}", response_class=ORJSONResponse)
+async def get_table_snapshot(
+    owner: str = Path(description="The owner of the table.", regex=identifier_validation),
+    table: str = Path(description="The name of the table.", regex=identifier_validation),
+    snapshot: str = Path(description="The snapshot to retrieve."),
+):
+    pass
+
+
+@router.delete("/tables/{owner}/{table}", response_class=ORJSONResponse)
+async def delete_table(
+    owner: str = Path(description="The owner of the table.", regex=identifier_validation),
+    table: str = Path(description="The name of the table.", regex=identifier_validation),
+):
     """
     Delete a table from the catalog.
 

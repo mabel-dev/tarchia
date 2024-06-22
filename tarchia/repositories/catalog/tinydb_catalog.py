@@ -5,10 +5,10 @@ development, prototyping and for regression testing.
 
 from typing import List
 
-from tarchia.catalog.provider_base import CatalogProvider
 from tarchia.exceptions import AmbiguousTableError
 from tarchia.exceptions import MissingDependencyError
 from tarchia.models import TableCatalogEntry
+from tarchia.repositories.catalog.provider_base import CatalogProvider
 
 
 class TinyDBCatalogProvider(CatalogProvider):

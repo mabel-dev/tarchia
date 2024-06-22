@@ -47,12 +47,26 @@ class AddSnapshotRequest(BaseModel):
     parent: str
 
 
+class CreateOwnerRequest(BaseModel):
+    """
+    Model for creating an owner.
+
+    Attributes:
+        name (str): The name of the owning user/organization.
+        user (str): The name of the user/group that owns this group.
+    """
+
+    name: str
+    user: str
+
+
 class CreateTableRequest(BaseModel):
     """
     Model for creating a table request.
 
     Attributes:
         name (str): The name of the table.
+        owner (str): The namespace for the table.
         location (str): The location of the table data.
         table_schema (Schema): The schema of the table.
         partitioning (Optional[List[str]]): The partitioning information, default is ["year", "month", "day"].
@@ -62,6 +76,7 @@ class CreateTableRequest(BaseModel):
     """
 
     name: str
+    owner: str
     location: str
     table_schema: Schema
     partitioning: Optional[List[str]] = Field(default_factory=default_partitioning)
