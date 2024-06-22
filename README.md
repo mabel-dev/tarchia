@@ -118,14 +118,28 @@ erDiagram
 
 ## API Definition
 
-### Overview
-
-**Owner Management**
+### Owner Management
 
 End Point            | GET | POST | PATCH | DELETE
 -------------------- | --- | ---- | ----- | ------
-/v1/**owners**           | -   | Create Owner | -     | -
-/v1/**owners**/_{owner}_ | -   | -    | Update Owner | -
+/v1/owners           | - | Create Owner | - | -
+/v1/owners/_{owner}_ | Read Owner | - | Update Owner | Delete Owner
+
+### Schema Management
+
+End Point            | GET | POST | PATCH | DELETE
+-------------------- | --- | ---- | ----- | ------
+/v1/tables/_{owner}_/_{table}_/schemas | Read Schema | - | Update Schema | -
+
+---
+
+[POST]      /v1/tables/{owner}/{table}/stage  
+[POST]      /v1/tables/{owner}/{table}/truncate  
+[POST]      /v1/transactions/start  
+[POST]      /v1/transactions/commit   
+
+[POST]      /v1/tables/{owner}/{table}/push/{snapshot}  
+[POST]      /v1/tables/{owner}/{table}/fork
 
 **Table Management**
 
@@ -135,19 +149,6 @@ End Point            | GET | POST | PATCH | DELETE
 **[DELETE]**    /v1/tables/{owner}/{table}  
 **[GET]**       /v1/tables/{owner}/{table}?as_at={timestamp}&filter={filter}  
 **[GET]**       /v1/tables/{owner}/{table}/snaphots/{snapshot}?filter={filter}  
-
-**Schema Management**
-
-[POST]      /v1/tables/{owner}/{table}/schemas
-[GET]       /v1/tables/{owner}/{table}/schemas
-[POST]      /v1/tables/{owner}/{table}/stage
-[POST]      /v1/tables/{owner}/{table}/truncate
-[POST]      /v1/transactions/start
-[POST]      /v1/transactions/commit 
-
-[POST]      /v1/tables/{owner}/{table}/push/{snapshot}
-[POST]      /v1/tables/{owner}/{table}/fork
-
 <!---
     
 
