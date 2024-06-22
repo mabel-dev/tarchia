@@ -1,4 +1,3 @@
-import re
 from typing import Any
 from typing import Dict
 from typing import List
@@ -7,6 +6,8 @@ from typing import Optional
 from pydantic import BaseModel
 from pydantic import Field
 from pydantic import field_validator
+
+from tarchia.utils import is_valid_sql_identifier
 
 from .table_metadata_models import Column
 from .table_metadata_models import DatasetPermissions
@@ -82,7 +83,7 @@ class CreateTableRequest(BaseModel):
         Raises:
             ValueError: If the name does not match the required pattern.
         """
-        if not name or not re.match(r"^[A-Za-z_]\w*$", name):
+        if not is_valid_sql_identifier(name):
             raise ValueError("Invalid table name")
         return name
 

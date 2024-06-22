@@ -1,5 +1,3 @@
-import uuid
-
 from tarchia.catalog import catalog_factory
 from tarchia.config import METADATA_ROOT
 from tarchia.exceptions import TableNotFoundError
@@ -13,12 +11,8 @@ catalog_provider = catalog_factory()
 storage_provider = storage_factory()
 
 
-def generate_uuid() -> str:
-    """Generate a new UUID."""
-    return str(uuid.uuid4())
-
-
-def identify_table(identifier) -> TableCatalogEntry:
+def identify_table(identifier: str) -> TableCatalogEntry:
+    """Get the catalog entry for a table name/identifier"""
     catalog_entry = catalog_provider.get_table(identifier)
     if catalog_entry is None:
         raise TableNotFoundError(table=identifier)

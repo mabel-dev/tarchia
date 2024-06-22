@@ -1,7 +1,8 @@
 cityhash
 fastapi
 fastavro
-numpy
+numpy==1.*
 orjson
+orso
 pyarrow
 pydantic
