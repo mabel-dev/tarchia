@@ -87,9 +87,10 @@ class FirestoreCatalogProvider(CatalogProvider):
             table_id (str): The identifier of the table.
             metadata (Dict[str, Any]): A dictionary containing the metadata to be updated.
         """
+        from google.cloud import firestore
 
-        self.store.upsert("catalog", entry.as_dict(), {"table_id": table_id})
-        pass
+        database = firestore.Client(project=self.project_id)
+        database.collection(self.collection).document(entry.table_id).set(entry.as_dict())
 
     def list_tables(self, owner: str) -> List[TableCatalogEntry]:
         """
@@ -115,4 +116,7 @@ class FirestoreCatalogProvider(CatalogProvider):
         Parameters:
             table_id (str): The identifier of the table to be deleted.
         """
-        self.store.delete("catalog", {"table_id": table_id})
+        from google.cloud import firestore
+
+        database = firestore.Client(project=self.project_id)
+        database.collection(self.collection).document(table_id).delete()
