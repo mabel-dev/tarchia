@@ -51,6 +51,8 @@ def get(key, default=None):
 
 
 # fmt:off
+TARCHIA_DEBUG: str = bool(get("TARCHIA_DEBUG", "false"))
+"""Flag to enable debug logging."""
 
 CATALOG_PROVIDER: str = get("CATALOG_PROVIDER", "DEVELOPMENT")
 """The service providing the storage for the Catalog."""
@@ -67,10 +69,5 @@ METADATA_ROOT: str = get("METADATA_ROOT", "warehouse")
 TRANSACTION_SIGNER: str = get("TRANSACTION_SIGNER", "secret")
 """The key used to sign transactions."""
 
-# GCP project ID - for Google Cloud Data
-GCP_PROJECT_ID: str = get("GCP_PROJECT_ID")
 
-METASTORE_HOST: str = get("METASTORE_HOST", "json")
-DATASET_COLLECTION_NAME: str = get("DATASET_COLLECTION_NAME", "opteryx_data_catalogue")
-BLOB_COLLECTION_NAME: str = get("BLOB_COLLECTION_NAME", "opteryx_blobs")
 # fmt:on

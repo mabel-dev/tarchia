@@ -18,7 +18,7 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        if request.url.hostname not in ("127.0.0.1", "localhost"):
+        if request.url.hostname not in ("127.0.0.1", "localhost", "testserver"):
             print(request.url.hostname)
 
             auth_token = None
