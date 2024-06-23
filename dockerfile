@@ -21,4 +21,4 @@ COPY --from=build-environment /venv /venv
 WORKDIR /app/src
 ENV PYTHONPATH /app/src
 
-ENTRYPOINT [ "/venv/bin/python3", "app/src/main.py" ]
+ENTRYPOINT [ "/venv/bin/python3", "app/tarchia/main.py" ]

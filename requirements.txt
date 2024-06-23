@@ -6,3 +6,5 @@ orjson
 orso
 pyarrow
 pydantic
+
+opteryx
