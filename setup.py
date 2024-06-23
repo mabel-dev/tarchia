@@ -20,7 +20,7 @@ def is_mac():  # pragma: no cover
 
 
 def is_win():  # pragma: no cover
-    ros.name == "nt"
+    os.name == "nt"
 
 
 if is_mac():
@@ -43,13 +43,7 @@ except:
 
 extensions = [
     Extension(
-        # Your .pyx file will be available to cpython at this location.
-        name="tarchia.avro.decoder_fast",
-        sources=[
-            os.path.join(LIBRARY, "avro", "decoder_fast.pyx"),
-        ],
-        extra_compile_args=COMPILE_FLAGS,
-        language="c",
+
     )
 ]
 

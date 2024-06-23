@@ -11,19 +11,18 @@ from fastapi import Request
 from fastapi.responses import ORJSONResponse
 
 from tarchia.config import METADATA_ROOT
-from tarchia.constants import identifier_validation
+from tarchia.constants import IDENTIFIER_VALIDATION
+from tarchia.constants import SNAPSHOT_ROOT
 from tarchia.exceptions import TableHasNoDataError
-from tarchia.manifest import get_manifest
-from tarchia.manifest import parse_filters
+from tarchia.manifests import get_manifest
+from tarchia.manifests import parse_filters
 from tarchia.models import CreateTableRequest
 from tarchia.models import TableCatalogEntry
 from tarchia.repositories.catalog import catalog_factory
 from tarchia.storage import storage_factory
+from tarchia.utils import build_root
 from tarchia.utils import generate_uuid
 from tarchia.utils.catalog import identify_table
-
-SNAPSHOT_ROOT = f"{METADATA_ROOT}/[table_id]/snapshots/"
-MANIFEST_ROOT = f"{METADATA_ROOT}/[table_id]/manifests/"
 
 router = APIRouter()
 catalog_provider = catalog_factory()
@@ -49,14 +48,16 @@ async def list_tables(owner: str, request: Request):
         current_snapshot_id = table.get("current_snapshot_id")
         if current_snapshot_id is not None:
             # provide the URL to call to get the snapshot
-            table["snapshot_url"] = f"{base_url}/tables/{owner}/{table_id}/{current_snapshot_id}"
+            table["snapshot_url"] = (
+                f"{base_url}/tables/{owner}/{table_id}/snapshots/{current_snapshot_id}"
+            )
     return tables
 
 
 @router.post("/tables/{owner}", response_class=ORJSONResponse)
 async def create_table(
     request: CreateTableRequest,
-    owner: str = Path(description="The owner of the table.", regex=identifier_validation),
+    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_VALIDATION),
 ):
     """
     Create a new table in the catalog.
@@ -94,7 +95,7 @@ async def create_table(
     # Save the table to the Catalog
     catalog_provider.update_table(table_id=new_table.table_id, entry=new_table)
     # create the metadata folder, put a file with the table name in there
-    storage_provider.write_blob(f"{METADATA_ROOT}/{table_id}/{request.name}", b"")
+    storage_provider.write_blob(f"{METADATA_ROOT}/{owner}/{table_id}/{request.name}", b"")
 
     return {
         "message": "Table Created",
@@ -105,8 +106,8 @@ async def create_table(
 @router.patch("/tables/{owner}/{table}", response_class=ORJSONResponse)
 async def update_table(
     request: Request,
-    owner: str = Path(description="The owner of the table.", regex=identifier_validation),
-    table: str = Path(description="The name of the table.", regex=identifier_validation),
+    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_VALIDATION),
+    table: str = Path(description="The name of the table.", regex=IDENTIFIER_VALIDATION),
 ):
     catalog_entry = identify_table(owner, table)
     body = await request.json()
@@ -131,8 +132,8 @@ async def update_table(
 
 @router.get("/tables/{owner}/{table}", response_class=ORJSONResponse)
 async def get_table(
-    owner: str = Path(description="The owner of the table.", regex=identifier_validation),
-    table: str = Path(description="The name of the table.", regex=identifier_validation),
+    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_VALIDATION),
+    table: str = Path(description="The name of the table.", regex=IDENTIFIER_VALIDATION),
     as_at: Optional[int] = Query(
         default=None,
         description="Retrieve the table state as of this timestamp, in nanoseconds after Linux epoch.",
@@ -173,7 +174,7 @@ async def get_table(
 
     snapshot_id = catalog_entry.snapshot_id
     table_id = catalog_entry.table_id
-    snapshot_root = SNAPSHOT_ROOT.replace("[table_id]", table_id)
+    snapshot_root = build_root(SNAPSHOT_ROOT, owner=owner, table_id=table_id)
 
     if as_at:
         # Get the snapshot before a given timestamp
@@ -182,7 +183,7 @@ async def get_table(
             raise TableHasNoDataError(owner=owner, table=table, as_at=as_at)
         snapshot_id = candidates[0].split("-")[-1].split(".")[0]
 
-    snapshot_file = storage_provider.read_blob(f"{SNAPSHOT_ROOT}/snapshot-{snapshot_id}.json")
+    snapshot_file = storage_provider.read_blob(f"{snapshot_root}/snapshot-{snapshot_id}.json")
     snapshot = orjson.loads(snapshot_file)
 
     # retrieve the list of blobs from the manifests
@@ -199,8 +200,8 @@ async def get_table(
 
 @router.get("/tables/{owner}/{table}/snapshots/{snapshot}", response_class=ORJSONResponse)
 async def get_table_snapshot(
-    owner: str = Path(description="The owner of the table.", regex=identifier_validation),
-    table: str = Path(description="The name of the table.", regex=identifier_validation),
+    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_VALIDATION),
+    table: str = Path(description="The name of the table.", regex=IDENTIFIER_VALIDATION),
     snapshot: str = Path(description="The snapshot to retrieve."),
 ):
     pass
@@ -208,8 +209,8 @@ async def get_table_snapshot(
 
 @router.delete("/tables/{owner}/{table}", response_class=ORJSONResponse)
 async def delete_table(
-    owner: str = Path(description="The owner of the table.", regex=identifier_validation),
-    table: str = Path(description="The name of the table.", regex=identifier_validation),
+    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_VALIDATION),
+    table: str = Path(description="The name of the table.", regex=IDENTIFIER_VALIDATION),
 ):
     """
     Delete a table from the catalog.

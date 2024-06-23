@@ -4,10 +4,10 @@ from typing import Tuple
 
 import fastavro
 
-from tarchia.manifest.models import EntryType
-from tarchia.manifest.models import ManifestEntry
-from tarchia.manifest.pruning import parse_filters
-from tarchia.manifest.pruning import prune
+from tarchia.manifests.models import EntryType
+from tarchia.manifests.models import ManifestEntry
+from tarchia.manifests.pruning import parse_filters
+from tarchia.manifests.pruning import prune
 from tarchia.storage import StorageProvider
 
 

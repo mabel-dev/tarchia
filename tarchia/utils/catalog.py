@@ -4,9 +4,6 @@ from tarchia.models import TableCatalogEntry
 from tarchia.repositories.catalog import catalog_factory
 from tarchia.storage import storage_factory
 
-SNAPSHOT_ROOT = f"{METADATA_ROOT}/[table_id]/snapshots/"
-MANIFEST_ROOT = f"{METADATA_ROOT}/[table_id]/manifests/"
-
 catalog_provider = catalog_factory()
 storage_provider = storage_factory()
 

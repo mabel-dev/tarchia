@@ -1,7 +1,8 @@
 import re
 import uuid
 
-from tarchia.constants import identifier_validation
+from tarchia.config import METADATA_ROOT
+from tarchia.constants import IDENTIFIER_VALIDATION
 
 
 def generate_uuid() -> str:
@@ -11,4 +12,13 @@ def generate_uuid() -> str:
 
 def is_valid_sql_identifier(identifier: str) -> bool:
     """Is the string a valid SQL identifier"""
-    return identifier and re.match(identifier_validation, identifier)
+    return identifier and re.match(IDENTIFIER_VALIDATION, identifier)
+
+
+def build_root(root: str, owner: str, table_id: str) -> str:
+    """Wrap some repeat legwork"""
+    value = root.replace("[metadata_root]", METADATA_ROOT)
+    value = value.replace("[owner]", owner)
+    value = value.replace("[table_id]", table_id)
+
+    return value
