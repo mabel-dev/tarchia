@@ -104,16 +104,11 @@ erDiagram
     
     CATALOG {
         string name
-        int owner_id
-    }
-    
-    VIEWS {
-        string name
-        string owner_id
+        string owner
+
     }
 
     OWNER ||--o{ CATALOG : "owns"
-    OWNER ||--o{ VIEWS : "owns"
 ~~~
 
 ## API Definition

@@ -3,6 +3,10 @@ from pydantic import BaseModel
 
 
 class TarchiaBaseModel(BaseModel):
+    """
+    Extend the Pydantic BaseModel with a more robust serialization routine.
+    """
+
     def as_dict(self) -> dict:
         """Convert the model object to a dict"""
         from tarchia.utils.serde import to_dict
