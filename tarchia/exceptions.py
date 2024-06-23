@@ -35,8 +35,11 @@ class InvalidConfigurationError(Exception):
 
 
 class InvalidFilterError(Exception):
-    def __init__(self, message: str):
-        super().__init__(message)
+    """Exception raised when filters are not formatted correctly"""
+
+
+class UnmetRequirementError(Exception):
+    """Exception raised when a requirement for operation is not met."""
 
 
 class DataEntryError(Exception):

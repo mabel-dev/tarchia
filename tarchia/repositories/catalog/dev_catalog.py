@@ -13,10 +13,10 @@ from tarchia.repositories.catalog.provider_base import CatalogProvider
 class DevelopmentCatalogProvider(CatalogProvider):
     def __init__(self, db_path: str = None):
         """
-        Initializes the database connection to TinyDB.
+        Initializes the database connection.
 
         Parameters:
-            db_path (str): The file path for the TinyDB database.
+            db_path (str): The file path for the database.
         """
         from tarchia.utils.doc_store import DocumentStore
 

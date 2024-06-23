@@ -69,5 +69,7 @@ METADATA_ROOT: str = get("METADATA_ROOT", "warehouse")
 TRANSACTION_SIGNER: str = get("TRANSACTION_SIGNER", "secret")
 """The key used to sign transactions."""
 
+GCP_PROJECT_ID: str = get("GCP_PROJECT_ID") 
+"""GCP Project ID - for Google Cloud Platform hosted systems"""
 
 # fmt:on
