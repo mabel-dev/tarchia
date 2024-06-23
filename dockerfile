@@ -7,7 +7,7 @@ RUN apt-get update && \
 
 COPY requirements.txt /requirements.txt
 RUN  /venv/bin/pip install --disable-pip-version-check -r /requirements.txt
-COPY requirements.txt /requirements-cr.txt
+COPY requirements-cr.txt /requirements-cr.txt
 RUN  /venv/bin/pip install --disable-pip-version-check -r /requirements-cr.txt
 
 RUN useradd --create-home tarchia
