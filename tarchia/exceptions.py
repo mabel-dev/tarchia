@@ -49,10 +49,11 @@ class DataEntryError(Exception):
 
 
 class TableNotFoundError(Exception):
-    def __init__(self, table: str):
+    def __init__(self, owner: str, table: str):
+        self.owner = owner
         self.table = table
 
-        message = f"Table with reference {table} could not be found."
+        message = f"Table with reference {owner}.{table} could not be found."
         super().__init__(message)
 
 

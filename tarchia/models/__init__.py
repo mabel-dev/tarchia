@@ -1,3 +1,4 @@
+from .table_metadata_models import Column  # isort: skip
 from .table_metadata_models import DatasetPermissions  # isort: skip
 from .table_metadata_models import EncryptionDetails  # isort: skip
 from .table_metadata_models import RolePermission  # isort: skip

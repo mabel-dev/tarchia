@@ -178,6 +178,7 @@ class TableCatalogEntry(BaseModel):
     partitioning: List[str]
     last_updated_ms: int
     permissions: List[DatasetPermissions]
+    visibility: TableVisibility
     current_schema: Schema
     current_snapshot_id: Optional[str]
     format_version: int = Field(default=1)

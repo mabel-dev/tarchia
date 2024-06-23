@@ -52,8 +52,11 @@ def get(key, default=None):
 
 # fmt:off
 
-CATALOG_PROVIDER: str = get("CATALOG_PROVIDER", "TinyDB")
+CATALOG_PROVIDER: str = get("CATALOG_PROVIDER", "DEVELOPMENT")
 """The service providing the storage for the Catalog."""
+
+CATALOG_NAME: str = get("CATALOG_NAME")
+"""The name of the catalog collection/table"""
 
 STORAGE_PROVIDER: str = get("STORAGE_PROVIDER", "local")
 """The service providing the storage for the metadata."""

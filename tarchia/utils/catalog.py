@@ -11,9 +11,9 @@ catalog_provider = catalog_factory()
 storage_provider = storage_factory()
 
 
-def identify_table(identifier: str) -> TableCatalogEntry:
+def identify_table(owner: str, table: str) -> TableCatalogEntry:
     """Get the catalog entry for a table name/identifier"""
-    catalog_entry = catalog_provider.get_table(identifier)
+    catalog_entry = catalog_provider.get_table(owner=owner, table=table)
     if catalog_entry is None:
-        raise TableNotFoundError(table=identifier)
+        raise TableNotFoundError(owner=owner, table=table)
     return TableCatalogEntry(**catalog_entry)

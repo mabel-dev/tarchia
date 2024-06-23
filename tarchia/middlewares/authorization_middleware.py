@@ -31,7 +31,7 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
 
             if auth_token is None:
                 return Response(status_code=401)
-            if os.environ["AUTH_TOKEN"] != auth_token:
+            if os.environ.get("AUTH_TOKEN") != auth_token:
                 return Response(status_code=403)
 
         return await call_next(request)
