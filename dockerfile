@@ -1,4 +1,4 @@
-FROM debian:bullseye-slim as build-environment
+FROM debian:bookworm-slim as build-environment
 
 RUN apt-get update && \
     apt-get install --no-install-suggests --no-install-recommends --yes python3-venv gcc libpython3-dev && \
@@ -11,7 +11,7 @@ RUN  /venv/bin/pip install --disable-pip-version-check -r /requirements.txt
 RUN useradd --create-home tarchia
 USER tarchia
 
-FROM gcr.io/distroless/python3
+FROM gcr.io/distroless/python3-debian12
 EXPOSE 8080
 
 ENV PYTHONBUFFERED=1
