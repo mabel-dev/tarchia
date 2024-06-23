@@ -14,6 +14,7 @@ from .table_metadata_models import DatasetPermissions
 from .table_metadata_models import RolePermission
 from .table_metadata_models import Schema
 from .table_metadata_models import TableDisposition
+from .table_metadata_models import TableVisibility
 
 
 def default_permissions() -> List[DatasetPermissions]:
@@ -66,7 +67,6 @@ class CreateTableRequest(BaseModel):
 
     Attributes:
         name (str): The name of the table.
-        owner (str): The namespace for the table.
         location (str): The location of the table data.
         table_schema (Schema): The schema of the table.
         partitioning (Optional[List[str]]): The partitioning information, default is ["year", "month", "day"].
@@ -76,9 +76,9 @@ class CreateTableRequest(BaseModel):
     """
 
     name: str
-    owner: str
     location: str
     table_schema: Schema
+    visibility: TableVisibility = TableVisibility.PRIVATE
     partitioning: Optional[List[str]] = Field(default_factory=default_partitioning)
     disposition: TableDisposition = TableDisposition.SNAPSHOT
     permissions: List[DatasetPermissions] = Field(default_factory=default_permissions)

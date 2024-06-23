@@ -3,6 +3,8 @@ from typing import Any
 from typing import Dict
 from typing import List
 
+from tarchia.models import TableCatalogEntry
+
 
 class CatalogProvider:
     """
@@ -24,13 +26,13 @@ class CatalogProvider:
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name} is not implemented."
         )
 
-    def update_table_metadata(self, table_id: str, metadata: Dict[str, Any]) -> None:
+    def update_table(self, table_id: str, entry: TableCatalogEntry) -> None:
         """
         Update the metadata for a specified table.
 
         Parameters:
             table_id (str): The identifier of the table.
-            metadata (Dict[str, Any]): A dictionary containing the metadata to be updated.
+            entry (Dict[str, Any]): A dictionary containing the metadata to be updated.
         """
         raise NotImplementedError(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name} is not implemented."

@@ -137,4 +137,5 @@ docs/**
 .DS_Store
 _temp/**
 warehouse/**
-tarchia.json
+**.json
+

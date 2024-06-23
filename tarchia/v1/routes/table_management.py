@@ -12,7 +12,6 @@ from fastapi.responses import ORJSONResponse
 
 from tarchia.config import METADATA_ROOT
 from tarchia.constants import identifier_validation
-from tarchia.exceptions import DataEntryError
 from tarchia.exceptions import TableHasNoDataError
 from tarchia.manifest import get_manifest
 from tarchia.manifest import parse_filters
@@ -55,7 +54,10 @@ async def list_tables(owner: str, request: Request):
 
 
 @router.post("/tables/{owner}", response_class=ORJSONResponse)
-async def create_table(request: CreateTableRequest):
+async def create_table(
+    request: CreateTableRequest,
+    owner: str = Path(description="The owner of the table.", regex=identifier_validation),
+):
     """
     Create a new table in the catalog.
 
@@ -65,7 +67,7 @@ async def create_table(request: CreateTableRequest):
         request: CreateTableRequest - The request body containing the table metadata.
     """
     # check if we have a table with that name already
-    catalog_entry = catalog_provider.get_table(request.name)
+    catalog_entry = catalog_provider.get_table(owner=owner, table=request.name)
     if catalog_entry:
         raise ValueError("table name already exists")
 
@@ -75,11 +77,12 @@ async def create_table(request: CreateTableRequest):
     # table types (external) we never record snapshots for.
     new_table = TableCatalogEntry(
         name=request.name,
-        owner=request.owner,
+        owner=owner,
         table_id=table_id,
         format_version=1,
         location=request.location,
         partitioning=request.partitioning,
+        visibility=request.visibility,
         permissions=request.permissions,
         disposition=request.disposition,
         metadata=request.metadata,
@@ -89,25 +92,41 @@ async def create_table(request: CreateTableRequest):
     )
 
     # Save the table to the Catalog
-    catalog_provider.update_table_metadata(table_id=new_table.table_id, metadata=new_table)
+    catalog_provider.update_table(table_id=new_table.table_id, entry=new_table)
     # create the metadata folder, put a file with the table name in there
     storage_provider.write_blob(f"{METADATA_ROOT}/{table_id}/{request.name}", b"")
 
     return {
         "message": "Table Created",
-        "table": table_id,
+        "table": f"{owner}.{request.name}",
     }
 
 
 @router.patch("/tables/{owner}/{table}", response_class=ORJSONResponse)
 async def update_table(
+    request: Request,
     owner: str = Path(description="The owner of the table.", regex=identifier_validation),
     table: str = Path(description="The name of the table.", regex=identifier_validation),
 ):
-    # update visibility
-    # rename
-    # metadata
-    pass
+    catalog_entry = identify_table(owner, table)
+    body = await request.json()
+
+    if any(k in {"schema", "metadata"} for k in body):
+        raise ValueError("Schema and Metadata must be updated via dedicated end points")
+
+    if not all(k in {"visibility"} for k in body):
+        raise ValueError("Read only property attempted to be updated")
+
+    for key, value in body.items():
+        if key == "visibility":
+            catalog_entry.visibility = value
+
+    catalog_provider.update_table(table_id=catalog_entry.table_id, entry=catalog_entry)
+
+    return {
+        "message": "Table updated",
+        "table": f"{owner}.{table}",
+    }
 
 
 @router.get("/tables/{owner}/{table}", response_class=ORJSONResponse)
@@ -115,8 +134,10 @@ async def get_table(
     owner: str = Path(description="The owner of the table.", regex=identifier_validation),
     table: str = Path(description="The name of the table.", regex=identifier_validation),
     as_at: Optional[int] = Query(
+        default=None,
         description="Retrieve the table state as of this timestamp, in nanoseconds after Linux epoch.",
     ),
+    filters=None,
     #    filters: Optional[str] = Query(
     #        None,
     #        description="List of filters to apply in the format (field, operator, value).",
@@ -136,9 +157,8 @@ async def get_table(
     perform blob filtering based on statistics held for each blob.
 
     Parameters:
-        tableIdentifier: str - The unique identifier of the table.
+        table: str - The unique identifier of the table.
         as_at: Optional[int] - Timestamp to retrieve the table state as of this time.
-        snapshotIdentifier: Optional[str] - The unique identifier of the snapshot to retrieve.
         filters: Optional[str] - Comma separated list of filters to apply in the format (field=value).
 
     Returns:
@@ -149,35 +169,20 @@ async def get_table(
 
     # if the table has no snapshots, return only the table information
     if catalog_entry.current_snapshot_id is None:
-        if snapshotIdentifier is not None or as_at is not None:
-            raise TableHasNoDataError(owner=owner, table=table)
         return catalog_entry.serialize()
 
+    snapshot_id = catalog_entry.snapshot_id
     table_id = catalog_entry.table_id
-    my_snapshot_root = SNAPSHOT_ROOT.replace("[table_id]", table_id)
+    snapshot_root = SNAPSHOT_ROOT.replace("[table_id]", table_id)
 
-    # Do we have a valid request
-    if snapshotIdentifier is not None and as_at is not None:
-        raise DataEntryError(
-            endpoint="",
-            fields=["snapshotIdentifier", "as_at"],
-            message="Cannot provide a time-based search (as_at) and an index-based search (snapshotIdentifier) in the same request.",
-        )
-
-    # if we have no snapshot or as_at, we want the current version
-    if snapshotIdentifier is None and as_at is None:
-        snapshotIdentifier = catalog_entry.snapshot_id
-
-    if as_at is not None:
+    if as_at:
         # Get the snapshot before a given timestamp
-        candidates = storage_provider.blob_list(prefix=my_snapshot_root, as_at=as_at)
+        candidates = storage_provider.blob_list(prefix=snapshot_root, as_at=as_at)
         if len(candidates) != 1:
             raise TableHasNoDataError(owner=owner, table=table, as_at=as_at)
-        snapshotIdentifier = candidates[0].split("-")[-1].split(".")[0]
+        snapshot_id = candidates[0].split("-")[-1].split(".")[0]
 
-    snapshot_file = storage_provider.read_blob(
-        f"{SNAPSHOT_ROOT}/snapshot-{snapshotIdentifier}.json"
-    )
+    snapshot_file = storage_provider.read_blob(f"{SNAPSHOT_ROOT}/snapshot-{snapshot_id}.json")
     snapshot = orjson.loads(snapshot_file)
 
     # retrieve the list of blobs from the manifests
