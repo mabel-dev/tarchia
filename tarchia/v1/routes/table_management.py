@@ -25,8 +25,6 @@ from tarchia.utils import generate_uuid
 from tarchia.utils.catalog import identify_table
 
 router = APIRouter()
-catalog_provider = catalog_factory()
-storage_provider = storage_factory()
 
 
 @router.get("/tables/{owner}", response_class=ORJSONResponse)
@@ -40,6 +38,7 @@ async def list_tables(owner: str, request: Request):
     Returns:
         List[Dict[str, Any]]: A list of tables with their metadata, including the snapshot URL if applicable.
     """
+    catalog_provider = catalog_factory()
     base_url = request.url.scheme + "://" + request.url.netloc
 
     tables = catalog_provider.list_tables(owner)
@@ -67,6 +66,8 @@ async def create_table(
     Parameters:
         request: CreateTableRequest - The request body containing the table metadata.
     """
+    catalog_provider = catalog_factory()
+    storage_provider = storage_factory()
     # check if we have a table with that name already
     catalog_entry = catalog_provider.get_table(owner=owner, table=request.name)
     if catalog_entry:
@@ -109,6 +110,8 @@ async def update_table(
     owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_VALIDATION),
     table: str = Path(description="The name of the table.", regex=IDENTIFIER_VALIDATION),
 ):
+    catalog_provider = catalog_factory()
+
     catalog_entry = identify_table(owner, table)
     body = await request.json()
 
@@ -165,12 +168,13 @@ async def get_table(
     Returns:
         Dict[str, Any]: The table definition along with the snapshot and the list of blobs.
     """
+    storage_provider = storage_factory()
     # read the data from the catalog for this table
     catalog_entry = identify_table(owner, table)
 
     # if the table has no snapshots, return only the table information
     if catalog_entry.current_snapshot_id is None:
-        return catalog_entry.serialize()
+        return catalog_entry.as_dict()
 
     snapshot_id = catalog_entry.snapshot_id
     table_id = catalog_entry.table_id
@@ -183,7 +187,7 @@ async def get_table(
             raise TableHasNoDataError(owner=owner, table=table, as_at=as_at)
         snapshot_id = candidates[0].split("-")[-1].split(".")[0]
 
-    snapshot_file = storage_provider.read_blob(f"{snapshot_root}/snapshot-{snapshot_id}.json")
+    snapshot_file = storage_provider.read_blob(f"{snapshot_root}/asat-{snapshot_id}.json")
     snapshot = orjson.loads(snapshot_file)
 
     # retrieve the list of blobs from the manifests
@@ -191,7 +195,7 @@ async def get_table(
     blobs = get_manifest(snapshot.get("manifest_path"), storage_provider, filter_conditions)
 
     # build the response
-    table_definition = catalog_entry.serialize()
+    table_definition = catalog_entry.as_dict()
     table_definition.update(snapshot)
     table_definition["blobs"] = blobs
 
@@ -221,9 +225,18 @@ async def delete_table(
     Note:
         The metadata and data files for this table is NOT deleted.
     """
-    catalog_entry = identify_table(tableIdentifier)
+    catalog_provider = catalog_factory()
+    storage_provider = storage_factory()
+
+    catalog_entry = identify_table(owner=owner, table=table)
     table_id = catalog_entry.table_id
-    catalog_provider.delete_table_metadata(table_id)
+    catalog_provider.delete_table(table_id)
+
+    # mark the entry as deleted
+    # we save the catalog entry to give the option to manually restate the table
+    storage_provider.write_blob(
+        f"{METADATA_ROOT}/{owner}/{table_id}/deleted.json", catalog_entry.serialize()
+    )
 
     return {
         "message": "Table Deleted",

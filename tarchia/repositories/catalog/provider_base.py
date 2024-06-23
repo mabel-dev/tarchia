@@ -49,9 +49,9 @@ class CatalogProvider:
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name} is not implemented."
         )
 
-    def delete_table_metadata(self, table_id: str) -> None:
+    def delete_table(self, table_id: str) -> None:
         """
-        Delete metadata for a specified table.
+        Delete entry for a specified table.
 
         Parameters:
             table_id (str): The identifier of the table to be deleted.

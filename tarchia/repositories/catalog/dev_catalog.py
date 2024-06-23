@@ -53,7 +53,7 @@ class DevelopmentCatalogProvider(CatalogProvider):
             metadata (Dict[str, Any]): A dictionary containing the metadata to be updated.
         """
 
-        self.store.upsert("catalog", entry.serialize(), {"table_id": table_id})
+        self.store.upsert("catalog", entry.as_dict(), {"table_id": table_id})
         pass
 
     def list_tables(self, owner: str) -> List[TableCatalogEntry]:
@@ -66,11 +66,11 @@ class DevelopmentCatalogProvider(CatalogProvider):
         result = self.store.find("catalog", {"owner": owner})
         return result
 
-    def delete_table(self, owner: str, table: str) -> None:
+    def delete_table(self, table_id: str) -> None:
         """
         Delete metadata for a specified table.
 
         Parameters:
             table_id (str): The identifier of the table to be deleted.
         """
-        self.store.delete("catalog", {"owner": owner, "name": table})
+        self.store.delete("catalog", {"table_id": table_id})
