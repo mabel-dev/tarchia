@@ -39,24 +39,17 @@ def _get_project_id():  # pragma: no cover
     return response.text
 
 
-def _initialize():  # pragma: no cover
-    """Create the connection to Firebase"""
-    try:
-        import firebase_admin
-        from firebase_admin import credentials
-    except ImportError as err:  # pragma: no cover
-        raise MissingDependencyError(err.name) from err
-    if not firebase_admin._apps:
-        # if we've not been given the ID, fetch it
-        project_id = GCP_PROJECT_ID
-        if project_id is None:
-            project_id = _get_project_id()
-        creds = credentials.ApplicationDefault()
-        firebase_admin.initialize_app(creds, {"projectId": project_id, "httpTimeout": 10})
-
-
 class FirestoreCatalogProvider(CatalogProvider):
     def __init__(self, db_path: str = None):
+        try:
+            from google.cloud import firestore
+        except ImportError as err:  # pragma: no cover
+            raise MissingDependencyError(err.name) from err
+        # if we've not been given the ID, fetch it
+        self.project_id = GCP_PROJECT_ID
+        if self.project_id is None:
+            self.project_id = _get_project_id()
+
         self.collection = db_path
 
     def get_table(self, owner: str, table: str) -> TableCatalogEntry:
@@ -69,15 +62,17 @@ class FirestoreCatalogProvider(CatalogProvider):
         Returns:
             Dict[str, Any]: A dictionary containing the metadata of the table.
         """
-        from firebase_admin import firestore
+        from google.cloud import firestore
+        from google.cloud.firestore_v1.base_query import FieldFilter
 
-        _initialize()
-        database = firestore.client()
+        database = firestore.Client(project=self.project_id)
         documents = database.collection(self.collection)
 
-        documents = documents.where([("owner", "=", owner), ("name", "=", table)])
+        documents = documents.where(filter=FieldFilter("owner", "==", owner)).where(
+            filter=FieldFilter("name", "==", table)
+        )
         documents = documents.stream()
-        documents = list({**doc.to_dict(), "_id": doc.id} for doc in documents)
+        documents = list(doc.to_dict() for doc in documents)
         if len(documents) > 1:
             raise AmbiguousTableError(owner=owner, table=table)
         if len(documents) == 1:
@@ -103,15 +98,15 @@ class FirestoreCatalogProvider(CatalogProvider):
         Returns:
             List[Dict[str, Any]]: A list of dictionaries, each representing the metadata of a table.
         """
-        from firebase_admin import firestore
+        from google.cloud import firestore
+        from google.cloud.firestore_v1.base_query import FieldFilter
 
-        _initialize()
-        database = firestore.client()
+        database = firestore.Client(project=self.project_id)
         documents = database.collection(self.collection)
 
-        documents = documents.where([("owner", "=", owner)])
+        documents = documents.where(filter=FieldFilter("owner", "==", owner))
         documents = documents.stream()
-        return list({**doc.to_dict(), "_id": doc.id} for doc in documents)
+        return list(doc.to_dict() for doc in documents)
 
     def delete_table(self, table_id: str) -> None:
         """
