@@ -4,6 +4,11 @@ import os
 os.environ["CATALOG_NAME"] = "test_catalog.json"
 os.environ["TARCHIA_DEBUG"] = "TRUE"
 
+try:
+    os.remove(os.environ["CATALOG_NAME"])
+except FileNotFoundError:
+    pass
+
 sys.path.insert(1, os.path.join(sys.path[0], "../.."))
 
 from fastapi.testclient import TestClient
@@ -14,11 +19,6 @@ from tarchia.main import application
 
 def test_create_read_update_delete_table():
 
-    try:
-        os.remove(os.environ["CATALOG_NAME"])
-    except FileNotFoundError:
-        pass
-
     client = TestClient(application)
 
     new_table = CreateTableRequest(
@@ -28,7 +28,7 @@ def test_create_read_update_delete_table():
     )
 
     # create the table
-    response = client.post(url="/v1/tables/joocer", content=new_table.model_dump_json())
+    response = client.post(url="/v1/tables/joocer", content=new_table.serialize())
     assert response.status_code == 200, f"{response.status_code} - {response.content}"
 
     # can we retrieve this table?
@@ -46,6 +46,14 @@ def test_create_read_update_delete_table():
     response = client.get(url="/v1/tables/joocer/test_dataset")
     assert response.status_code == 200, f"{response.status_code} - {response.content}"
     assert response.json()["visibility"] == "INTERNAL", response.json()["visibility"]
+
+    # delete the table
+    response = client.delete(url="/v1/tables/joocer/test_dataset")
+    assert response.status_code == 200, f"{response.status_code} - {response.content}"
+
+    # table shouldn't exist anymore
+    response = client.get(url="/v1/tables/joocer/test_dataset")
+    assert response.status_code == 404, f"{response.status_code} - {response.content}"
 
 if __name__ == "__main__":  # pragma: no cover
     from tests.tools import run_tests

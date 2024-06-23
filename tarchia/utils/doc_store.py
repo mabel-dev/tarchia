@@ -1,3 +1,9 @@
+"""
+A simple document store used for testing and development.
+
+Not intended for production use.
+"""
+
 from typing import Any
 from typing import Dict
 from typing import List
@@ -5,7 +11,7 @@ from typing import List
 import orjson
 
 
-class DocumentStore:
+class _DocumentStore:
     def __init__(self, file_path: str):
         self.file_path = file_path
         self.data = self._load()
@@ -26,10 +32,7 @@ class DocumentStore:
 
     def find(self, collection: str, query: Dict[str, Any]) -> List[Dict[str, Any]]:
         def matches(doc: Dict[str, Any]) -> bool:
-            for k, v in query.items():
-                if doc.get(k) != v:
-                    return False
-            return True
+            return all(doc.get(k) == v for k, v in query.items())
 
         return [doc for doc in self.data.get(collection, []) if matches(doc)]
 
@@ -55,3 +58,19 @@ class DocumentStore:
             if not all(doc.get(k) == v for k, v in query.items())
         ]
         self._save()
+
+
+class DocumentStore(_DocumentStore):
+    """
+    Singleton wrapper for the _DocumentStore class.
+    Only allows one instance of _DocumentStore to exist per location.
+    """
+
+    slots = "_instances"
+
+    _instances: dict[str, _DocumentStore] = {}
+
+    def __new__(cls, location: str):
+        if cls._instances.get(location) is None:
+            cls._instances[location] = _DocumentStore(location)
+        return cls._instances[location]

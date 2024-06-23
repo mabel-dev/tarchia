@@ -3,7 +3,6 @@ from typing import Dict
 from typing import List
 from typing import Optional
 
-from pydantic import BaseModel
 from pydantic import Field
 from pydantic import field_validator
 
@@ -15,6 +14,7 @@ from .table_metadata_models import RolePermission
 from .table_metadata_models import Schema
 from .table_metadata_models import TableDisposition
 from .table_metadata_models import TableVisibility
+from .tarchia_base import TarchiaBaseModel
 
 
 def default_permissions() -> List[DatasetPermissions]:
@@ -37,7 +37,7 @@ def default_partitioning() -> List[str]:
     return ["year", "month", "day"]
 
 
-class AddSnapshotRequest(BaseModel):
+class AddSnapshotRequest(TarchiaBaseModel):
     """
     Model for adding a snapshot request.
 
@@ -48,7 +48,7 @@ class AddSnapshotRequest(BaseModel):
     parent: str
 
 
-class CreateOwnerRequest(BaseModel):
+class CreateOwnerRequest(TarchiaBaseModel):
     """
     Model for creating an owner.
 
@@ -61,7 +61,7 @@ class CreateOwnerRequest(BaseModel):
     user: str
 
 
-class CreateTableRequest(BaseModel):
+class CreateTableRequest(TarchiaBaseModel):
     """
     Model for creating a table request.
 
@@ -103,7 +103,7 @@ class CreateTableRequest(BaseModel):
         return name
 
 
-class TableCloneRequest(BaseModel):
+class TableCloneRequest(TarchiaBaseModel):
     """
     Model for table clone request.
 
@@ -115,7 +115,7 @@ class TableCloneRequest(BaseModel):
     name: str
 
 
-class UpdateSchemaRequest(BaseModel):
+class UpdateSchemaRequest(TarchiaBaseModel):
     """
     Model for updating schema request.
 

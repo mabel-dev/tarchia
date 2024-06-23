@@ -5,10 +5,11 @@ from typing import Optional
 
 from orso.schema import FlatColumn
 from orso.schema import OrsoTypes
-from pydantic import BaseModel
 from pydantic import Field
 
 from tarchia.utils import is_valid_sql_identifier
+
+from .tarchia_base import TarchiaBaseModel
 
 
 class RolePermission(Enum):
@@ -41,7 +42,7 @@ class TableVisibility(Enum):
     PUBLIC = "PUBLIC"  # no restrictions
 
 
-class EncryptionDetails(BaseModel):
+class EncryptionDetails(TarchiaBaseModel):
     """
     Model representing encryption details.
 
@@ -56,7 +57,7 @@ class EncryptionDetails(BaseModel):
     fields: List[str]
 
 
-class DatasetPermissions(BaseModel):
+class DatasetPermissions(TarchiaBaseModel):
     """
     Model representing dataset permissions.
 
@@ -69,7 +70,7 @@ class DatasetPermissions(BaseModel):
     permission: RolePermission
 
 
-class Column(BaseModel):
+class Column(TarchiaBaseModel):
     """
     Model representing a column in a schema.
 
@@ -94,13 +95,13 @@ class Column(BaseModel):
         # We need to be able to build valid Orso FlatColumns
         # it has validation we can leverage
         try:
-            column = FlatColumn(**self.model_dump())
+            column = FlatColumn(**self.as_dict())
         except Exception as load_error:
             print(load_error)
             raise ValueError(f"Column definition for '{self.name}' is invalid.") from load_error
 
 
-class Schema(BaseModel):
+class Schema(TarchiaBaseModel):
     """
     Model representing a schema.
 
@@ -110,17 +111,8 @@ class Schema(BaseModel):
 
     columns: List[Column]
 
-    def serialize(self) -> dict:
-        """
-        Serialize the snapshot to a dictionary.
 
-        Returns:
-            dict: The serialized snapshot.
-        """
-        return self.model_dump()
-
-
-class Snapshot(BaseModel):
+class Snapshot(TarchiaBaseModel):
     """
     Model representing a snapshot.
 
@@ -140,17 +132,8 @@ class Snapshot(BaseModel):
     table_schema: Schema
     encryption_details: EncryptionDetails
 
-    def serialize(self) -> dict:
-        """
-        Serialize the snapshot to a dictionary.
 
-        Returns:
-            dict: The serialized snapshot.
-        """
-        return self.model_dump()
-
-
-class TableCatalogEntry(BaseModel):
+class TableCatalogEntry(TarchiaBaseModel):
     """
     The Catalog entry for a table.
 
@@ -184,14 +167,3 @@ class TableCatalogEntry(BaseModel):
     format_version: int = Field(default=1)
     disposition: TableDisposition = Field(default=TableDisposition.SNAPSHOT)
     metadata: dict = Field(default_factory=dict)
-
-    def serialize(self) -> dict:
-        """
-        Serialize the table catalog entry to a dictionary.
-
-        Returns:
-            dict: The serialized table catalog entry.
-        """
-        from tarchia.utils.serde import to_dict
-
-        return to_dict(self)
