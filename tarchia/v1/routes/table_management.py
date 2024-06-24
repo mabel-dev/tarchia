@@ -18,6 +18,7 @@ from tarchia.manifests import get_manifest
 from tarchia.manifests import parse_filters
 from tarchia.models import CreateTableRequest
 from tarchia.models import TableCatalogEntry
+from tarchia.models import UpdateSchemaRequest
 from tarchia.repositories.catalog import catalog_factory
 from tarchia.storage import storage_factory
 from tarchia.utils import build_root
@@ -25,6 +26,9 @@ from tarchia.utils import generate_uuid
 from tarchia.utils.catalog import identify_table
 
 router = APIRouter()
+
+catalog_provider = catalog_factory()
+storage_provider = storage_factory()
 
 
 @router.get("/tables/{owner}", response_class=ORJSONResponse)
@@ -38,7 +42,6 @@ async def list_tables(owner: str, request: Request):
     Returns:
         List[Dict[str, Any]]: A list of tables with their metadata, including the snapshot URL if applicable.
     """
-    catalog_provider = catalog_factory()
     base_url = request.url.scheme + "://" + request.url.netloc
 
     tables = catalog_provider.list_tables(owner)
@@ -66,8 +69,6 @@ async def create_table(
     Parameters:
         request: CreateTableRequest - The request body containing the table metadata.
     """
-    catalog_provider = catalog_factory()
-    storage_provider = storage_factory()
     # check if we have a table with that name already
     catalog_entry = catalog_provider.get_table(owner=owner, table=request.name)
     if catalog_entry:
@@ -111,8 +112,6 @@ async def update_table(
     owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_REG_EX),
     table: str = Path(description="The name of the table.", regex=IDENTIFIER_REG_EX),
 ):
-    catalog_provider = catalog_factory()
-
     catalog_entry = identify_table(owner, table)
     body = await request.json()
 
@@ -169,7 +168,6 @@ async def get_table(
     Returns:
         Dict[str, Any]: The table definition along with the snapshot and the list of blobs.
     """
-    storage_provider = storage_factory()
     # read the data from the catalog for this table
     catalog_entry = identify_table(owner, table)
 
@@ -226,9 +224,6 @@ async def delete_table(
     Note:
         The metadata and data files for this table is NOT deleted.
     """
-    catalog_provider = catalog_factory()
-    storage_provider = storage_factory()
-
     catalog_entry = identify_table(owner=owner, table=table)
     table_id = catalog_entry.table_id
     catalog_provider.delete_table(table_id)
@@ -241,5 +236,25 @@ async def delete_table(
 
     return {
         "message": "Table Deleted",
+        "table": table_id,
+    }
+
+
+@router.patch("/tables/{owner}/{table}/schema")
+async def update_schema(
+    schema: UpdateSchemaRequest,
+    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", regex=IDENTIFIER_REG_EX),
+):
+    for col in schema.columns:
+        col.validate()
+
+    catalog_entry = identify_table(owner=owner, table=table)
+    table_id = catalog_entry.table_id
+    catalog_entry.current_schema = schema
+    catalog_provider.update_table_metadata(table_id, catalog_entry)
+
+    return {
+        "message": "Schema Updated",
         "table": table_id,
     }
