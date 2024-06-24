@@ -8,13 +8,15 @@ from pydantic import field_validator
 
 from tarchia.utils import is_valid_sql_identifier
 
-from .table_metadata_models import Column
-from .table_metadata_models import DatasetPermissions
-from .table_metadata_models import RolePermission
-from .table_metadata_models import Schema
-from .table_metadata_models import TableDisposition
-from .table_metadata_models import TableVisibility
+from .metadata_models import Column
+from .metadata_models import DatasetPermissions
+from .metadata_models import RolePermission
+from .metadata_models import Schema
+from .metadata_models import TableDisposition
+from .metadata_models import TableVisibility, OwnerType
 from .tarchia_base import TarchiaBaseModel
+
+
 
 
 def default_permissions() -> List[DatasetPermissions]:
@@ -50,15 +52,18 @@ class AddSnapshotRequest(TarchiaBaseModel):
 
 class CreateOwnerRequest(TarchiaBaseModel):
     """
-    Model for creating an owner.
+    Model for creating an owner (an org or individual).
 
     Attributes:
         name (str): The name of the owning user/organization.
+        type (OwnerType): The type of the owner.
         user (str): The name of the user/group that owns this group.
+        memberships (List(str)): Identifiers to automatically map users to Owners
     """
-
     name: str
-    user: str
+    type: OwnerType
+    steward: str
+    memberships: List[str]
 
 
 class CreateTableRequest(TarchiaBaseModel):
@@ -67,6 +72,7 @@ class CreateTableRequest(TarchiaBaseModel):
 
     Attributes:
         name (str): The name of the table.
+        steward: (str): The indivial responsible for this table.
         location (str): The location of the table data.
         table_schema (Schema): The schema of the table.
         partitioning (Optional[List[str]]): The partitioning information, default is ["year", "month", "day"].
@@ -76,6 +82,7 @@ class CreateTableRequest(TarchiaBaseModel):
     """
 
     name: str
+    steward: str
     location: str
     table_schema: Schema
     visibility: TableVisibility = TableVisibility.PRIVATE

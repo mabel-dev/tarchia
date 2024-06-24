@@ -80,6 +80,7 @@ async def create_table(
     new_table = TableCatalogEntry(
         name=request.name,
         owner=owner,
+        steward=request.steward,
         table_id=table_id,
         format_version=1,
         location=request.location,

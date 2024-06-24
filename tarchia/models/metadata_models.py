@@ -12,6 +12,15 @@ from tarchia.utils import is_valid_sql_identifier
 from .tarchia_base import TarchiaBaseModel
 
 
+class OwnerType(Enum):
+    """
+    Enum for owner types.
+    """
+
+    ORGANIZATION = "ORGANIZATION"
+    INDIVIDUAL = "INDIVIDUAL"
+
+
 class RolePermission(Enum):
     """
     Enum for role permissions.
@@ -141,6 +150,7 @@ class TableCatalogEntry(TarchiaBaseModel):
 
     Attributes:
         name (str): The name of the table.
+        steward (str): The individual responsible for this table.
         owner (str): The namespace of the table.
         location (str): The location of the table data.
         partitioning (List[str]): The partitioning information.
@@ -155,6 +165,7 @@ class TableCatalogEntry(TarchiaBaseModel):
     """
 
     name: str
+    steward: str
     owner: str
     table_id: str
     location: str
@@ -167,3 +178,20 @@ class TableCatalogEntry(TarchiaBaseModel):
     format_version: int = Field(default=1)
     disposition: TableDisposition = Field(default=TableDisposition.SNAPSHOT)
     metadata: dict = Field(default_factory=dict)
+
+
+class OwnerModel(TarchiaBaseModel):
+    """
+    Model for owners.
+
+    Attributes:
+        name (str): The name of the owning user/organization.
+        type (OwnerType): The type of the owner.
+        user (str): The name of the user/group that owns this group.
+        memberships (List(str)): Identifiers to automatically map users to Owners
+    """
+
+    name: str
+    type: OwnerType
+    steward: str
+    memberships: List[str]
