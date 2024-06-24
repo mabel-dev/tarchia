@@ -131,3 +131,7 @@ class UpdateSchemaRequest(TarchiaBaseModel):
     """
 
     columns: List[Column]
+
+
+class UpdateMetadataRequest(TarchiaBaseModel):
+    metadata: dict = Field(default_factory=dict)

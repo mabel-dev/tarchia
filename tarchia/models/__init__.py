@@ -12,4 +12,5 @@ from .request_models import AddSnapshotRequest
 from .request_models import CreateOwnerRequest
 from .request_models import CreateTableRequest
 from .request_models import TableCloneRequest
+from .request_models import UpdateMetadataRequest
 from .request_models import UpdateSchemaRequest
