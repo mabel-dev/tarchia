@@ -18,6 +18,7 @@ from tarchia.manifests import get_manifest
 from tarchia.manifests import parse_filters
 from tarchia.models import CreateTableRequest
 from tarchia.models import TableCatalogEntry
+from tarchia.models import UpdateMetadataRequest
 from tarchia.models import UpdateSchemaRequest
 from tarchia.repositories.catalog import catalog_factory
 from tarchia.storage import storage_factory
@@ -249,6 +250,13 @@ async def update_schema(
     for col in schema.columns:
         col.validate()
 
+    # valid transitions
+    # Add - add a new column to the table (must have a default)
+    # Drop - remove an existing column from the table
+    # Rename - rename an existing column (via aliasing)
+    # Reorder - change the order of columns
+    # Type Changes - int->float
+
     catalog_entry = identify_table(owner=owner, table=table)
     table_id = catalog_entry.table_id
     catalog_entry.current_schema = schema
@@ -258,3 +266,12 @@ async def update_schema(
         "message": "Schema Updated",
         "table": table_id,
     }
+
+
+@router.patch("/tables/{owner}/{table}/metadata")
+async def update_metadata(
+    schema: UpdateMetadataRequest,
+    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", regex=IDENTIFIER_REG_EX),
+):
+    pass
