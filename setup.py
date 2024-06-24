@@ -38,7 +38,7 @@ try:
     with open("requirements.txt", "r") as f:
         required = f.read().splitlines()
 except:
-    with open("draken.egg-info/requires.txt", "r") as f:
+    with open("tarchia.egg-info/requires.txt", "r") as f:
         required = f.read().splitlines()
 
 extensions = []

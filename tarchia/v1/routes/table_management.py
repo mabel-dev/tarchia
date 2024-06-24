@@ -11,7 +11,7 @@ from fastapi import Request
 from fastapi.responses import ORJSONResponse
 
 from tarchia.config import METADATA_ROOT
-from tarchia.constants import IDENTIFIER_VALIDATION
+from tarchia.constants import IDENTIFIER_REG_EX
 from tarchia.constants import SNAPSHOT_ROOT
 from tarchia.exceptions import TableHasNoDataError
 from tarchia.manifests import get_manifest
@@ -56,7 +56,7 @@ async def list_tables(owner: str, request: Request):
 @router.post("/tables/{owner}", response_class=ORJSONResponse)
 async def create_table(
     request: CreateTableRequest,
-    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_VALIDATION),
+    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_REG_EX),
 ):
     """
     Create a new table in the catalog.
@@ -108,8 +108,8 @@ async def create_table(
 @router.patch("/tables/{owner}/{table}", response_class=ORJSONResponse)
 async def update_table(
     request: Request,
-    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_VALIDATION),
-    table: str = Path(description="The name of the table.", regex=IDENTIFIER_VALIDATION),
+    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", regex=IDENTIFIER_REG_EX),
 ):
     catalog_provider = catalog_factory()
 
@@ -136,8 +136,8 @@ async def update_table(
 
 @router.get("/tables/{owner}/{table}", response_class=ORJSONResponse)
 async def get_table(
-    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_VALIDATION),
-    table: str = Path(description="The name of the table.", regex=IDENTIFIER_VALIDATION),
+    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", regex=IDENTIFIER_REG_EX),
     as_at: Optional[int] = Query(
         default=None,
         description="Retrieve the table state as of this timestamp, in nanoseconds after Linux epoch.",
@@ -205,8 +205,8 @@ async def get_table(
 
 @router.get("/tables/{owner}/{table}/snapshots/{snapshot}", response_class=ORJSONResponse)
 async def get_table_snapshot(
-    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_VALIDATION),
-    table: str = Path(description="The name of the table.", regex=IDENTIFIER_VALIDATION),
+    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", regex=IDENTIFIER_REG_EX),
     snapshot: str = Path(description="The snapshot to retrieve."),
 ):
     pass
@@ -214,8 +214,8 @@ async def get_table_snapshot(
 
 @router.delete("/tables/{owner}/{table}", response_class=ORJSONResponse)
 async def delete_table(
-    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_VALIDATION),
-    table: str = Path(description="The name of the table.", regex=IDENTIFIER_VALIDATION),
+    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", regex=IDENTIFIER_REG_EX),
 ):
     """
     Delete a table from the catalog.
