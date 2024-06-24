@@ -24,6 +24,7 @@ def test_create_read_update_delete_table():
     new_table = CreateTableRequest(
         name="test_dataset",
         location="gs://dataset/",
+        steward="bob",
         table_schema=Schema(columns=[Column(name="column")]),
     )
 

@@ -1,11 +1,13 @@
-from .table_metadata_models import Column  # isort: skip
-from .table_metadata_models import DatasetPermissions  # isort: skip
-from .table_metadata_models import EncryptionDetails  # isort: skip
-from .table_metadata_models import RolePermission  # isort: skip
-from .table_metadata_models import Schema  # isort: skip
-from .table_metadata_models import Snapshot  # isort: skip
-from .table_metadata_models import TableDisposition  # isort: skip
-from .table_metadata_models import TableCatalogEntry  # isort: skip
+from .metadata_models import Column
+from .metadata_models import DatasetPermissions
+from .metadata_models import EncryptionDetails
+from .metadata_models import OrsoTypes
+from .metadata_models import OwnerModel
+from .metadata_models import RolePermission
+from .metadata_models import Schema
+from .metadata_models import Snapshot
+from .metadata_models import TableCatalogEntry
+from .metadata_models import TableDisposition
 from .request_models import AddSnapshotRequest
 from .request_models import CreateOwnerRequest
 from .request_models import CreateTableRequest
