@@ -119,7 +119,7 @@ async def update_table(
     if any(k in {"schema", "metadata"} for k in body):
         raise ValueError("Schema and Metadata must be updated via dedicated end points")
 
-    if not all(k in {"visibility"} for k in body):
+    if not all(k in {"visibility", "steward"} for k in body):
         raise ValueError("Read only property attempted to be updated")
 
     for key, value in body.items():
