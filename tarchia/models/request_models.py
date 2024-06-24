@@ -10,13 +10,12 @@ from tarchia.utils import is_valid_sql_identifier
 
 from .metadata_models import Column
 from .metadata_models import DatasetPermissions
+from .metadata_models import OwnerType
 from .metadata_models import RolePermission
 from .metadata_models import Schema
 from .metadata_models import TableDisposition
-from .metadata_models import TableVisibility, OwnerType
+from .metadata_models import TableVisibility
 from .tarchia_base import TarchiaBaseModel
-
-
 
 
 def default_permissions() -> List[DatasetPermissions]:
@@ -60,6 +59,7 @@ class CreateOwnerRequest(TarchiaBaseModel):
         user (str): The name of the user/group that owns this group.
         memberships (List(str)): Identifiers to automatically map users to Owners
     """
+
     name: str
     type: OwnerType
     steward: str

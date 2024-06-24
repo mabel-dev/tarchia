@@ -41,11 +41,7 @@ except:
     with open("draken.egg-info/requires.txt", "r") as f:
         required = f.read().splitlines()
 
-extensions = [
-    Extension(
-
-    )
-]
+extensions = []
 
 setup_config = {
     "name": LIBRARY,
