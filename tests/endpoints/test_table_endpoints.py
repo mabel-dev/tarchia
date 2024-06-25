@@ -37,12 +37,12 @@ def test_create_read_update_delete_table():
     assert response.status_code == 200, f"{response.status_code} - {response.content}"
     assert response.json()["visibility"] == "PRIVATE"
 
-    # we shouldn't be able to update the schema
-    response = client.patch(url="/v1/tables/joocer/test_dataset", content='{"schema": ""}')
+    # we shouldn't be able to update the table_id
+    response = client.patch(url="/v1/tables/joocer/test_dataset/table_id", content='1234')
     assert response.status_code == 422, f"{response.status_code} - {response.content}"
 
     # can we update this table
-    response = client.patch(url="/v1/tables/joocer/test_dataset", content='{"visibility": "INTERNAL"}')
+    response = client.patch(url="/v1/tables/joocer/test_dataset/visibility", content='{"value":"INTERNAL"}')
     assert response.status_code == 200, f"{response.status_code} - {response.content}"
     response = client.get(url="/v1/tables/joocer/test_dataset")
     assert response.status_code == 200, f"{response.status_code} - {response.content}"
@@ -58,5 +58,5 @@ def test_create_read_update_delete_table():
 
 if __name__ == "__main__":  # pragma: no cover
     from tests.tools import run_tests
-
+    test_create_read_update_delete_table()
     run_tests()

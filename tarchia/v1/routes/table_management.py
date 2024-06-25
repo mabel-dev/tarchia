@@ -20,6 +20,7 @@ from tarchia.models import CreateTableRequest
 from tarchia.models import TableCatalogEntry
 from tarchia.models import UpdateMetadataRequest
 from tarchia.models import UpdateSchemaRequest
+from tarchia.models import UpdateValueRequest
 from tarchia.repositories.catalog import catalog_factory
 from tarchia.storage import storage_factory
 from tarchia.utils import build_root
@@ -107,33 +108,6 @@ async def create_table(
     }
 
 
-@router.patch("/tables/{owner}/{table}", response_class=ORJSONResponse)
-async def update_table(
-    request: Request,
-    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_REG_EX),
-    table: str = Path(description="The name of the table.", regex=IDENTIFIER_REG_EX),
-):
-    catalog_entry = identify_table(owner, table)
-    body = await request.json()
-
-    if any(k in {"schema", "metadata"} for k in body):
-        raise ValueError("Schema and Metadata must be updated via dedicated end points")
-
-    if not all(k in {"visibility", "steward"} for k in body):
-        raise ValueError("Read only property attempted to be updated")
-
-    for key, value in body.items():
-        if key == "visibility":
-            catalog_entry.visibility = value
-
-    catalog_provider.update_table(table_id=catalog_entry.table_id, entry=catalog_entry)
-
-    return {
-        "message": "Table updated",
-        "table": f"{owner}.{table}",
-    }
-
-
 @router.get("/tables/{owner}/{table}", response_class=ORJSONResponse)
 async def get_table(
     owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_REG_EX),
@@ -206,9 +180,27 @@ async def get_table(
 async def get_table_snapshot(
     owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_REG_EX),
     table: str = Path(description="The name of the table.", regex=IDENTIFIER_REG_EX),
-    snapshot: str = Path(description="The snapshot to retrieve."),
+    snapshot: int = Path(description="The snapshot to retrieve."),
+    filters=None,
 ):
-    pass
+    # read the data from the catalog for this table
+    catalog_entry = identify_table(owner, table)
+    table_id = catalog_entry.table_id
+    snapshot_root = build_root(SNAPSHOT_ROOT, owner=owner, table_id=table_id)
+
+    snapshot_file = storage_provider.read_blob(f"{snapshot_root}/asat-{snapshot}.json")
+    snapshot = orjson.loads(snapshot_file)
+
+    # retrieve the list of blobs from the manifests
+    filter_conditions = parse_filters(filters)
+    blobs = get_manifest(snapshot.get("manifest_path"), storage_provider, filter_conditions)
+
+    # build the response
+    table_definition = catalog_entry.as_dict()
+    table_definition.update(snapshot)
+    table_definition["blobs"] = blobs
+
+    return table_definition
 
 
 @router.delete("/tables/{owner}/{table}", response_class=ORJSONResponse)
@@ -237,7 +229,7 @@ async def delete_table(
 
     return {
         "message": "Table Deleted",
-        "table": table_id,
+        "table": f"{owner}.{table}",
     }
 
 
@@ -260,18 +252,47 @@ async def update_schema(
     catalog_entry = identify_table(owner=owner, table=table)
     table_id = catalog_entry.table_id
     catalog_entry.current_schema = schema
-    catalog_provider.update_table_metadata(table_id, catalog_entry)
+    catalog_provider.update_table(table_id, catalog_entry)
 
     return {
         "message": "Schema Updated",
-        "table": table_id,
+        "table": f"{owner}.{table}",
     }
 
 
 @router.patch("/tables/{owner}/{table}/metadata")
 async def update_metadata(
-    schema: UpdateMetadataRequest,
+    metadata: UpdateMetadataRequest,
     owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_REG_EX),
     table: str = Path(description="The name of the table.", regex=IDENTIFIER_REG_EX),
 ):
-    pass
+    catalog_entry = identify_table(owner, table)
+    table_id = catalog_entry.table_id
+    catalog_entry.metadata = metadata.metadata
+    catalog_provider.update_table(table_id=table_id, entry=catalog_entry)
+
+    return {
+        "message": "Metadata updated",
+        "table": f"{owner}.{table}",
+    }
+
+
+@router.patch("/tables/{owner}/{table}/{attribute}", response_class=ORJSONResponse)
+async def update_table(
+    value: UpdateValueRequest,
+    attribute: str,
+    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", regex=IDENTIFIER_REG_EX),
+):
+    if attribute not in {"visibility", "steward"}:
+        raise ValueError(f"Data attribute {attribute} cannot be modified via the API")
+
+    catalog_entry = identify_table(owner, table)
+    setattr(catalog_entry, attribute, value.value)
+
+    catalog_provider.update_table(table_id=catalog_entry.table_id, entry=catalog_entry)
+
+    return {
+        "message": "Table updated",
+        "table": f"{owner}.{table}",
+    }
