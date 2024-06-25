@@ -69,13 +69,13 @@ class AmbiguousTableError(Exception):
 
 
 class TableHasNoDataError(Exception):
-    def __init__(self, table: str, as_at: Optional[int] = None):
+    def __init__(self, owner: str, table: str, as_at: Optional[int] = None):
         self.table = table
         self.as_at = as_at
 
         if not as_at:
-            message = f"Table with reference {table} has no data."
+            message = f"Table with reference {table} is empty."
         else:
-            message = f"Table with reference {table} had no data at {as_at}."
+            message = f"Table with reference {table} was empty at {as_at}."
 
         super().__init__(message)

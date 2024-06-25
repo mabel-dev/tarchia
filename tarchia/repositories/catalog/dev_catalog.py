@@ -54,7 +54,6 @@ class DevelopmentCatalogProvider(CatalogProvider):
         """
 
         self.store.upsert("catalog", entry.as_dict(), {"table_id": table_id})
-        pass
 
     def list_tables(self, owner: str) -> List[TableCatalogEntry]:
         """

@@ -135,3 +135,7 @@ class UpdateSchemaRequest(TarchiaBaseModel):
 
 class UpdateMetadataRequest(TarchiaBaseModel):
     metadata: dict = Field(default_factory=dict)
+
+
+class UpdateValueRequest(TarchiaBaseModel):
+    value: Any
