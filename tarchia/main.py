@@ -27,5 +27,5 @@ application.add_middleware(AuthorizationMiddleware)
 application.add_middleware(AuditMiddleware)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     run("main:application", host="0.0.0.0", port=int(environ.get("PORT", 8080)))  # nosec

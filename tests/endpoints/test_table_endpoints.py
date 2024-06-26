@@ -1,4 +1,5 @@
 import sys
+import orjson
 import os
 
 os.environ["CATALOG_NAME"] = "test_catalog.json"
@@ -44,6 +45,7 @@ def test_create_read_update_delete_table():
     # can we update this table
     response = client.patch(url="/v1/tables/joocer/test_dataset/visibility", content='{"value":"INTERNAL"}')
     assert response.status_code == 200, f"{response.status_code} - {response.content}"
+
     response = client.get(url="/v1/tables/joocer/test_dataset")
     assert response.status_code == 200, f"{response.status_code} - {response.content}"
     assert response.json()["visibility"] == "INTERNAL", response.json()["visibility"]
@@ -56,7 +58,81 @@ def test_create_read_update_delete_table():
     response = client.get(url="/v1/tables/joocer/test_dataset")
     assert response.status_code == 404, f"{response.status_code} - {response.content}"
 
+
+def test_maintain_table_metadata():
+
+    client = TestClient(application)
+
+    new_table = CreateTableRequest(
+        name="test_dataset_metadata_test",
+        location="gs://dataset/",
+        steward="bob",
+        table_schema=Schema(columns=[Column(name="column")]),
+    )
+
+    # create the table
+    response = client.post(url="/v1/tables/joocer", content=new_table.serialize())
+    assert response.status_code == 200, f"{response.status_code} - {response.content}"
+
+    # confirm we know the metadata value before we start
+    response = client.get(url="/v1/tables/joocer/test_dataset_metadata_test")
+    assert response.status_code == 200, f"{response.status_code} - {response.content}"
+    assert response.json()["metadata"] == {}, response.json()["metadata"]
+
+    # update the metadata
+    response = client.patch(url="/v1/tables/joocer/test_dataset_metadata_test/metadata", content=orjson.dumps({"metadata": {"set":True}}))
+    assert response.status_code == 200, f"{response.status_code} - {response.content}"
+
+    # confirm the metadata has been updated correctly
+    response = client.get(url="/v1/tables/joocer/test_dataset_metadata_test")
+    assert response.status_code == 200, f"{response.status_code} - {response.content}"
+    metadata = response.json()["metadata"]
+    assert metadata is not None
+    assert metadata["set"], metadata
+
+    # delete the table
+    response = client.delete(url="/v1/tables/joocer/test_dataset_metadata_test")
+    assert response.status_code == 200, f"{response.status_code} - {response.content}"
+
+
+def test_maintain_table_schema():
+
+    client = TestClient(application)
+
+    new_table = CreateTableRequest(
+        name="test_dataset_schema_test",
+        location="gs://dataset/",
+        steward="bob",
+        table_schema=Schema(columns=[Column(name="column")]),
+    )
+
+    # create the table
+    response = client.post(url="/v1/tables/joocer", content=new_table.serialize())
+    assert response.status_code == 200, f"{response.status_code} - {response.content}"
+
+    # confirm we know the schema value before we start
+    response = client.get(url="/v1/tables/joocer/test_dataset_schema_test")
+    assert response.status_code == 200, f"{response.status_code} - {response.content}"
+    assert response.json()["current_schema"] == {'columns': [{'name': 'column'}]}
+
+    # update the schema
+    response = client.patch(url="/v1/tables/joocer/test_dataset_schema_test/schema", content=Schema(columns=[Column(name="new")]).serialize())
+    assert response.status_code == 200, f"{response.status_code} - {response.content}"
+
+    # confirm the schema has been updated correctly
+    response = client.get(url="/v1/tables/joocer/test_dataset_schema_test")
+    assert response.status_code == 200, f"{response.status_code} - {response.content}"
+    schema = response.json()["current_schema"]
+    assert schema is not None
+    assert response.json()["current_schema"] == {'columns': [{'name': 'new'}]}, schema
+
+    # delete the table
+    response = client.delete(url="/v1/tables/joocer/test_dataset_schema_test")
+    assert response.status_code == 200, f"{response.status_code} - {response.content}"
+
+
+
 if __name__ == "__main__":  # pragma: no cover
     from tests.tools import run_tests
-    test_create_read_update_delete_table()
+
     run_tests()

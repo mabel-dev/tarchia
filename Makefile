@@ -33,7 +33,7 @@ coverage:
 	clear
 	export MANUAL_TEST=1
 	python -m coverage run -m pytest 
-	python -m coverage report --include=opteryx/** -m
+	python -m coverage report --include=tarchia/** -m
 
 compile:
 	python setup.py build_ext --inplace

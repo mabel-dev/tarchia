@@ -21,7 +21,7 @@ class MissingDependencyError(Exception):  # pragma: no cover
         super().__init__(message)
 
 
-class InvalidConfigurationError(Exception):
+class InvalidConfigurationError(Exception):  # pragma: no cover
     def __init__(self, setting: str, source: Optional[str] = None):
         self.setting = setting
         self.source = source
@@ -34,15 +34,15 @@ class InvalidConfigurationError(Exception):
         super().__init__(message)
 
 
-class InvalidFilterError(Exception):
+class InvalidFilterError(Exception):  # pragma: no cover
     """Exception raised when filters are not formatted correctly"""
 
 
-class UnmetRequirementError(Exception):
+class UnmetRequirementError(Exception):  # pragma: no cover
     """Exception raised when a requirement for operation is not met."""
 
 
-class DataEntryError(Exception):
+class DataEntryError(Exception):  # pragma: no cover
     def __init__(self, endpoint: str, fields: List[str], message: str):
         self.endpoint = endpoint
         self.fields = fields
@@ -51,7 +51,7 @@ class DataEntryError(Exception):
         super().__init__(message)
 
 
-class TableNotFoundError(Exception):
+class TableNotFoundError(Exception):  # pragma: no cover
     def __init__(self, owner: str, table: str):
         self.owner = owner
         self.table = table
@@ -60,7 +60,7 @@ class TableNotFoundError(Exception):
         super().__init__(message)
 
 
-class AmbiguousTableError(Exception):
+class AmbiguousTableError(Exception):  # pragma: no cover
     def __init__(self, table: str):
         self.table = table
 
@@ -68,7 +68,7 @@ class AmbiguousTableError(Exception):
         super().__init__(message)
 
 
-class TableHasNoDataError(Exception):
+class TableHasNoDataError(Exception):  # pragma: no cover
     def __init__(self, owner: str, table: str, as_at: Optional[int] = None):
         self.table = table
         self.as_at = as_at

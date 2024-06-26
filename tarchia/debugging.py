@@ -29,7 +29,7 @@ import importlib.util
 import sys
 
 
-class DebuggingImportFinder(importlib.abc.MetaPathFinder):
+class DebuggingImportFinder(importlib.abc.MetaPathFinder):  # pragma: no cover
     """
     Custom Import Finder that looks for modules starting with 'opteryx' or 'Orso'.
     """
@@ -51,7 +51,7 @@ class DebuggingImportFinder(importlib.abc.MetaPathFinder):
         return spec
 
 
-class DebuggingImportLoader(importlib.abc.SourceLoader):
+class DebuggingImportLoader(importlib.abc.SourceLoader):  # pragma: no cover
     """
     Custom Import Loader to process Python source code before it's actually imported.
     """
@@ -89,5 +89,5 @@ class DebuggingImportLoader(importlib.abc.SourceLoader):
 
 
 # Register the custom MetaPathFinder
-print(f"{datetime.datetime.now()} [LOADER] Loading application in DEBUG mode.")
-sys.meta_path.insert(0, DebuggingImportFinder())
+print(f"{datetime.datetime.now()} [LOADER] Loading application in DEBUG mode.")  # pragma: no cover
+sys.meta_path.insert(0, DebuggingImportFinder())  # pragma: no cover
