@@ -15,7 +15,7 @@ def identify_table(owner: str, table: str) -> TableCatalogEntry:
     catalog_entry = catalog_provider.get_table(owner=owner, table=table)
     if catalog_entry is None:
         raise TableNotFoundError(owner=owner, table=table)
-    return catalog_entry
+    return TableCatalogEntry(**catalog_entry)
 
 
 def identify_owner(name: str) -> OwnerEntry:
@@ -23,4 +23,4 @@ def identify_owner(name: str) -> OwnerEntry:
     catalog_entry = catalog_provider.get_owner(name=name)
     if catalog_entry is None:
         raise OwnerNotFoundError(owner=name)
-    return catalog_entry
+    return OwnerEntry(**catalog_entry)
