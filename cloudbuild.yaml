@@ -39,5 +39,5 @@ steps:
         "--memory",
         "1Gi",
         "--update-env-vars",
-        "SERVICE=$REPO_NAME,PROJECT_NAME=$PROJECT_ID,PROJECT_NUMBER=$PROJECT_NUMBER"
+        "SERVICE=$REPO_NAME,PROJECT_NAME=$PROJECT_ID,PROJECT_NUMBER=$PROJECT_NUMBER;CATALOG_NAME=tarchia;"
       ]
