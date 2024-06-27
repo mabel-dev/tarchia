@@ -28,9 +28,9 @@ class AuditMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
+        outcome = "unknown"
+        start = time.monotonic_ns()
         try:
-            outcome = "unknown"
-            start = time.monotonic_ns()
             result = await call_next(request)
             outcome = "success"
             return result
@@ -50,7 +50,6 @@ class AuditMiddleware(BaseHTTPMiddleware):
 
             code = str(uuid4())
             print(f"{code}\n{e}")
-            raise e
             return Response(status_code=500, content=f"Unexpected Error ({code})")
         finally:
             audit_record = {
