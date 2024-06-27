@@ -4,8 +4,10 @@ development, prototyping and for regression testing.
 """
 
 from typing import List
+from typing import Optional
 
 from tarchia.exceptions import AmbiguousTableError
+from tarchia.models import OwnerEntry
 from tarchia.models import TableCatalogEntry
 from tarchia.repositories.catalog.provider_base import CatalogProvider
 
@@ -28,7 +30,7 @@ class DevelopmentCatalogProvider(CatalogProvider):
         self.db_path = db_path
         self.store = DocumentStore(self.db_path)
 
-    def get_table(self, owner: str, table: str) -> TableCatalogEntry:
+    def get_table(self, owner: str, table: str) -> Optional[TableCatalogEntry]:
         """
         Retrieve metadata for a specified table, including its schema and manifest references.
 
@@ -42,7 +44,7 @@ class DevelopmentCatalogProvider(CatalogProvider):
         result = self.store.find("catalog", {"owner": owner, "name": table})
         if len(result) > 1:
             raise AmbiguousTableError(owner=owner, table=table)
-        return result[0] if result else None
+        return TableCatalogEntry(**result[0]) if result else None
 
     def update_table(self, table_id: str, entry: TableCatalogEntry) -> None:
         """
@@ -73,3 +75,13 @@ class DevelopmentCatalogProvider(CatalogProvider):
             table_id (str): The identifier of the table to be deleted.
         """
         self.store.delete("catalog", {"table_id": table_id})
+
+    def get_owner(self, name: str) -> OwnerEntry:
+        result = self.store.find("owners", {"name": name})
+        return OwnerEntry(**result[0]) if result else None
+
+    def update_owner(self, entry: OwnerEntry) -> None:
+        self.store.upsert("owners", entry.as_dict(), {"owner_id": entry.owner_id})
+
+    def delete_owner(self, entry: OwnerEntry) -> None:
+        self.store.delete("owners", {"owner_id": entry.owner_id})

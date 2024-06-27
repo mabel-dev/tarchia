@@ -26,7 +26,7 @@ from tarchia.config import METADATA_ROOT
 from tarchia.repositories.catalog import catalog_factory
 from tarchia.storage import storage_factory
 from tarchia.utils import generate_uuid
-from tarchia.utils.catalog import identify_table
+from tarchia.utils.catalogs import identify_table
 
 SNAPSHOT_ROOT = f"{METADATA_ROOT}/[table_id]/snapshots/"
 MANIFEST_ROOT = f"{METADATA_ROOT}/[table_id]/manifests/"

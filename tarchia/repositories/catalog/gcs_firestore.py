@@ -9,6 +9,7 @@ from tarchia import config
 from tarchia.exceptions import AmbiguousTableError
 from tarchia.exceptions import MissingDependencyError
 from tarchia.exceptions import UnmetRequirementError
+from tarchia.models import OwnerEntry
 from tarchia.models import TableCatalogEntry
 from tarchia.repositories.catalog.provider_base import CatalogProvider
 
@@ -66,7 +67,9 @@ class FirestoreCatalogProvider(CatalogProvider):
         from google.cloud.firestore_v1.base_query import FieldFilter
 
         database = firestore.Client(project=self.project_id)
-        documents = database.collection(self.collection)
+        documents = (
+            database.collection(self.collection).document("collections").collection("tables")
+        )
 
         documents = documents.where(filter=FieldFilter("owner", "==", owner)).where(
             filter=FieldFilter("name", "==", table)
@@ -90,7 +93,9 @@ class FirestoreCatalogProvider(CatalogProvider):
         from google.cloud import firestore
 
         database = firestore.Client(project=self.project_id)
-        database.collection(self.collection).document(entry.table_id).set(entry.as_dict())
+        database.collection(self.collection).document("collections").collection("tables").document(
+            entry.table_id
+        ).set(entry.as_dict())
 
     def list_tables(self, owner: str) -> List[TableCatalogEntry]:
         """
@@ -103,7 +108,9 @@ class FirestoreCatalogProvider(CatalogProvider):
         from google.cloud.firestore_v1.base_query import FieldFilter
 
         database = firestore.Client(project=self.project_id)
-        documents = database.collection(self.collection)
+        documents = (
+            database.collection(self.collection).document("collections").collection("tables")
+        )
 
         documents = documents.where(filter=FieldFilter("owner", "==", owner))
         documents = documents.stream()
@@ -119,4 +126,39 @@ class FirestoreCatalogProvider(CatalogProvider):
         from google.cloud import firestore
 
         database = firestore.Client(project=self.project_id)
-        database.collection(self.collection).document(table_id).delete()
+        database.collection(self.collection).document("collections").collection("tables").document(
+            table_id
+        ).delete()
+
+    def get_owner(self, name: str) -> OwnerEntry:
+        from google.cloud import firestore
+        from google.cloud.firestore_v1.base_query import FieldFilter
+
+        database = firestore.Client(project=self.project_id)
+
+        documents = (
+            database.collection(self.collection).document("collections").collection("owners")
+        )
+
+        documents = documents.where(filter=FieldFilter("name", "==", name))
+        documents = documents.stream()
+        documents = list(doc.to_dict() for doc in documents)
+        if len(documents) == 1:
+            return documents[0]
+        return None
+
+    def update_owner(self, entry: OwnerEntry) -> None:
+        from google.cloud import firestore
+
+        database = firestore.Client(project=self.project_id)
+        database.collection(self.collection).document("collections").collection("owner").document(
+            entry.owner_id
+        ).set(entry.as_dict())
+
+    def delete_owner(self, entry: OwnerEntry) -> None:
+        from google.cloud import firestore
+
+        database = firestore.Client(project=self.project_id)
+        database.collection(self.collection).document("collections").collection("owner").delete(
+            entry.owner_id
+        )

@@ -60,11 +60,27 @@ class TableNotFoundError(Exception):  # pragma: no cover
         super().__init__(message)
 
 
+class OwnerNotFoundError(Exception):  # pragma: no cover
+    def __init__(self, owner: str):
+        self.owner = owner
+
+        message = f"Owner with reference {owner} could not be found."
+        super().__init__(message)
+
+
 class AmbiguousTableError(Exception):  # pragma: no cover
     def __init__(self, table: str):
         self.table = table
 
         message = f"Multiple tables with reference {table} were found."
+        super().__init__(message)
+
+
+class AlreadyExistsError(Exception):  # pragma: no cover
+    def __init__(self, entity: str):
+        self.entity = entity
+
+        message = f"Item with name {entity} already exists."
         super().__init__(message)
 
 

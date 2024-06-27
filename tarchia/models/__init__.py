@@ -2,7 +2,8 @@ from .metadata_models import Column
 from .metadata_models import DatasetPermissions
 from .metadata_models import EncryptionDetails
 from .metadata_models import OrsoTypes
-from .metadata_models import OwnerModel
+from .metadata_models import OwnerEntry
+from .metadata_models import OwnerType
 from .metadata_models import RolePermission
 from .metadata_models import Schema
 from .metadata_models import Snapshot

@@ -1,3 +1,15 @@
+"""
+scenarios to test
+TABLES
+- cannot create a table for non existant owner
+
+OWNERS
+- create
+- update
+- delete
+- cannot delete an owner with tables
+"""
+
 import sys
 import orjson
 import os
@@ -13,12 +25,15 @@ except FileNotFoundError:
 sys.path.insert(1, os.path.join(sys.path[0], "../.."))
 
 from fastapi.testclient import TestClient
-from tarchia.models import CreateTableRequest
+from tarchia.models import CreateTableRequest, CreateOwnerRequest, OwnerType
 from tarchia.models import Column
 from tarchia.models import Schema
 from tarchia.main import application
+from tests.common import ensure_owner
 
 def test_create_read_update_delete_table():
+
+    ensure_owner()
 
     client = TestClient(application)
 
@@ -61,6 +76,8 @@ def test_create_read_update_delete_table():
 
 def test_maintain_table_metadata():
 
+    ensure_owner()
+
     client = TestClient(application)
 
     new_table = CreateTableRequest(
@@ -96,6 +113,8 @@ def test_maintain_table_metadata():
 
 
 def test_maintain_table_schema():
+
+    ensure_owner()
 
     client = TestClient(application)
 

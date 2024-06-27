@@ -3,6 +3,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 
+from tarchia.models import OwnerEntry
 from tarchia.models import TableCatalogEntry
 
 
@@ -56,6 +57,21 @@ class CatalogProvider:
         Parameters:
             table_id (str): The identifier of the table to be deleted.
         """
+        raise NotImplementedError(
+            f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name} is not implemented."
+        )
+
+    def get_owner(self, name: str) -> OwnerEntry:
+        raise NotImplementedError(
+            f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name} is not implemented."
+        )
+
+    def update_owner(self, entry: OwnerEntry) -> None:
+        raise NotImplementedError(
+            f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name} is not implemented."
+        )
+
+    def delete_owner(self, entry: OwnerEntry) -> None:
         raise NotImplementedError(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name} is not implemented."
         )
