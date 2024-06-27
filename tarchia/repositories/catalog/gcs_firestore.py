@@ -151,7 +151,7 @@ class FirestoreCatalogProvider(CatalogProvider):
         from google.cloud import firestore
 
         database = firestore.Client(project=self.project_id)
-        database.collection(self.collection).document("collections").collection("owner").document(
+        database.collection(self.collection).document("collections").collection("owners").document(
             entry.owner_id
         ).set(entry.as_dict())
 
@@ -159,6 +159,6 @@ class FirestoreCatalogProvider(CatalogProvider):
         from google.cloud import firestore
 
         database = firestore.Client(project=self.project_id)
-        database.collection(self.collection).document("collections").collection("owner").delete(
+        database.collection(self.collection).document("collections").collection("owners").delete(
             entry.owner_id
         )
