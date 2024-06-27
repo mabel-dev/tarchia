@@ -21,6 +21,7 @@ from starlette.responses import Response
 from tarchia.exceptions import AlreadyExistsError
 from tarchia.exceptions import AmbiguousTableError
 from tarchia.exceptions import DataEntryError
+from tarchia.exceptions import OwnerNotFoundError
 from tarchia.exceptions import TableNotFoundError
 
 
@@ -38,7 +39,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
         except DataEntryError as e:
             outcome = "error"
             return Response(status_code=422, content=se)
-        except TableNotFoundError as e:
+        except (TableNotFoundError, OwnerNotFoundError) as e:
             outcome = "error"
             return Response(status_code=404, content=str(e))
         except AlreadyExistsError as e:
@@ -50,6 +51,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
 
             code = str(uuid4())
             print(f"{code}\n{e}")
+            raise e
             return Response(status_code=500, content=f"Unexpected Error ({code})")
         finally:
             audit_record = {

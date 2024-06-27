@@ -30,7 +30,7 @@ class DevelopmentCatalogProvider(CatalogProvider):
         self.db_path = db_path
         self.store = DocumentStore(self.db_path)
 
-    def get_table(self, owner: str, table: str) -> Optional[TableCatalogEntry]:
+    def get_table(self, owner: str, table: str) -> Optional[dict]:
         """
         Retrieve metadata for a specified table, including its schema and manifest references.
 
@@ -44,7 +44,7 @@ class DevelopmentCatalogProvider(CatalogProvider):
         result = self.store.find("catalog", {"owner": owner, "name": table})
         if len(result) > 1:
             raise AmbiguousTableError(owner=owner, table=table)
-        return TableCatalogEntry(**result[0]) if result else None
+        return result[0] if result else None
 
     def update_table(self, table_id: str, entry: TableCatalogEntry) -> None:
         """
@@ -57,7 +57,7 @@ class DevelopmentCatalogProvider(CatalogProvider):
 
         self.store.upsert("catalog", entry.as_dict(), {"table_id": table_id})
 
-    def list_tables(self, owner: str) -> List[TableCatalogEntry]:
+    def list_tables(self, owner: str) -> List[dict]:
         """
         List all tables in the catalog along with their basic metadata.
 
@@ -76,12 +76,12 @@ class DevelopmentCatalogProvider(CatalogProvider):
         """
         self.store.delete("catalog", {"table_id": table_id})
 
-    def get_owner(self, name: str) -> OwnerEntry:
+    def get_owner(self, name: str) -> dict:
         result = self.store.find("owners", {"name": name})
-        return OwnerEntry(**result[0]) if result else None
+        return result[0] if result else None
 
     def update_owner(self, entry: OwnerEntry) -> None:
         self.store.upsert("owners", entry.as_dict(), {"owner_id": entry.owner_id})
 
-    def delete_owner(self, entry: OwnerEntry) -> None:
-        self.store.delete("owners", {"owner_id": entry.owner_id})
+    def delete_owner(self, owner_id: str) -> None:
+        self.store.delete("owners", {"owner_id": owner_id})

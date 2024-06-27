@@ -2,12 +2,6 @@
 scenarios to test
 TABLES
 - cannot create a table for non existant owner
-
-OWNERS
-- create
-- update
-- delete
-- cannot delete an owner with tables
 """
 
 import sys

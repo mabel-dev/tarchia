@@ -53,7 +53,7 @@ class FirestoreCatalogProvider(CatalogProvider):
 
         self.collection = db_path
 
-    def get_table(self, owner: str, table: str) -> TableCatalogEntry:
+    def get_table(self, owner: str, table: str) -> dict:
         """
         Retrieve metadata for a specified table, including its schema and manifest references.
 
@@ -67,9 +67,7 @@ class FirestoreCatalogProvider(CatalogProvider):
         from google.cloud.firestore_v1.base_query import FieldFilter
 
         database = firestore.Client(project=self.project_id)
-        documents = (
-            database.collection(self.collection).document("catalog").collection("tables")
-        )
+        documents = database.collection(self.collection).document("catalog").collection("tables")
 
         documents = documents.where(filter=FieldFilter("owner", "==", owner)).where(
             filter=FieldFilter("name", "==", table)
@@ -108,9 +106,7 @@ class FirestoreCatalogProvider(CatalogProvider):
         from google.cloud.firestore_v1.base_query import FieldFilter
 
         database = firestore.Client(project=self.project_id)
-        documents = (
-            database.collection(self.collection).document("catalog").collection("tables")
-        )
+        documents = database.collection(self.collection).document("catalog").collection("tables")
 
         documents = documents.where(filter=FieldFilter("owner", "==", owner))
         documents = documents.stream()
@@ -130,15 +126,13 @@ class FirestoreCatalogProvider(CatalogProvider):
             table_id
         ).delete()
 
-    def get_owner(self, name: str) -> OwnerEntry:
+    def get_owner(self, name: str) -> dict:
         from google.cloud import firestore
         from google.cloud.firestore_v1.base_query import FieldFilter
 
         database = firestore.Client(project=self.project_id)
 
-        documents = (
-            database.collection(self.collection).document("catalog").collection("owners")
-        )
+        documents = database.collection(self.collection).document("catalog").collection("owners")
 
         documents = documents.where(filter=FieldFilter("name", "==", name))
         documents = documents.stream()
@@ -155,10 +149,10 @@ class FirestoreCatalogProvider(CatalogProvider):
             entry.owner_id
         ).set(entry.as_dict())
 
-    def delete_owner(self, entry: OwnerEntry) -> None:
+    def delete_owner(self, owner_id: str) -> None:
         from google.cloud import firestore
 
         database = firestore.Client(project=self.project_id)
         database.collection(self.collection).document("catalog").collection("owners").delete(
-            entry.owner_id
+            owner_id
         )

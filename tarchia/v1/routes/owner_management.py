@@ -59,7 +59,7 @@ async def delete_owner(owner: str):
     tables = catalog_provider.list_tables(owner)
     if len(tables) > 0:
         raise ValueError("Cannot delete an owner of tables")
-    catalog_provider.delete_owner(owner)
+    catalog_provider.delete_owner(entry.owner_id)
     return {
         "message": "Owner Deleted",
         "owner": owner,
