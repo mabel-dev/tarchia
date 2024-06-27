@@ -18,6 +18,7 @@ from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
+from tarchia.exceptions import AlreadyExistsError
 from tarchia.exceptions import AmbiguousTableError
 from tarchia.exceptions import DataEntryError
 from tarchia.exceptions import TableNotFoundError
@@ -40,10 +41,9 @@ class AuditMiddleware(BaseHTTPMiddleware):
         except TableNotFoundError as e:
             outcome = "error"
             return Response(status_code=404, content=str(e))
-        except ValueError as e:
+        except AlreadyExistsError as e:
             outcome = "error"
-            print("Validation Error", e)
-            return Response(status_code=422, content=str(e))
+            return Response(status_code=409, content=str(e))
         except Exception as e:
             outcome = "error"
             from uuid import uuid4

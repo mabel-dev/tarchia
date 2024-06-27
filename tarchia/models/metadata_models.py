@@ -180,7 +180,7 @@ class TableCatalogEntry(TarchiaBaseModel):
     metadata: dict = Field(default_factory=dict)
 
 
-class OwnerModel(TarchiaBaseModel):
+class OwnerEntry(TarchiaBaseModel):
     """
     Model for owners.
 
@@ -192,6 +192,7 @@ class OwnerModel(TarchiaBaseModel):
     """
 
     name: str
+    owner_id: str
     type: OwnerType
     steward: str
     memberships: List[str]

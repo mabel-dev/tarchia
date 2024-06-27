@@ -1,6 +1,7 @@
 lint:
-	python -m pip install --quiet --upgrade pycln isort ruff yamllint
+	python -m pip install --quiet --upgrade pycln isort ruff yamllint bandit
 #	python -m yamllint .
+	python -m bandit tarchia
 	python -m ruff check --fix --exit-zero
 	python -m pycln .
 	python -m isort .

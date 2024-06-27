@@ -13,6 +13,7 @@ from fastapi.responses import ORJSONResponse
 from tarchia.config import METADATA_ROOT
 from tarchia.constants import IDENTIFIER_REG_EX
 from tarchia.constants import SNAPSHOT_ROOT
+from tarchia.exceptions import AlreadyExistsError
 from tarchia.exceptions import TableHasNoDataError
 from tarchia.manifests import get_manifest
 from tarchia.manifests import parse_filters
@@ -25,7 +26,8 @@ from tarchia.repositories.catalog import catalog_factory
 from tarchia.storage import storage_factory
 from tarchia.utils import build_root
 from tarchia.utils import generate_uuid
-from tarchia.utils.catalog import identify_table
+from tarchia.utils.catalogs import identify_owner
+from tarchia.utils.catalogs import identify_table
 
 router = APIRouter()
 
@@ -48,6 +50,23 @@ async def list_tables(owner: str, request: Request):
 
     tables = catalog_provider.list_tables(owner)
     for table in tables:
+        # filter down the items we return
+        table = {
+            k: v
+            for k, v in table.items()
+            if k
+            in {
+                "table_id",
+                "current_snapshot_id",
+                "name",
+                "description",
+                "visibility",
+                "owner",
+                "last_updated_ms",
+                "steward",
+                "metadata",
+            }
+        }
         table_id = table["table_id"]
         current_snapshot_id = table.get("current_snapshot_id")
         if current_snapshot_id is not None:
@@ -61,7 +80,7 @@ async def list_tables(owner: str, request: Request):
 @router.post("/tables/{owner}", response_class=ORJSONResponse)
 async def create_table(
     request: CreateTableRequest,
-    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_REG_EX),
+    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
 ):
     """
     Create a new table in the catalog.
@@ -74,7 +93,11 @@ async def create_table(
     # check if we have a table with that name already
     catalog_entry = catalog_provider.get_table(owner=owner, table=request.name)
     if catalog_entry:
-        raise ValueError("table name already exists")
+        # return a 409
+        raise AlreadyExistsError(entity=request.name)
+
+    # can we find the owner?
+    identify_owner(name=owner)
 
     table_id = generate_uuid()
 
@@ -110,8 +133,8 @@ async def create_table(
 
 @router.get("/tables/{owner}/{table}", response_class=ORJSONResponse)
 async def get_table(
-    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_REG_EX),
-    table: str = Path(description="The name of the table.", regex=IDENTIFIER_REG_EX),
+    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
     as_at: Optional[int] = Query(
         default=None,
         description="Retrieve the table state as of this timestamp, in nanoseconds after Linux epoch.",
@@ -178,8 +201,8 @@ async def get_table(
 
 @router.get("/tables/{owner}/{table}/snapshots/{snapshot}", response_class=ORJSONResponse)
 async def get_table_snapshot(
-    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_REG_EX),
-    table: str = Path(description="The name of the table.", regex=IDENTIFIER_REG_EX),
+    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
     snapshot: int = Path(description="The snapshot to retrieve."),
     filters=None,
 ):
@@ -205,8 +228,8 @@ async def get_table_snapshot(
 
 @router.delete("/tables/{owner}/{table}", response_class=ORJSONResponse)
 async def delete_table(
-    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_REG_EX),
-    table: str = Path(description="The name of the table.", regex=IDENTIFIER_REG_EX),
+    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
 ):
     """
     Delete a table from the catalog.
@@ -236,8 +259,8 @@ async def delete_table(
 @router.patch("/tables/{owner}/{table}/schema")
 async def update_schema(
     schema: UpdateSchemaRequest,
-    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_REG_EX),
-    table: str = Path(description="The name of the table.", regex=IDENTIFIER_REG_EX),
+    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
 ):
     for col in schema.columns:
         col.validate()
@@ -263,8 +286,8 @@ async def update_schema(
 @router.patch("/tables/{owner}/{table}/metadata")
 async def update_metadata(
     metadata: UpdateMetadataRequest,
-    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_REG_EX),
-    table: str = Path(description="The name of the table.", regex=IDENTIFIER_REG_EX),
+    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
 ):
     catalog_entry = identify_table(owner, table)
     table_id = catalog_entry.table_id
@@ -281,8 +304,8 @@ async def update_metadata(
 async def update_table(
     value: UpdateValueRequest,
     attribute: str,
-    owner: str = Path(description="The owner of the table.", regex=IDENTIFIER_REG_EX),
-    table: str = Path(description="The name of the table.", regex=IDENTIFIER_REG_EX),
+    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
 ):
     if attribute not in {"visibility", "steward"}:
         raise ValueError(f"Data attribute {attribute} cannot be modified via the API")

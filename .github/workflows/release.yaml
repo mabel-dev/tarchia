@@ -2,7 +2,7 @@ name: release
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
 
@@ -13,20 +13,20 @@ jobs:
       id-token: write
 
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - uses: actions/setup-python@v4
-      with:
-        python-version: "3.x"
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
 
-    - name: app dependencies
-      run: python -m pip install -r requirements.txt
+      - name: app dependencies
+        run: python -m pip install -r requirements.txt
 
-    - name: build deps
-      run: python -m pip install -U build cython
+      - name: build deps
+        run: python -m pip install -U build cython
 
-    - name: build
-      run: python -m build
+      - name: build
+        run: python -m build
 
-    - name: Publish package distributions to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
