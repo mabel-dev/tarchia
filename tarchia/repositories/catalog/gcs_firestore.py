@@ -67,7 +67,7 @@ class FirestoreCatalogProvider(CatalogProvider):
         from google.cloud.firestore_v1.base_query import FieldFilter
 
         database = firestore.Client(project=self.project_id)
-        documents = database.collection(self.collection).document("catalog").collection("tables")
+        documents = database.collection(self.collection)
 
         documents = documents.where(filter=FieldFilter("owner", "==", owner)).where(
             filter=FieldFilter("name", "==", table)
@@ -91,9 +91,9 @@ class FirestoreCatalogProvider(CatalogProvider):
         from google.cloud import firestore
 
         database = firestore.Client(project=self.project_id)
-        database.collection(self.collection).document("catalog").collection("tables").document(
-            entry.table_id
-        ).set(entry.as_dict())
+        database.collection(self.collection).document(f"table-{entry.table_id}").set(
+            entry.as_dict()
+        )
 
     def list_tables(self, owner: str) -> List[TableCatalogEntry]:
         """
@@ -106,7 +106,7 @@ class FirestoreCatalogProvider(CatalogProvider):
         from google.cloud.firestore_v1.base_query import FieldFilter
 
         database = firestore.Client(project=self.project_id)
-        documents = database.collection(self.collection).document("catalog").collection("tables")
+        documents = database.collection(self.collection)
 
         documents = documents.where(filter=FieldFilter("owner", "==", owner))
         documents = documents.stream()
@@ -122,9 +122,7 @@ class FirestoreCatalogProvider(CatalogProvider):
         from google.cloud import firestore
 
         database = firestore.Client(project=self.project_id)
-        database.collection(self.collection).document("catalog").collection("tables").document(
-            table_id
-        ).delete()
+        database.collection(self.collection).document(f"table-{table_id}").delete()
 
     def get_owner(self, name: str) -> dict:
         from google.cloud import firestore
@@ -132,7 +130,7 @@ class FirestoreCatalogProvider(CatalogProvider):
 
         database = firestore.Client(project=self.project_id)
 
-        documents = database.collection(self.collection).document("catalog").collection("owners")
+        documents = database.collection(self.collection)
 
         documents = documents.where(filter=FieldFilter("name", "==", name))
         documents = documents.stream()
@@ -145,14 +143,12 @@ class FirestoreCatalogProvider(CatalogProvider):
         from google.cloud import firestore
 
         database = firestore.Client(project=self.project_id)
-        database.collection(self.collection).document("catalog").collection("owners").document(
-            entry.owner_id
-        ).set(entry.as_dict())
+        database.collection(self.collection).document(f"owners-{entry.owner_id}").set(
+            entry.as_dict()
+        )
 
     def delete_owner(self, owner_id: str) -> None:
         from google.cloud import firestore
 
         database = firestore.Client(project=self.project_id)
-        database.collection(self.collection).document("catalog").collection("owners").delete(
-            owner_id
-        )
+        database.collection(self.collection).delete(f"owners-{owner_id}")
