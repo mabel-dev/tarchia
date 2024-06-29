@@ -41,7 +41,7 @@ class DevelopmentCatalogProvider(CatalogProvider):
             Dict[str, Any]: A dictionary containing the metadata of the table.
         """
 
-        result = self.store.find("catalog", {"owner": owner, "name": table})
+        result = self.store.find("tables", {"owner": owner, "name": table})
         if len(result) > 1:
             raise AmbiguousTableError(owner=owner, table=table)
         return result[0] if result else None
@@ -55,7 +55,7 @@ class DevelopmentCatalogProvider(CatalogProvider):
             metadata (Dict[str, Any]): A dictionary containing the metadata to be updated.
         """
 
-        self.store.upsert("catalog", entry.as_dict(), {"table_id": table_id})
+        self.store.upsert("tables", entry.as_dict(), {"table_id": table_id})
 
     def list_tables(self, owner: str) -> List[dict]:
         """
@@ -64,7 +64,7 @@ class DevelopmentCatalogProvider(CatalogProvider):
         Returns:
             List[Dict[str, Any]]: A list of dictionaries, each representing the metadata of a table.
         """
-        result = self.store.find("catalog", {"owner": owner})
+        result = self.store.find("tables", {"owner": owner})
         return result
 
     def delete_table(self, table_id: str) -> None:
@@ -74,7 +74,7 @@ class DevelopmentCatalogProvider(CatalogProvider):
         Parameters:
             table_id (str): The identifier of the table to be deleted.
         """
-        self.store.delete("catalog", {"table_id": table_id})
+        self.store.delete("tables", {"table_id": table_id})
 
     def get_owner(self, name: str) -> dict:
         result = self.store.find("owners", {"name": name})
