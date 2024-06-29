@@ -8,35 +8,48 @@ Routes:
 from typing import List
 
 from fastapi import APIRouter
+from fastapi import Path
 
+from tarchia.constants import IDENTIFIER_REG_EX
 from tarchia.models import DatasetPermissions
 
 router = APIRouter()
 
 
-@router.post("/tables/{tableIdentifier}/permissions")
-async def grant_permissions(tableIdentifier: str, permissions: DatasetPermissions):
+@router.post("/tables/{owner}/{table}/permissions")
+async def grant_permissions(
+    permissions: DatasetPermissions,
+    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
+):
     # Store or update the permissions in your permissions management system.
     return {
         "message": "Permissions updated",
-        "identifier": tableIdentifier,
+        "table": f"{owner}.{table}",
         "permissions": permissions,
     }
 
 
-@router.delete("/tables/{tableIdentifier}/permissions")
-async def revoke_permissions(tableIdentifier: str, permissions: DatasetPermissions):
+@router.delete("/tables/{owner}/{table}/permissions")
+async def revoke_permissions(
+    permissions: DatasetPermissions,
+    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
+):
     # Store or update the permissions in your permissions management system.
     return {
         "message": "Permissions updated",
-        "identifier": tableIdentifier,
+        "table": f"{owner}.{table}",
         "permissions": permissions,
     }
 
 
-@router.get("/tables/{tableIdentifier}/permissions/check")
+@router.get("/tables/{owner}/{table}/permissions/check")
 async def check_permissions(
-    tableIdentifier: str, user_attributes: List[str], requested_permission: str
+    user_attributes: List[str],
+    requested_permission: str,
+    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
 ):
     # Retrieve dataset permissions from your storage
     dataset_permissions = (
@@ -59,7 +72,7 @@ async def check_permissions(
 
     return {
         "message": "Permission check completed",
-        "identifier": tableIdentifier,
+        "table": f"{owner}.{table}",
         "requested_permission": requested_permission,
         "permission_granted": permission_granted,
     }
