@@ -15,24 +15,13 @@ from tarchia.constants import IDENTIFIER_REG_EX
 from tarchia.constants import SNAPSHOT_ROOT
 from tarchia.exceptions import AlreadyExistsError
 from tarchia.exceptions import TableHasNoDataError
-from tarchia.manifests import get_manifest
-from tarchia.manifests import parse_filters
 from tarchia.models import CreateTableRequest
 from tarchia.models import TableCatalogEntry
 from tarchia.models import UpdateMetadataRequest
 from tarchia.models import UpdateSchemaRequest
 from tarchia.models import UpdateValueRequest
-from tarchia.repositories.catalog import catalog_factory
-from tarchia.storage import storage_factory
-from tarchia.utils import build_root
-from tarchia.utils import generate_uuid
-from tarchia.utils.catalogs import identify_owner
-from tarchia.utils.catalogs import identify_table
 
 router = APIRouter()
-
-catalog_provider = catalog_factory()
-storage_provider = storage_factory()
 
 
 @router.get("/tables/{owner}", response_class=ORJSONResponse)
@@ -46,7 +35,10 @@ async def list_tables(owner: str, request: Request):
     Returns:
         List[Dict[str, Any]]: A list of tables with their metadata, including the snapshot URL if applicable.
     """
+    from tarchia.catalog import catalog_factory
+
     base_url = request.url.scheme + "://" + request.url.netloc
+    catalog_provider = catalog_factory()
 
     tables = catalog_provider.list_tables(owner)
     for table in tables:
@@ -90,7 +82,14 @@ async def create_table(
     Parameters:
         request: CreateTableRequest - The request body containing the table metadata.
     """
+    from tarchia.catalog import catalog_factory
+    from tarchia.storage import storage_factory
+    from tarchia.utils import generate_uuid
+    from tarchia.utils.catalogs import identify_owner
+
     # check if we have a table with that name already
+    catalog_provider = catalog_factory()
+    storage_provider = storage_factory()
     catalog_entry = catalog_provider.get_table(owner=owner, table=request.name)
     if catalog_entry:
         # return a 409
@@ -166,8 +165,16 @@ async def get_table(
     Returns:
         Dict[str, Any]: The table definition along with the snapshot and the list of blobs.
     """
+    from tarchia.manifests import get_manifest
+    from tarchia.manifests import parse_filters
+    from tarchia.storage import storage_factory
+    from tarchia.utils import build_root
+    from tarchia.utils.catalogs import identify_table
+
     # read the data from the catalog for this table
     catalog_entry = identify_table(owner, table)
+
+    storage_provider = storage_factory()
 
     # if the table has no snapshots, return only the table information
     if catalog_entry.current_snapshot_id is None:
@@ -188,6 +195,7 @@ async def get_table(
     snapshot = orjson.loads(snapshot_file)
 
     # retrieve the list of blobs from the manifests
+
     filter_conditions = parse_filters(filters)
     blobs = get_manifest(snapshot.get("manifest_path"), storage_provider, filter_conditions)
 
@@ -206,10 +214,18 @@ async def get_table_snapshot(
     snapshot: int = Path(description="The snapshot to retrieve."),
     filters=None,
 ):
+    from tarchia.manifests import get_manifest
+    from tarchia.manifests import parse_filters
+    from tarchia.storage import storage_factory
+    from tarchia.utils import build_root
+    from tarchia.utils.catalogs import identify_table
+
     # read the data from the catalog for this table
     catalog_entry = identify_table(owner, table)
     table_id = catalog_entry.table_id
     snapshot_root = build_root(SNAPSHOT_ROOT, owner=owner, table_id=table_id)
+
+    storage_provider = storage_factory()
 
     snapshot_file = storage_provider.read_blob(f"{snapshot_root}/asat-{snapshot}.json")
     snapshot = orjson.loads(snapshot_file)
@@ -240,7 +256,14 @@ async def delete_table(
     Note:
         The metadata and data files for this table is NOT deleted.
     """
+    from tarchia.catalog import catalog_factory
+    from tarchia.storage import storage_factory
+    from tarchia.utils.catalogs import identify_table
+
     catalog_entry = identify_table(owner=owner, table=table)
+    catalog_provider = catalog_factory()
+    storage_provider = storage_factory()
+
     table_id = catalog_entry.table_id
     catalog_provider.delete_table(table_id)
 
@@ -262,6 +285,9 @@ async def update_schema(
     owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
     table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
 ):
+    from tarchia.catalog import catalog_factory
+    from tarchia.utils.catalogs import identify_table
+
     for col in schema.columns:
         col.validate()
 
@@ -275,6 +301,7 @@ async def update_schema(
     catalog_entry = identify_table(owner=owner, table=table)
     table_id = catalog_entry.table_id
     catalog_entry.current_schema = schema
+    catalog_provider = catalog_factory()
     catalog_provider.update_table(table_id, catalog_entry)
 
     return {
@@ -289,9 +316,13 @@ async def update_metadata(
     owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
     table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
 ):
+    from tarchia.catalog import catalog_factory
+    from tarchia.utils.catalogs import identify_table
+
     catalog_entry = identify_table(owner, table)
     table_id = catalog_entry.table_id
     catalog_entry.metadata = metadata.metadata
+    catalog_provider = catalog_factory()
     catalog_provider.update_table(table_id=table_id, entry=catalog_entry)
 
     return {
@@ -307,11 +338,15 @@ async def update_table(
     owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
     table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
 ):
+    from tarchia.catalog import catalog_factory
+    from tarchia.utils.catalogs import identify_table
+
     if attribute not in {"visibility", "steward"}:
         raise ValueError(f"Data attribute {attribute} cannot be modified via the API")
 
     catalog_entry = identify_table(owner, table)
     setattr(catalog_entry, attribute, value.value)
+    catalog_provider = catalog_factory()
 
     catalog_provider.update_table(table_id=catalog_entry.table_id, entry=catalog_entry)
 

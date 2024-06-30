@@ -22,20 +22,10 @@ from fastapi import Path
 from fastapi.responses import ORJSONResponse
 
 from tarchia import config
-from tarchia.config import METADATA_ROOT
-from tarchia.repositories.catalog import catalog_factory
-from tarchia.storage import storage_factory
 from tarchia.utils import generate_uuid
 from tarchia.utils.catalogs import identify_table
 
-SNAPSHOT_ROOT = f"{METADATA_ROOT}/[table_id]/snapshots/"
-MANIFEST_ROOT = f"{METADATA_ROOT}/[table_id]/manifests/"
-
-
 router = APIRouter()
-
-catalog_provider = catalog_factory()
-storage_provider = storage_factory()
 
 
 def encode_and_sign_transaction(transaction_data: dict):

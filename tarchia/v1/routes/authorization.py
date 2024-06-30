@@ -1,10 +1,3 @@
-"""
-
-Routes:
-    [POST]      /v1/tables/{tableIdentifier}/permissions
-    [GET]       /v1/tables/{tableIdentifier}/permissions/check
-"""
-
 from typing import List
 
 from fastapi import APIRouter

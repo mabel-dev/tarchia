@@ -5,19 +5,17 @@ from tarchia.exceptions import AlreadyExistsError
 from tarchia.models import CreateOwnerRequest
 from tarchia.models import OwnerEntry
 from tarchia.models import UpdateValueRequest
-from tarchia.repositories.catalog import catalog_factory
-from tarchia.storage import storage_factory
-from tarchia.utils import generate_uuid
-from tarchia.utils.catalogs import identify_owner
 
 router = APIRouter()
-
-catalog_provider = catalog_factory()
-storage_provider = storage_factory()
 
 
 @router.post("/owners", response_class=ORJSONResponse)
 async def create_owner(request: CreateOwnerRequest):
+    from tarchia.catalog import catalog_factory
+    from tarchia.utils import generate_uuid
+
+    catalog_provider = catalog_factory()
+
     catalog_entry = catalog_provider.get_owner(name=request.name)
     if catalog_entry:
         raise AlreadyExistsError(entity=request.name)
@@ -39,14 +37,20 @@ async def create_owner(request: CreateOwnerRequest):
 
 @router.get("/owners/{owner}", response_class=ORJSONResponse)
 async def read_owner(owner: str):
+    from tarchia.utils.catalogs import identify_owner
+
     entry = identify_owner(owner)
     return entry.as_dict()
 
 
 @router.patch("/owners/{owner}/{attribute}", response_class=ORJSONResponse)
 async def update_owner(owner: str, attribute: str, request: UpdateValueRequest):
+    from tarchia.catalog import catalog_factory
+    from tarchia.utils.catalogs import identify_owner
+
     if attribute not in {"steward"}:
         raise ValueError(f"Unable to update {attribute}")
+    catalog_provider = catalog_factory()
     entry = identify_owner(owner)
     setattr(entry, attribute, request.value)
     catalog_provider.update_owner(entry)
@@ -55,7 +59,11 @@ async def update_owner(owner: str, attribute: str, request: UpdateValueRequest):
 
 @router.delete("/owners/{owner}", response_class=ORJSONResponse)
 async def delete_owner(owner: str):
+    from tarchia.catalog import catalog_factory
+    from tarchia.utils.catalogs import identify_owner
+
     entry = identify_owner(owner)
+    catalog_provider = catalog_factory()
     tables = catalog_provider.list_tables(owner)
     if len(tables) > 0:
         raise ValueError("Cannot delete an owner of tables")

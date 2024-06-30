@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 
-from .authorization import router as authorization_router
-from .data_management import router as data_router
-from .maintenance import router as maintenance_router
+# from .authorization import router as authorization_router
+# from .data_management import router as data_router
+# from .maintenance import router as maintenance_router
 from .owner_management import router as owner_router
 from .table_management import router as table_router
 
