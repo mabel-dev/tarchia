@@ -6,10 +6,10 @@ development, prototyping and for regression testing.
 from typing import List
 from typing import Optional
 
+from tarchia.catalog.provider_base import CatalogProvider
 from tarchia.exceptions import AmbiguousTableError
 from tarchia.models import OwnerEntry
 from tarchia.models import TableCatalogEntry
-from tarchia.repositories.catalog.provider_base import CatalogProvider
 
 
 class DevelopmentCatalogProvider(CatalogProvider):
