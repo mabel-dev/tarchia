@@ -1,15 +1,3 @@
-"""
-
-Routes:
-    [POST]      /v1/transactions/start
-    [POST]      /v1/transactions/commit
-    [DELETE]    /v1/tables/{tableIdentifier}/files
-    [GET]       /v1/tables/{tableIdentifier}/files
-    [POST]      /v1/tables/{tableIdentifier}/files
-    [GET]       /v1/tables/{tableIdentifier}/snapshots
-    [POST]      /v1/tables/{tableIdentifier}/snapshots
-"""
-
 import base64
 import hashlib
 from typing import List
@@ -19,11 +7,11 @@ import orjson
 from fastapi import APIRouter
 from fastapi import HTTPException
 from fastapi import Path
-from fastapi.responses import ORJSONResponse
+from fastapi import Query
 
 from tarchia import config
-from tarchia.utils import generate_uuid
-from tarchia.utils.catalogs import identify_table
+from tarchia.constants import IDENTIFIER_REG_EX
+from tarchia.constants import SNAPSHOT_ROOT
 
 router = APIRouter()
 
@@ -76,50 +64,88 @@ def calculate_dataset_hash(table_hashes):
 
 
 @router.post("/transactions/start")
-async def start_transaction(tableIdentifier: str, snapshotIdentifier: str):
-    catalog_entry = identify_table(tableIdentifier)
+async def start_transaction(owner: str, table: str, snapshot: Optional[str] = None):
+    from tarchia.storage import storage_factory
+    from tarchia.utils import build_root
+    from tarchia.utils import generate_uuid
+    from tarchia.utils.catalogs import identify_table
+
+    catalog_entry = identify_table(owner=owner, table=table)
     table_id = catalog_entry.table_id
 
-    print("TODO: check the snapshot exists")
+    if snapshot is None:
+        snapshot = catalog_entry.current_snapshot_id
+    else:
+        snapshot_root = build_root(SNAPSHOT_ROOT, owner=owner, table_id=catalog_entry.table_id)
+        storage_provider = storage_factory()
+        snapshot_file = storage_provider.read_blob(f"{snapshot_root}/asat-{snapshot}.json")
+        if not snapshot_file:
+            raise ValueError("Snapshot not found")
 
     transaction_id = generate_uuid()
     transaction_data = {
         "transaction_id": transaction_id,
         "table_id": table_id,
-        "parent_snapshot": snapshotIdentifier,
+        "parent_snapshot": snapshot,
         "additions": [],
         "deletions": [],
         "truncate": False,
     }
     encoded_data = encode_and_sign_transaction(transaction_data)
-    return {
-        "message": "Transaction started",
-        "encoded_transaction": encoded_data,
-    }
+    return {"message": "Transaction started", "encoded_transaction": encoded_data}
 
 
 @router.post("/transactions/commit")
-async def commit_transaction(encoded_transaction: str):
-    # transaction_data = verify_and_decode(encoded_transaction)
-    # if not is_latest_snapshot(transaction_data["dataset"], transaction_data["parent_snapshot"]):
+async def commit_transaction(
+    encoded_transaction: str,
+    force=Query(
+        False,
+        description="Force a transaction to complete, even if operating on a non-latest snapshot",
+    ),
+):
+    from tarchia.utils import generate_uuid
+
+    transaction_data = verify_and_decode_transaction(encoded_transaction)
+
+    # if not force and not is_latest_snapshot(transaction_data["dataset"], transaction_data["parent_snapshot"]):
     #    return {"message": "Transaction failed: Snapshot out of date", "status": "error"}
 
-    # apply_changes(transaction_data)
+    snaphot = generate_uuid()
+
+    """
+    write a new snapshot
+    - write new manifest
+    - write snaphot file
+    - update catalog
+    """
+
     return {
         "message": "Transaction committed successfully",
-        #    "transaction_id": transaction_data["transaction_id"]
+        "transaction": transaction_data["transaction_id"],
+        "snapshot": snaphot,
+        "notice": "this isn't actually completely written",
     }
 
 
-@router.post("/tables/{tableIdentifier}/stage")
+@router.post("/tables/{owner}/{table}/stage")
 async def add_files_to_transaction(
-    tableIdentifier: str, file_paths: List[str], encoded_transaction: str
+    file_paths: List[str],
+    encoded_transaction: str,
+    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
 ):
-    catalog_entry = identify_table(tableIdentifier)
-    table_id = catalog_entry.get("table_id")
+    """
+    Add files to a table.
+
+    This operation can only be called as part of a transaction and does not make
+    any changes to the table until the commit end-point is called.
+    """
+    from tarchia.utils.catalogs import identify_table
+
+    catalog_entry = identify_table(owner=owner, table=table)
 
     transaction_data = verify_and_decode_transaction(encoded_transaction)
-    if not transaction_data or transaction_data["table_id"] != table_id:
+    if not transaction_data or transaction_data["table_id"] != catalog_entry.table_id:
         raise HTTPException(status_code=400, detail="Invalid transaction data")
 
     # Add file paths to the transaction's addition list
@@ -131,8 +157,20 @@ async def add_files_to_transaction(
 
 
 @router.post("/tables/{tableIdentifier}/truncate")
-async def truncate_all_files(tableIdentifier: str, file_paths: List[str], encoded_transaction: str):
-    catalog_entry = identify_table(tableIdentifier)
+async def truncate_all_files(
+    encoded_transaction: str,
+    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
+):
+    """
+    Truncate (delete all records) from a table.
+
+    This operation can only be called as part of a transaction and does not make
+    any changes to the table until the commit end-point is called.
+    """
+    from tarchia.utils.catalogs import identify_table
+
+    catalog_entry = identify_table(owner=owner, table=table)
     table_id = catalog_entry.table_id
 
     transaction_data = verify_and_decode_transaction(encoded_transaction)
@@ -144,14 +182,7 @@ async def truncate_all_files(tableIdentifier: str, file_paths: List[str], encode
 
     # Reissue the updated transaction token
     new_encoded_transaction = encode_and_sign_transaction(transaction_data)
-    return {"message": "Files added to transaction", "encoded_transaction": new_encoded_transaction}
-
-
-@router.post("/tables/{tableIdentifier}/push/{snapshotIdentifier}", response_class=ORJSONResponse)
-async def promote_snaphow(
-    tableIdentifier: str = Path(description="The unique identifier of the table."),
-    snapshotIdentifier: Optional[str] = Path(
-        description="The unique identifier of the snapshot to promote to the head."
-    ),
-):
-    return False
+    return {
+        "message": "Table truncated in Transaction",
+        "encoded_transaction": new_encoded_transaction,
+    }

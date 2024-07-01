@@ -45,12 +45,16 @@ class LocalStorage(StorageProvider):
         Returns:
             The blob as bytes.
         """
-        file_descriptor = os.open(location, os.O_RDONLY | os.O_BINARY)
+        file_descriptor = None
         try:
+            file_descriptor = os.open(location, os.O_RDONLY | os.O_BINARY)
             size = os.path.getsize(location)
             return os.read(file_descriptor, size)
+        except FileNotFoundError:
+            return None
         finally:
-            os.close(file_descriptor)
+            if file_descriptor:
+                os.close(file_descriptor)
 
     def blob_list(self, prefix: str, as_at: Optional[int] = None) -> List[str]:
         """
