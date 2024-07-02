@@ -1,42 +1,46 @@
 import base64
 import hashlib
+import time
 from typing import List
 from typing import Optional
 
 import orjson
 from fastapi import APIRouter
-from fastapi import HTTPException
 from fastapi import Path
 from fastapi import Query
 
 from tarchia import config
 from tarchia.constants import IDENTIFIER_REG_EX
+from tarchia.constants import MANIFEST_ROOT
 from tarchia.constants import SNAPSHOT_ROOT
+from tarchia.exceptions import TransactionError
+from tarchia.models import Snapshot
+from tarchia.models import Transaction
 
 router = APIRouter()
 
 
-def encode_and_sign_transaction(transaction_data: dict):
+def encode_and_sign_transaction(transaction: Transaction):
     # We late import to allow code to override this
     SIGNER = config.TRANSACTION_SIGNER
     if not isinstance(SIGNER, bytes):
         SIGNER = str(SIGNER).encode()
     # Placeholder for actual encoding and cryptographic signing
-    transaction_bytes = orjson.dumps(transaction_data)
+    transaction_bytes = transaction.serialize()
     encoded = base64.b64encode(transaction_bytes).decode()
     signature = hashlib.sha256(SIGNER + transaction_bytes).hexdigest()
     # You would add a cryptographic signature here
     return encoded + "." + signature
 
 
-def verify_and_decode_transaction(transaction_data: str) -> dict:
+def verify_and_decode_transaction(transaction_data: str) -> Transaction:
     # We late import to allow code to override this
     SIGNER = config.TRANSACTION_SIGNER
     if not isinstance(SIGNER, bytes):
         SIGNER = str(SIGNER).encode()
 
     if not transaction_data:
-        raise ValueError("No Transaction")
+        raise TransactionError("No Transaction")
 
     transaction, signature = transaction_data.split(".")
 
@@ -44,8 +48,10 @@ def verify_and_decode_transaction(transaction_data: str) -> dict:
     transaction = orjson.loads(decoded)
     recreated_signature = hashlib.sha256(SIGNER + decoded).hexdigest()
     if signature != recreated_signature:
-        raise ValueError("Signature doesn't match")
-    return transaction
+        raise TransactionError("Transaction signature invalid")
+    if int(transaction["expires"]) > time.time_ns():
+        raise TransactionError("Transaction Expired")
+    return Transaction(**transaction)
 
 
 def calculate_table_hash(data):
@@ -80,18 +86,21 @@ async def start_transaction(owner: str, table: str, snapshot: Optional[str] = No
         storage_provider = storage_factory()
         snapshot_file = storage_provider.read_blob(f"{snapshot_root}/asat-{snapshot}.json")
         if not snapshot_file:
-            raise ValueError("Snapshot not found")
+            raise TransactionError("Snapshot not found")
 
     transaction_id = generate_uuid()
-    transaction_data = {
-        "transaction_id": transaction_id,
-        "table_id": table_id,
-        "parent_snapshot": snapshot,
-        "additions": [],
-        "deletions": [],
-        "truncate": False,
-    }
-    encoded_data = encode_and_sign_transaction(transaction_data)
+    transaction = Transaction(
+        transaction_id=transaction_id,
+        expires_at=time.time_ns() + (30 * 60 * 1e9),
+        table_id=table_id,
+        table=table,
+        owner=owner,
+        parent_snapshot=snapshot,
+        additions=[],
+        deletions=[],
+        truncate=False,
+    )
+    encoded_data = encode_and_sign_transaction(transaction)
     return {"message": "Transaction started", "encoded_transaction": encoded_data}
 
 
@@ -103,14 +112,60 @@ async def commit_transaction(
         description="Force a transaction to complete, even if operating on a non-latest snapshot",
     ),
 ):
+    from tarchia.manifests import build_manifest_entry
+    from tarchia.manifests import get_manifest
+    from tarchia.storage import storage_factory
+    from tarchia.utils import build_root
     from tarchia.utils import generate_uuid
+    from tarchia.utils.catalogs import identify_table
 
-    transaction_data = verify_and_decode_transaction(encoded_transaction)
+    transaction = verify_and_decode_transaction(encoded_transaction)
+    catalog_entry = identify_table(owner=transaction.owner, table=transaction.owner)
 
-    # if not force and not is_latest_snapshot(transaction_data["dataset"], transaction_data["parent_snapshot"]):
-    #    return {"message": "Transaction failed: Snapshot out of date", "status": "error"}
+    if not force and not catalog_entry.current_schema == transaction.parent_snapshot:
+        raise TransactionError("Transaction failed: Snapshot out of date")
 
-    snaphot = generate_uuid()
+    snaphot_id = generate_uuid()
+    owner = catalog_entry.owner
+    table_id = catalog_entry.table_id
+
+    snapshot_root = build_root(SNAPSHOT_ROOT, owner=owner, table_id=table_id)
+    manifest_root = build_root(MANIFEST_ROOT, owner=owner, table_id=table_id)
+
+    storage_provider = storage_factory()
+
+    if transaction.parent_snapshot:
+        snapshot_file = storage_provider.read_blob(
+            f"{snapshot_root}/asat-{transaction.parent_snapshot}.json"
+        )
+        old_snapshot = orjson.loads(snapshot_file)
+    else:
+        old_snapshot = {}
+
+    # build the new manifest first
+    # simple single file manifest for now, this isn't size limited, we'll see how that goes
+    if transaction.truncate or old_snapshot.get("manifest_path") is None:
+        old_manifest = []
+    else:
+        old_manifest = get_manifest(old_snapshot.get("manifest_path"), storage_provider)
+
+    # build the new snapshot
+    new_snaphot = Snapshot(
+        snaphot_id=snapshot_id,
+        parent_snapshot_path=transaction.parent_snapshot,
+        last_updated_ms=time.time_ns() * 10000000,
+        manifest_path="",
+        table_schema=catalog_entry.table_schema,
+        encryption_details=catalog_entry.encryption_details,
+    )
+
+    # build the file list for the new manifest
+    new_manifest = []
+    for entry in old_manifest:
+        if entry not in transaction.deletions:
+            new_manifest.append(entry)
+    for entry in transaction.additions:
+        new_manifest.extend(build_manifest_entry(entry))
 
     """
     write a new snapshot
@@ -121,8 +176,8 @@ async def commit_transaction(
 
     return {
         "message": "Transaction committed successfully",
-        "transaction": transaction_data["transaction_id"],
-        "snapshot": snaphot,
+        "transaction": transaction.transaction_id,
+        "snapshot": snaphot_id,
         "notice": "this isn't actually completely written",
     }
 
@@ -144,15 +199,15 @@ async def add_files_to_transaction(
 
     catalog_entry = identify_table(owner=owner, table=table)
 
-    transaction_data = verify_and_decode_transaction(encoded_transaction)
-    if not transaction_data or transaction_data["table_id"] != catalog_entry.table_id:
-        raise HTTPException(status_code=400, detail="Invalid transaction data")
+    transaction = verify_and_decode_transaction(encoded_transaction)
+    if transaction.table_id != catalog_entry.table_id:
+        raise TransactionError("Transaction operate on single tables")
 
     # Add file paths to the transaction's addition list
-    transaction_data["additions"].extend(file_paths)
+    transaction.additions.extend(file_paths)
 
     # Reissue the updated transaction token
-    new_encoded_transaction = encode_and_sign_transaction(transaction_data)
+    new_encoded_transaction = encode_and_sign_transaction(transaction)
     return {"message": "Files added to transaction", "encoded_transaction": new_encoded_transaction}
 
 
@@ -171,17 +226,18 @@ async def truncate_all_files(
     from tarchia.utils.catalogs import identify_table
 
     catalog_entry = identify_table(owner=owner, table=table)
-    table_id = catalog_entry.table_id
 
-    transaction_data = verify_and_decode_transaction(encoded_transaction)
-    if not transaction_data or transaction_data["table_id"] != table_id:
-        raise HTTPException(status_code=400, detail="Invalid transaction data")
+    transaction = verify_and_decode_transaction(encoded_transaction)
+    if transaction.table_id != catalog_entry.table_id:
+        raise TransactionError("Transaction operate on single tables")
 
-    transaction_data["truncate"] = True
-    transaction_data["additions"] = []
+    # truncate everything
+    transaction.truncate = True
+    transaction.additions = []
+    transaction.deletions = []
 
     # Reissue the updated transaction token
-    new_encoded_transaction = encode_and_sign_transaction(transaction_data)
+    new_encoded_transaction = encode_and_sign_transaction(transaction)
     return {
         "message": "Table truncated in Transaction",
         "encoded_transaction": new_encoded_transaction,

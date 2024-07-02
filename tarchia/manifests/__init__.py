@@ -58,3 +58,34 @@ def get_manifest(
 
     # return accumulated records
     return manifest
+
+
+def write_manifest(location: str, storage_provider: StorageProvider, entries: List[ManifestEntry]):
+    manifest = []
+
+    # get the manifest
+    manifest_bytes = storage_provider.read_blob(manifest)
+    manifest_complete = fastavro.reader(manifest_bytes)
+
+    for entry in manifest_complete:
+        manifest_entry = ManifestEntry(**entry)
+
+        # filter the rows we don't want
+        if filter_conditions and prune(manifest_entry, filter_conditions):
+            continue
+
+        # if the rows are manifests, call get_manifest
+        if manifest_entry.file_type == EntryType.Manifest:
+            manifest.extend(
+                get_manifest(manifest_entry.file_path, storage_provider, filter_conditions)
+            )
+        else:
+            manifest.append(manifest_entry.file_path)
+
+    # return accumulated records
+    return manifest
+
+
+def build_manifest_entry(file) -> ManifestEntry:
+    print("write me")
+    quit()

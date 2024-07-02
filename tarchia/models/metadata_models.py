@@ -196,3 +196,15 @@ class OwnerEntry(TarchiaBaseModel):
     type: OwnerType
     steward: str
     memberships: List[str]
+
+
+class Transaction(TarchiaBaseModel):
+    transaction_id: str
+    expires_at: int
+    table_id: str
+    table: str
+    owner: str
+    parent_snapshot: str
+    additions: List[str]
+    deletions: List[str]
+    truncate: bool = False
