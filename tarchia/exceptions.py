@@ -95,3 +95,7 @@ class TableHasNoDataError(Exception):  # pragma: no cover
             message = f"Table with reference {table} was empty at {as_at}."
 
         super().__init__(message)
+
+
+class TransactionError(Exception):  # pragma: no cover
+    pass

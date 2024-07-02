@@ -9,6 +9,7 @@ from .metadata_models import Schema
 from .metadata_models import Snapshot
 from .metadata_models import TableCatalogEntry
 from .metadata_models import TableDisposition
+from .metadata_models import Transaction
 from .request_models import AddSnapshotRequest
 from .request_models import CreateOwnerRequest
 from .request_models import CreateTableRequest
