@@ -103,11 +103,7 @@ class Column(TarchiaBaseModel):
 
         # We need to be able to build valid Orso FlatColumns
         # it has validation we can leverage
-        try:
-            column = FlatColumn(**self.as_dict())
-        except Exception as load_error:
-            print(load_error)
-            raise ValueError(f"Column definition for '{self.name}' is invalid.") from load_error
+        FlatColumn(**self.as_dict())
 
 
 class Schema(TarchiaBaseModel):
@@ -204,7 +200,7 @@ class Transaction(TarchiaBaseModel):
     table_id: str
     table: str
     owner: str
-    parent_snapshot: str
-    additions: List[str]
-    deletions: List[str]
+    parent_snapshot: Optional[str] = None
+    additions: List[str] = Field(default_factory=list)
+    deletions: List[str] = Field(default_factory=list)
     truncate: bool = False

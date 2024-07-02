@@ -24,7 +24,7 @@ from fastapi.testclient import TestClient
 from tarchia.models import CreateTableRequest, CreateOwnerRequest, OwnerType
 from tarchia.models import Column
 from tarchia.models import Schema
-from tarchia.main import application
+from main import application
 from tests.common import ensure_owner
 
 def test_create_read_update_delete_owner():

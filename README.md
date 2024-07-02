@@ -50,39 +50,76 @@ flowchart TD
     MANIFEST --> DATA(Data Files)
 ~~~
 
-The Catalog, hosted in a datastore like FireStore, contains references to Schemas and Snapshots. 
+## Design
 
-When a table is created, it is created with a schema but no snapshot (it doesn't have any data yet).
+### Catalog Overview
+- Hosted in a datastore like FireStore.
+- Contains references to Schemas and Snapshots.
 
-When a table is written to, the writer should obtain the latest schema (this may not be the same as the latest snapshot, if the schema was updated since), write the data, and saves the snapshot.
+### Table Creation and Updates
+- **Creation**:
+  - Created with a schema but no snapshot (no data initially).
+- **Writing to a Table**:
+  - Obtain the latest schema (may differ from the latest snapshot if updated).
+  - Write the data and save the snapshot.
+  - Use a transaction system to ensure complete datasets/updates before catalog updates.
 
-Writers use a transaction system to ensure datasets/updates are complete before updating the catalog.
+### Handling Clashes
+- Ensure the dataset version (latest snapshot) at the start of the transaction matches the version at the end.
+- If versions don't match, another change has occurred:
+  - The transaction should fail or require a hard override.
 
-Clashes are managed by ensuring the version (latest snapshot) of the dataset at the start of the transaction matches the version of the dataset at the end of the transaction - if these don't match someone else has made a change and the transaction should fail or require a hard override.
+### Streaming Datasets
+- Add new files to the dataset and create a new manifest.
+- Schema changes are limited to:
+  - Adding and removing columns.
+  - Limited type conversions (e.g., int to float).
+- Larger changes are treated as different datasets.
 
-Streaming datasets add new files to the dataset, create a new manifest streaming data cannot change schemas beyond - adding and removing columns, and limited type converstions (e.g. int->float). Larger changes are different datasets.
+### Table Reading
+- Retrieve the schema and the manifest.
+- Each snapshot can only have one schema.
 
-When a table is read, we get the schema and the manifest. Each snapshot can only have one schema.
+### Catalog References
+- The latest schema.
+- The latest snapshot.
+- Key information about the table.
 
-The catalog references the latest schema, latest snapshot and key information about the table.
+### Manifests
+- First split at 4097, (11 years of daily writes, 61m if 15k/file, 200m if 50k/file)
+- Otherwise, limited to 2048 rows (aiming for most files to be <2MB to fit in remote cache).
+- If a manifest exceeds this number, it is split, and a Manifest List is created.
+- Use B-Tree style management for efficient pruning:
+  - **Read and Write Overheads**:
+    - 1 million row dataset: single manifest.
+    - 1 billion row dataset: 33 manifests (1 root and 1 layer with 32 children).
+    - 1 trillion row dataset: 32568 manifests in three layers.
+  - **Parallel Access**:
+    - 1 trillion rows, 32568 manifests: about 16GB of data.
+    - Parallel access reduces read and process time.
+    - Pruning can quickly reduce reads.
 
-Manifests are limited to 2048 rows (aiming for most files to be <2Mb files to fit in remote cache), when a manifest exceeds this number it is split and a Manifest list created. Manifest/Manifest Lists use B-Tree style management to help ensure efficient pruning. 
+### Data Files
+- Manifest and snapshot files do not need to be colocated with the data files.
+- Data files do not need to be colocated with each other.
 
-B-Tree manifests will create read and write overheads when accessing and updating, assuming about 15k rows per file; 1 million row dataset would be in a single manifest, a 1 billion row dataset in 33 manifests (1 root and 1 layer with 32 children) and a 1 trillion row dataset in 32568 manifests in three layers. 
+### Updates and Atomicity
+- Updates are atomic, effective when the catalog is updated.
+- Failed updates may leave artifacts (e.g., orphan files), but the update itself is either successful or not.
+- Storage cost for failed commits (orphaned tables) is considered acceptable.
 
-1 trillion row's 32568 manifests would be about 16Gb of data, this data could be accessed in parallel reducing the time to read and process all of this data. Pruning would very quickly reduce the reads - eliminating just one row from layer one would avoid reading thousands of manifests. 
+### Pruning
+- Effective for columns that are sorted, nearly sorted, or have values appearing for limited periods.
+- Ineffective for columns with very few, highly recurrent values (e.g., Gender).
+- Effective for columns like dates when working with log entries.
 
-If data files had 50k rows per file, 1 trillion rows would only have require 9770 Manifests.
+### Indexes
+- Intended to operate at a leaf manifest level.
+- Aim to balance between:
+  - Too many indexes (one per blob).
+  - Too few indexes (one per dataset).
+- Index strategy is still being developed.
 
-The manifest and snapshot files do not need to be colocated with the data files.
-
-The data files don't need to be colocated with each other.
-
-Updates are atomic due to them being effected when the catalog is updated. Failed updates may leave artifacts (like orphan files), but the update was either successful or not, there is no partial success. As storage is cheap, if the cost of a failed commit is orphaned tables, that should be acceptable.
-
-Pruning is only effective for columns that are sorted, or nearly sorted, or columns with values that appear for limited periods of time. Attempting to prune on a column like Gender which has very few, highly recurrant values, is likely to be a waste of effort, pruning on dates when working with log entries, is likely to be quite effective.
-
-It's intended that indexes, if ever added, will operate at a leaf manifest level, providing a balance between too many indexes (one per blob) and too few indexes (one per dataset). This is still to be worked through.
 
 ## Git-Like Management
 

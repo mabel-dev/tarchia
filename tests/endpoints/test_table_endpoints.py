@@ -5,8 +5,8 @@ TABLES
 """
 
 import sys
-import orjson
 import os
+import orjson
 
 os.environ["CATALOG_NAME"] = "test_catalog.json"
 os.environ["TARCHIA_DEBUG"] = "TRUE"
@@ -19,10 +19,10 @@ except FileNotFoundError:
 sys.path.insert(1, os.path.join(sys.path[0], "../.."))
 
 from fastapi.testclient import TestClient
-from tarchia.models import CreateTableRequest, CreateOwnerRequest, OwnerType
+from tarchia.models import CreateTableRequest
 from tarchia.models import Column
 from tarchia.models import Schema
-from tarchia.main import application
+from main import application
 from tests.common import ensure_owner
 
 def test_create_read_update_delete_table():
@@ -129,7 +129,7 @@ def test_maintain_table_schema():
     assert response.json()["current_schema"] == {'columns': [{'name': 'column'}]}
 
     # update the schema
-    response = client.patch(url="/v1/tables/joocer/test_dataset_schema_test/schema", content=Schema(columns=[Column(name="new")]).serialize())
+    response = client.patch(url="/v1/tables/joocer/test_dataset_schema_test/schema", content=Schema(columns=[Column(name="new", type="VARCHAR", default="true")]).serialize())
     assert response.status_code == 200, f"{response.status_code} - {response.content}"
 
     # confirm the schema has been updated correctly
@@ -137,15 +137,13 @@ def test_maintain_table_schema():
     assert response.status_code == 200, f"{response.status_code} - {response.content}"
     schema = response.json()["current_schema"]
     assert schema is not None
-    assert response.json()["current_schema"] == {'columns': [{'name': 'new'}]}, schema
+    assert response.json()["current_schema"] == {'columns': [{'name': 'new', 'type': 'VARCHAR', 'default': 'true'}]}, schema
 
     # delete the table
     response = client.delete(url="/v1/tables/joocer/test_dataset_schema_test")
     assert response.status_code == 200, f"{response.status_code} - {response.content}"
 
-
-
 if __name__ == "__main__":  # pragma: no cover
     from tests.tools import run_tests
-
+    test_maintain_table_schema()
     run_tests()

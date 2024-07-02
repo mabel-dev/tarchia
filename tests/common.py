@@ -1,7 +1,7 @@
 
 from fastapi.testclient import TestClient
 from tarchia.models import CreateOwnerRequest, OwnerType
-from tarchia.main import application
+from main import application
 
 def ensure_owner():
     """
