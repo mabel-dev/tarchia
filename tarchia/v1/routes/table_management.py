@@ -138,12 +138,6 @@ async def get_table(
         default=None,
         description="Retrieve the table state as of this timestamp, in nanoseconds after Linux epoch.",
     ),
-    filters=None,
-    #    filters: Optional[str] = Query(
-    #        None,
-    #        description="List of filters to apply in the format (field, operator, value).",
-    #        example="column1=value1,column2>value2"
-    #    ),
 ):
     """
     Return information required to access a table.
@@ -154,19 +148,14 @@ async def get_table(
     timestamp and we work out which snapshot to read. This is the least
     preferred option and requires more work to resolve.
 
-    We also accept filters, these are conjunctive (ANDed) and used to
-    perform blob filtering based on statistics held for each blob.
-
     Parameters:
         table: str - The unique identifier of the table.
         as_at: Optional[int] - Timestamp to retrieve the table state as of this time.
-        filters: Optional[str] - Comma separated list of filters to apply in the format (field=value).
 
     Returns:
         Dict[str, Any]: The table definition along with the snapshot and the list of blobs.
     """
     from tarchia.manifests import get_manifest
-    from tarchia.manifests import parse_filters
     from tarchia.storage import storage_factory
     from tarchia.utils import build_root
     from tarchia.utils.catalogs import identify_table
@@ -195,9 +184,7 @@ async def get_table(
     snapshot = orjson.loads(snapshot_file)
 
     # retrieve the list of blobs from the manifests
-
-    filter_conditions = parse_filters(filters)
-    blobs = get_manifest(snapshot.get("manifest_path"), storage_provider, filter_conditions)
+    blobs = get_manifest(snapshot.get("manifest_path"), storage_provider, None)
 
     # build the response
     table_definition = catalog_entry.as_dict()
@@ -212,10 +199,8 @@ async def get_table_snapshot(
     owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
     table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
     snapshot: int = Path(description="The snapshot to retrieve."),
-    filters=None,
 ):
     from tarchia.manifests import get_manifest
-    from tarchia.manifests import parse_filters
     from tarchia.storage import storage_factory
     from tarchia.utils import build_root
     from tarchia.utils.catalogs import identify_table
@@ -231,8 +216,7 @@ async def get_table_snapshot(
     snapshot = orjson.loads(snapshot_file)
 
     # retrieve the list of blobs from the manifests
-    filter_conditions = parse_filters(filters)
-    blobs = get_manifest(snapshot.get("manifest_path"), storage_provider, filter_conditions)
+    blobs = get_manifest(snapshot.get("manifest_path"), storage_provider, None)
 
     # build the response
     table_definition = catalog_entry.as_dict()
@@ -286,19 +270,19 @@ async def update_schema(
     table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
 ):
     from tarchia.catalog import catalog_factory
+    from tarchia.schemas import validate_schema_update
     from tarchia.utils.catalogs import identify_table
 
+    # is the new schema valid
     for col in schema.columns:
         col.validate()
 
-    # valid transitions
-    # Add - add a new column to the table (must have a default)
-    # Drop - remove an existing column from the table
-    # Rename - rename an existing column (via aliasing)
-    # Reorder - change the order of columns
-    # Type Changes - int->float
-
     catalog_entry = identify_table(owner=owner, table=table)
+
+    # is the evolution valid
+    validate_schema_update(current_schema=catalog_entry.current_schema, updated_schema=schema)
+
+    # update the schema
     table_id = catalog_entry.table_id
     catalog_entry.current_schema = schema
     catalog_provider = catalog_factory()

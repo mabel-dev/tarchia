@@ -20,7 +20,7 @@ ENV PYTHONBUFFERED=1
 
 COPY . /app
 COPY --from=build-environment /venv /venv
-WORKDIR /app/tarchia
-ENV PYTHONPATH /app/tarchia
+WORKDIR /app
+ENV PYTHONPATH /app
 
 ENTRYPOINT [ "/venv/bin/python3", "main.py" ]

@@ -1,3 +1,21 @@
+"""
+API Router for managing owners in the Tarchia catalog system.
+
+This module defines the FastAPI routes for creating, reading, updating,
+and deleting owners. It utilizes the ORJSONResponse for efficient JSON
+responses and handles various exceptions and validation scenarios.
+
+Endpoints:
+    - POST /owners: Create a new owner.
+    - GET /owners/{owner}: Read an owner by name.
+    - PATCH /owners/{owner}/{attribute}: Update an attribute of an owner.
+    - DELETE /owners/{owner}: Delete an owner.
+
+Exceptions:
+    - AlreadyExistsError: Raised when attempting to create an owner that already exists.
+    - HTTPException: Raised for various validation errors and constraints.
+"""
+
 from fastapi import APIRouter
 from fastapi.responses import ORJSONResponse
 
@@ -11,6 +29,16 @@ router = APIRouter()
 
 @router.post("/owners", response_class=ORJSONResponse)
 async def create_owner(request: CreateOwnerRequest):
+    """
+    Create a new owner.
+
+    Parameters:
+        request: CreateOwnerRequest
+            The request containing the owner details.
+
+    Returns:
+        JSON response with a message and owner name.
+    """
     from tarchia.catalog import catalog_factory
     from tarchia.utils import generate_uuid
 
@@ -31,12 +59,22 @@ async def create_owner(request: CreateOwnerRequest):
 
     return {
         "message": "Owner Created",
-        "owner": f"{request.name}",
+        "owner": request.name,
     }
 
 
 @router.get("/owners/{owner}", response_class=ORJSONResponse)
 async def read_owner(owner: str):
+    """
+    Read an owner by name.
+
+    Parameters:
+        owner: str
+            The name of the owner.
+
+    Returns:
+        JSON response with the owner details.
+    """
     from tarchia.utils.catalogs import identify_owner
 
     entry = identify_owner(owner)
@@ -45,29 +83,57 @@ async def read_owner(owner: str):
 
 @router.patch("/owners/{owner}/{attribute}", response_class=ORJSONResponse)
 async def update_owner(owner: str, attribute: str, request: UpdateValueRequest):
+    """
+    Update an attribute of an owner.
+
+    Parameters:
+        owner: str
+            The name of the owner.
+        attribute: str
+            The attribute to update.
+        request: UpdateValueRequest
+            The request containing the new value for the attribute.
+
+    Returns:
+        JSON response with a message, owner name, and updated attribute.
+    """
     from tarchia.catalog import catalog_factory
     from tarchia.utils.catalogs import identify_owner
 
     if attribute not in {"steward"}:
         raise ValueError(f"Unable to update {attribute}")
+
     catalog_provider = catalog_factory()
     entry = identify_owner(owner)
     setattr(entry, attribute, request.value)
     catalog_provider.update_owner(entry)
+
     return {"message": "Owner Updated", "owner": owner, "attribute": attribute}
 
 
 @router.delete("/owners/{owner}", response_class=ORJSONResponse)
 async def delete_owner(owner: str):
+    """
+    Delete an owner.
+
+    Parameters:
+        owner: str
+            The name of the owner.
+
+    Returns:
+        JSON response with a message and owner name.
+    """
     from tarchia.catalog import catalog_factory
     from tarchia.utils.catalogs import identify_owner
 
     entry = identify_owner(owner)
     catalog_provider = catalog_factory()
-    tables = catalog_provider.list_tables(owner)
-    if len(tables) > 0:
+
+    if catalog_provider.list_tables(owner):
         raise ValueError("Cannot delete an owner of tables")
+
     catalog_provider.delete_owner(entry.owner_id)
+
     return {
         "message": "Owner Deleted",
         "owner": owner,

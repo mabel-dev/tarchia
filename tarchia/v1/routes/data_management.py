@@ -21,15 +21,14 @@ router = APIRouter()
 
 
 def encode_and_sign_transaction(transaction: Transaction):
-    # We late import to allow code to override this
     SIGNER = config.TRANSACTION_SIGNER
     if not isinstance(SIGNER, bytes):
         SIGNER = str(SIGNER).encode()
-    # Placeholder for actual encoding and cryptographic signing
+
     transaction_bytes = transaction.serialize()
     encoded = base64.b64encode(transaction_bytes).decode()
     signature = hashlib.sha256(SIGNER + transaction_bytes).hexdigest()
-    # You would add a cryptographic signature here
+
     return encoded + "." + signature
 
 
@@ -41,7 +40,8 @@ def verify_and_decode_transaction(transaction_data: str) -> Transaction:
 
     if not transaction_data:
         raise TransactionError("No Transaction")
-
+    if "." not in transaction_data:
+        raise TransactionError("Transaction not formatted correctly.")
     transaction, signature = transaction_data.split(".")
 
     decoded = base64.b64decode(transaction)
@@ -49,7 +49,7 @@ def verify_and_decode_transaction(transaction_data: str) -> Transaction:
     recreated_signature = hashlib.sha256(SIGNER + decoded).hexdigest()
     if signature != recreated_signature:
         raise TransactionError("Transaction signature invalid")
-    if int(transaction["expires"]) > time.time_ns():
+    if int(transaction["expires_at"]) > time.time():
         raise TransactionError("Transaction Expired")
     return Transaction(**transaction)
 
@@ -91,7 +91,7 @@ async def start_transaction(owner: str, table: str, snapshot: Optional[str] = No
     transaction_id = generate_uuid()
     transaction = Transaction(
         transaction_id=transaction_id,
-        expires_at=time.time_ns() + (30 * 60 * 1e9),
+        expires_at=time.time(),
         table_id=table_id,
         table=table,
         owner=owner,
@@ -211,7 +211,7 @@ async def add_files_to_transaction(
     return {"message": "Files added to transaction", "encoded_transaction": new_encoded_transaction}
 
 
-@router.post("/tables/{tableIdentifier}/truncate")
+@router.post("/tables/{owner}/{table}/truncate")
 async def truncate_all_files(
     encoded_transaction: str,
     owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),

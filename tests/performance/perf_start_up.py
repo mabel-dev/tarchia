@@ -10,7 +10,7 @@ sys.path.insert(1, os.path.join(sys.path[0], "../.."))
 
 with cProfile.Profile(subcalls=False) as pr:
 
-    import tarchia.main
+    import main
 #    app = tarchia.main.application
 
 #        suite = open("tests/sql_battery/test_shapes_and_errors_battery.py").read()
