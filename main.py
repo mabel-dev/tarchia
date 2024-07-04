@@ -2,7 +2,8 @@
 Tarchia Metastore Application
 
 Tarchia is the metadata store for Mabel and Opteryx, inspired by the Apache Iceberg REST API.
-This module sets up the FastAPI application, including routes and middleware, for the Tarchia metadata store.
+This module sets up the FastAPI application, including routes and middleware, for the Tarchia
+metadata store.
 
 Structure:
 - Imports standard library modules and third-party modules.
@@ -18,13 +19,15 @@ Imports:
 - v1_routes: API routes for version 1 of the Tarchia API.
 
 Usage:
-- To run the application, execute this module directly. The application will start and listen on the specified port (default is 8080).
+- To run the application, execute this module directly. The application will start and listen
+  on the specified port (default is 8080).
 
 Example:
     $ python main.py
 
 Notes:
-- The `pragma: no cover` and `nosec` comments are used to handle coverage and security warnings appropriately.
+- The `pragma: no cover` and `nosec` comments are used to handle coverage and security warnings
+  appropriately.
 - Basic error handling is included for the environment variable conversion.
 """
 

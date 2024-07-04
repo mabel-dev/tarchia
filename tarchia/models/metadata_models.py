@@ -135,7 +135,7 @@ class Snapshot(TarchiaBaseModel):
     last_updated_ms: int
     manifest_path: Optional[str]
     table_schema: Schema
-    encryption_details: EncryptionDetails
+    encryption_details: Optional[EncryptionDetails]
 
 
 class TableCatalogEntry(TarchiaBaseModel):
@@ -171,6 +171,7 @@ class TableCatalogEntry(TarchiaBaseModel):
     visibility: TableVisibility
     current_schema: Schema
     current_snapshot_id: Optional[str]
+    encryption_details: Optional[EncryptionDetails]
     format_version: int = Field(default=1)
     disposition: TableDisposition = Field(default=TableDisposition.SNAPSHOT)
     metadata: dict = Field(default_factory=dict)

@@ -117,6 +117,7 @@ async def create_table(
         current_snapshot_id=None,
         current_schema=request.table_schema,
         last_updated_ms=int(time.time_ns() / 1e6),
+        encryption_details=request.encryption_details,
     )
 
     # Save the table to the Catalog
