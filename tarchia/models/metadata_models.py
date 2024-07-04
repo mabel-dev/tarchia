@@ -170,8 +170,8 @@ class TableCatalogEntry(TarchiaBaseModel):
     permissions: List[DatasetPermissions]
     visibility: TableVisibility
     current_schema: Schema
-    current_snapshot_id: Optional[str]
-    encryption_details: Optional[EncryptionDetails]
+    current_snapshot_id: Optional[str] = None
+    encryption_details: Optional[EncryptionDetails] = None
     format_version: int = Field(default=1)
     disposition: TableDisposition = Field(default=TableDisposition.SNAPSHOT)
     metadata: dict = Field(default_factory=dict)

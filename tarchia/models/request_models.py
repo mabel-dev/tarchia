@@ -91,7 +91,7 @@ class CreateTableRequest(TarchiaBaseModel):
     disposition: TableDisposition = TableDisposition.SNAPSHOT
     permissions: List[DatasetPermissions] = Field(default_factory=default_permissions)
     metadata: Dict[str, Any] = Field(default_factory=dict)
-    encryption_details: EncryptionDetails = None
+    encryption_details: Optional[EncryptionDetails] = None
 
     @field_validator("name")
     def validate_name(cls, name):
