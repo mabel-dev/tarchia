@@ -91,7 +91,7 @@ async def start_transaction(owner: str, table: str, snapshot: Optional[str] = No
     transaction_id = generate_uuid()
     transaction = Transaction(
         transaction_id=transaction_id,
-        expires_at=time.time(),
+        expires_at=int(time.time()),
         table_id=table_id,
         table=table,
         owner=owner,
@@ -112,15 +112,17 @@ async def commit_transaction(
         description="Force a transaction to complete, even if operating on a non-latest snapshot",
     ),
 ):
+    from tarchia.catalog import catalog_factory
     from tarchia.manifests import build_manifest_entry
     from tarchia.manifests import get_manifest
+    from tarchia.manifests import write_manifest
     from tarchia.storage import storage_factory
     from tarchia.utils import build_root
     from tarchia.utils import generate_uuid
     from tarchia.utils.catalogs import identify_table
 
     transaction = verify_and_decode_transaction(encoded_transaction)
-    catalog_entry = identify_table(owner=transaction.owner, table=transaction.owner)
+    catalog_entry = identify_table(owner=transaction.owner, table=transaction.table)
 
     if not force and not catalog_entry.current_schema == transaction.parent_snapshot:
         raise TransactionError("Transaction failed: Snapshot out of date")
@@ -133,6 +135,10 @@ async def commit_transaction(
     manifest_root = build_root(MANIFEST_ROOT, owner=owner, table_id=table_id)
 
     storage_provider = storage_factory()
+    catalog_provider = catalog_factory()
+
+    snapshot_id = str(int(time.time_ns() / 1e6))
+    snapshot_path = f"{snapshot_root}/asat-{snaphot_id}.json"
 
     if transaction.parent_snapshot:
         snapshot_file = storage_provider.read_blob(
@@ -151,11 +157,11 @@ async def commit_transaction(
 
     # build the new snapshot
     new_snaphot = Snapshot(
-        snaphot_id=snapshot_id,
+        snapshot_id=snapshot_id,
         parent_snapshot_path=transaction.parent_snapshot,
-        last_updated_ms=time.time_ns() * 10000000,
+        last_updated_ms=int(time.time_ns() / 1e6),
         manifest_path="",
-        table_schema=catalog_entry.table_schema,
+        table_schema=catalog_entry.current_schema,
         encryption_details=catalog_entry.encryption_details,
     )
 
@@ -167,12 +173,16 @@ async def commit_transaction(
     for entry in transaction.additions:
         new_manifest.extend(build_manifest_entry(entry))
 
-    """
-    write a new snapshot
-    - write new manifest
-    - write snaphot file
-    - update catalog
-    """
+    manifest_id = generate_uuid()
+    manifest_path = f"{manifest_root}/manifest-{manifest_id}.avro"
+    write_manifest(location=manifest_path, storage_provider=storage_provider, entries=new_manifest)
+
+    new_snaphot.manifest_path = manifest_path
+
+    print(new_snaphot.as_dict())
+    storage_provider.write_blob(snapshot_path, new_snaphot.serialize())
+
+    catalog_provider.update_table(catalog_entry.table_id, catalog_entry)
 
     return {
         "message": "Transaction committed successfully",

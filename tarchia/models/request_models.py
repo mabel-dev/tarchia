@@ -10,6 +10,7 @@ from tarchia.utils import is_valid_sql_identifier
 
 from .metadata_models import Column
 from .metadata_models import DatasetPermissions
+from .metadata_models import EncryptionDetails
 from .metadata_models import OwnerType
 from .metadata_models import RolePermission
 from .metadata_models import Schema
@@ -90,6 +91,7 @@ class CreateTableRequest(TarchiaBaseModel):
     disposition: TableDisposition = TableDisposition.SNAPSHOT
     permissions: List[DatasetPermissions] = Field(default_factory=default_permissions)
     metadata: Dict[str, Any] = Field(default_factory=dict)
+    encryption_details: EncryptionDetails = None
 
     @field_validator("name")
     def validate_name(cls, name):
