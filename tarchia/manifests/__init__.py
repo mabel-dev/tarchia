@@ -107,20 +107,12 @@ def build_manifest_entry(path: str, storage_provider: StorageProvider) -> Manife
 
     # Initialize statistics for each column
     for column in parquet_file.schema_arrow.names:
-        new_manifest_entry.null_value_counts[column] = 0
-
         # Iterate over each row group to gather statistics
         for row_group_index in range(parquet_file.metadata.num_row_groups):
             column_index = parquet_file.schema_arrow.get_field_index(column)
             column_chunk = parquet_file.metadata.row_group(row_group_index).column(column_index)
 
             if column_chunk.statistics is not None:
-                # Update null value counts
-                if column_chunk.statistics.has_null_count:
-                    new_manifest_entry.null_value_counts[column] += (
-                        column_chunk.statistics.null_count
-                    )
-
                 # Update lower bounds
                 min_value = to_int(column_chunk.statistics.min)
                 if min_value:

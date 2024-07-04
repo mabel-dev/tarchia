@@ -22,7 +22,6 @@ class ManifestEntry(TarchiaBaseModel):
     file_type: EntryType
     record_count: Optional[int] = None
     file_size: Optional[int] = None
-    null_value_counts: Dict[str, int] = Field(default_factory=dict)
     lower_bounds: Dict[str, int] = Field(default_factory=dict)
     upper_bounds: Dict[str, int] = Field(default_factory=dict)
 
@@ -41,6 +40,5 @@ MANIFEST_SCHEMA = {
         {"name": "file_size", "type": "int"},
         {"name": "lower_bounds", "type": {"type": "map", "values": "int"}},
         {"name": "upper_bounds", "type": {"type": "map", "values": "int"}},
-        {"name": "null_value_counts", "type": {"type": "map", "values": "int"}},
     ],
 }
