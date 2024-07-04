@@ -141,5 +141,4 @@ def build_manifest_entry(path: str, storage_provider: StorageProvider) -> Manife
                             new_manifest_entry.upper_bounds[column], max_value
                         )
 
-    print(new_manifest_entry.as_dict())
     return new_manifest_entry
