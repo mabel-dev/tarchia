@@ -4,6 +4,7 @@ Models to support handling manifests.
 
 from enum import Enum
 from typing import Dict
+from typing import Optional
 
 from pydantic import Field
 
@@ -19,9 +20,9 @@ class ManifestEntry(TarchiaBaseModel):
     file_path: str
     file_format: str
     file_type: EntryType
-    record_count: int
-    file_size: int
-    null_value_counts: Dict[str, int]
+    record_count: Optional[int] = None
+    file_size: Optional[int] = None
+    null_value_counts: Dict[str, int] = Field(default_factory=dict)
     lower_bounds: Dict[str, int] = Field(default_factory=dict)
     upper_bounds: Dict[str, int] = Field(default_factory=dict)
 

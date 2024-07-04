@@ -12,13 +12,7 @@ from tarchia.models import Transaction
 
 
 def test_transaction_signing_happy():
-    payload = Transaction(
-        transaction_id="1",
-        expires_at=0,
-        table_id="1",
-        table="1",
-        owner="1"
-    )
+    payload = Transaction(transaction_id="1", expires_at=0, table_id="1", table="1", owner="1")
 
     signed_transaction = encode_and_sign_transaction(payload)
     verified_transaction = verify_and_decode_transaction(signed_transaction)
@@ -34,19 +28,15 @@ def test_transaction_signing_very_wrong_transactions():
     with pytest.raises(TransactionError):
         verify_and_decode_transaction(None)
 
-    signed_transaction = encode_and_sign_transaction(Transaction(
-        transaction_id="1",
-        expires_at=0,
-        table_id="1",
-        table="1",
-        owner="1"
-    ))
+    signed_transaction = encode_and_sign_transaction(
+        Transaction(transaction_id="1", expires_at=0, table_id="1", table="1", owner="1")
+    )
     # ensure the transaction is valid
     verify_and_decode_transaction(signed_transaction)
 
     # we're going to do various tamperings
     with pytest.raises(TransactionError):
-        verify_and_decode_transaction(signed_transaction[:-1]+'0')
+        verify_and_decode_transaction(signed_transaction[:-1] + "0")
     with pytest.raises(TransactionError):
         verify_and_decode_transaction(str(reversed(signed_transaction)))
 

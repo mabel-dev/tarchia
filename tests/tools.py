@@ -134,6 +134,7 @@ def skip(func):  # pragma: no cover
     Returns:
         Callable: The wrapped function that issues a warning.
     """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         import warnings
@@ -164,6 +165,7 @@ def skip_if(is_true: bool = True):
             @skip_if(is_windows() and is_version("3.8"))
             def test...
     """
+
     def decorate(func):
         @wraps(func)
         def wrapper(*args, **kwargs):

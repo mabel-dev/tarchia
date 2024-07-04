@@ -171,7 +171,7 @@ async def commit_transaction(
         if entry not in transaction.deletions:
             new_manifest.append(entry)
     for entry in transaction.additions:
-        new_manifest.extend(build_manifest_entry(entry))
+        new_manifest.append(build_manifest_entry(entry, storage_provider))
 
     manifest_id = generate_uuid()
     manifest_path = f"{manifest_root}/manifest-{manifest_id}.avro"

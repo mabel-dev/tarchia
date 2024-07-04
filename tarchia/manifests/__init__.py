@@ -6,7 +6,6 @@ import fastavro
 
 from tarchia.manifests.models import EntryType
 from tarchia.manifests.models import ManifestEntry
-from tarchia.manifests.pruning import parse_filters
 from tarchia.manifests.pruning import prune
 from tarchia.storage import StorageProvider
 
@@ -69,8 +68,8 @@ def write_manifest(location: str, storage_provider: StorageProvider, entries: Li
 
     fastavro.writer(
         stream,
-        MANIFEST_SCHEMA,
-        entries,
+        schema=MANIFEST_SCHEMA,
+        records=[e.as_dict() for e in entries],
         codec="zstandard",
     )
 
@@ -78,6 +77,69 @@ def write_manifest(location: str, storage_provider: StorageProvider, entries: Li
     storage_provider.write_blob(location, stream.read())
 
 
-def build_manifest_entry(file) -> ManifestEntry:
-    print("write me")
-    quit()
+def build_manifest_entry(path: str, storage_provider: StorageProvider) -> ManifestEntry:
+    """
+    Build a manifest entry for a given Parquet file.
+
+    Parameters:
+        path (str): The file path of the Parquet file.
+        storage_provider (StorageProvider): An instance of StorageProvider to read the file.
+
+    Returns:
+        ManifestEntry: The constructed manifest entry with file details and column statistics.
+    """
+    from io import BytesIO
+
+    from pyarrow import parquet
+
+    from tarchia.utils.to_int import to_int
+
+    new_manifest_entry = ManifestEntry(
+        file_path=path, file_format="parquet", file_type=EntryType.Data
+    )
+
+    # Read the file bytes and initialize the Parquet file object
+    file_bytes = storage_provider.read_blob(path)
+    new_manifest_entry.file_size = len(file_bytes)
+    stream = BytesIO(file_bytes)
+    parquet_file = parquet.ParquetFile(stream)
+    new_manifest_entry.record_count = parquet_file.metadata.num_rows
+
+    # Initialize statistics for each column
+    for column in parquet_file.schema_arrow.names:
+        new_manifest_entry.null_value_counts[column] = 0
+
+        # Iterate over each row group to gather statistics
+        for row_group_index in range(parquet_file.metadata.num_row_groups):
+            column_index = parquet_file.schema_arrow.get_field_index(column)
+            column_chunk = parquet_file.metadata.row_group(row_group_index).column(column_index)
+
+            if column_chunk.statistics is not None:
+                # Update null value counts
+                if column_chunk.statistics.has_null_count:
+                    new_manifest_entry.null_value_counts[column] += (
+                        column_chunk.statistics.null_count
+                    )
+
+                # Update lower bounds
+                min_value = to_int(column_chunk.statistics.min)
+                if min_value:
+                    if column not in new_manifest_entry.lower_bounds:
+                        new_manifest_entry.lower_bounds[column] = min_value
+                    else:
+                        new_manifest_entry.lower_bounds[column] = min(
+                            new_manifest_entry.lower_bounds[column], min_value
+                        )
+
+                # Update upper bounds
+                max_value = to_int(column_chunk.statistics.max)
+                if max_value:
+                    if column not in new_manifest_entry.upper_bounds:
+                        new_manifest_entry.upper_bounds[column] = max_value
+                    else:
+                        new_manifest_entry.upper_bounds[column] = max(
+                            new_manifest_entry.upper_bounds[column], max_value
+                        )
+
+    print(new_manifest_entry.as_dict())
+    return new_manifest_entry

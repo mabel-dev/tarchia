@@ -27,15 +27,13 @@ from tarchia.models import Schema
 from main import application
 from tests.common import ensure_owner
 
+
 def test_create_read_update_delete_owner():
 
     client = TestClient(application)
 
     owner = CreateOwnerRequest(
-        name="joocer",
-        steward="billy",
-        type=OwnerType.INDIVIDUAL,
-        memberships=[]
+        name="joocer", steward="billy", type=OwnerType.INDIVIDUAL, memberships=[]
     )
 
     # create the owner
@@ -48,7 +46,7 @@ def test_create_read_update_delete_owner():
     assert response.json()["steward"] == "billy"
 
     # we shouldn't be able to update the owner_id
-    response = client.patch(url="/v1/owners/joocer/owner_id", content='1234')
+    response = client.patch(url="/v1/owners/joocer/owner_id", content="1234")
     assert response.status_code == 422, f"{response.status_code} - {response.content}"
 
     # can we update this owner
@@ -67,7 +65,9 @@ def test_create_read_update_delete_owner():
     response = client.get(url="/v1/owners/joocer")
     assert response.status_code == 404, f"{response.status_code} - {response.content}"
 
+
 if __name__ == "__main__":  # pragma: no cover
     from tests.tools import run_tests
+
     test_create_read_update_delete_owner()
     run_tests()
