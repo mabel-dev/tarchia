@@ -6,11 +6,10 @@ from typing import Optional
 
 import orjson
 from fastapi import APIRouter
-from fastapi import Path
+from fastapi import HTTPException
 from fastapi import Query
 
 from tarchia import config
-from tarchia.constants import IDENTIFIER_REG_EX
 from tarchia.constants import MANIFEST_ROOT
 from tarchia.constants import SNAPSHOT_ROOT
 from tarchia.exceptions import TransactionError
@@ -20,7 +19,16 @@ from tarchia.models import Transaction
 router = APIRouter()
 
 
-def encode_and_sign_transaction(transaction: Transaction):
+def encode_and_sign_transaction(transaction: Transaction) -> str:
+    """
+    Encode and sign a transaction.
+
+    Parameters:
+        transaction (Transaction): The transaction object to be encoded and signed.
+
+    Returns:
+        str: The encoded and signed transaction as a string.
+    """
     SIGNER = config.TRANSACTION_SIGNER
     if not isinstance(SIGNER, bytes):
         SIGNER = str(SIGNER).encode()
@@ -29,44 +37,72 @@ def encode_and_sign_transaction(transaction: Transaction):
     encoded = base64.b64encode(transaction_bytes).decode()
     signature = hashlib.sha256(SIGNER + transaction_bytes).hexdigest()
 
-    return encoded + "." + signature
+    return f"{encoded}.{signature}"
 
 
 def verify_and_decode_transaction(transaction_data: str) -> Transaction:
-    # We late import to allow code to override this
+    """
+    Verify and decode a transaction.
+
+    Parameters:
+        transaction_data (str): The encoded and signed transaction data as a string.
+
+    Returns:
+        Transaction: The decoded transaction object.
+
+    Raises:
+        TransactionError: If the transaction is invalid or expired.
+    """
     SIGNER = config.TRANSACTION_SIGNER
     if not isinstance(SIGNER, bytes):
         SIGNER = str(SIGNER).encode()
 
     if not transaction_data:
-        raise TransactionError("No Transaction")
+        raise TransactionError("No Transaction.")
     if "." not in transaction_data:
-        raise TransactionError("Transaction not formatted correctly.")
+        raise TransactionError("Transaction incorrectly formatted.")
+
     transaction, signature = transaction_data.split(".")
 
     decoded = base64.b64decode(transaction)
     transaction = orjson.loads(decoded)
-    recreated_signature = hashlib.sha256(SIGNER + decoded).hexdigest()
-    if signature != recreated_signature:
-        raise TransactionError("Transaction signature invalid")
+
     if int(transaction["expires_at"]) > time.time():
         raise TransactionError("Transaction Expired")
+
+    recreated_signature = hashlib.sha256(SIGNER + decoded).hexdigest()
+    if signature != recreated_signature:
+        raise TransactionError("Transaction signature invalid.")
+
     return Transaction(**transaction)
 
 
-def calculate_table_hash(data):
-    # Assuming `data` is the serialized form of the table
-    return hashlib.sha256(data).hexdigest()
+def load_old_snapshot(storage_provider, snapshot_root, parent_snapshot):
+    if parent_snapshot:
+        snapshot_file = storage_provider.read_blob(f"{snapshot_root}/asat-{parent_snapshot}.json")
+        return orjson.loads(snapshot_file)
+    return {}
 
 
-def calculate_dataset_hash(table_hashes):
-    from binascii import unhexlify
-    from functools import reduce
-    from operator import xor
+def build_new_manifest(old_manifest, transaction, storage_provider):
+    from tarchia.manifests import build_manifest_entry
 
-    hex_hashes = [unhexlify(h) for h in table_hashes]
-    aggregated_hash = reduce(xor, hex_hashes)
-    return hashlib.sha256(aggregated_hash).hexdigest()
+    new_manifest = [entry for entry in old_manifest if entry not in transaction.deletions]
+    new_manifest.extend(
+        build_manifest_entry(entry, storage_provider) for entry in transaction.additions
+    )
+    return new_manifest
+
+
+def create_new_snapshot(snapshot_id, transaction, catalog_entry, manifest_path, timestamp):
+    return Snapshot(
+        snapshot_id=snapshot_id,
+        parent_snapshot_path=transaction.parent_snapshot,
+        last_updated_ms=timestamp,
+        manifest_path=manifest_path,
+        table_schema=catalog_entry.current_schema,
+        encryption_details=catalog_entry.encryption_details,
+    )
 
 
 @router.post("/transactions/start")
@@ -112,8 +148,18 @@ async def commit_transaction(
         description="Force a transaction to complete, even if operating on a non-latest snapshot",
     ),
 ):
+    """
+    Commits a transaction by verifying it, updating the manifest and snapshot,
+    and updating the catalog.
+
+    Parameters:
+        encoded_transaction (str): Encoded transaction string.
+        force (bool): Force transaction to complete even if the snapshot is not the latest.
+
+    Returns:
+        dict: Result of the transaction commit.
+    """
     from tarchia.catalog import catalog_factory
-    from tarchia.manifests import build_manifest_entry
     from tarchia.manifests import get_manifest
     from tarchia.manifests import write_manifest
     from tarchia.storage import storage_factory
@@ -121,102 +167,75 @@ async def commit_transaction(
     from tarchia.utils import generate_uuid
     from tarchia.utils.catalogs import identify_table
 
-    transaction = verify_and_decode_transaction(encoded_transaction)
-    catalog_entry = identify_table(owner=transaction.owner, table=transaction.table)
+    try:
+        transaction = verify_and_decode_transaction(encoded_transaction)
+        catalog_entry = identify_table(owner=transaction.owner, table=transaction.table)
 
-    if (
-        not force
-        and transaction.parent_snapshot
-        and not catalog_entry.current_snapshot_id == transaction.parent_snapshot
-    ):
-        raise TransactionError("Transaction failed: Snapshot out of date")
+        if (
+            not force
+            and transaction.parent_snapshot
+            and catalog_entry.current_snapshot_id != transaction.parent_snapshot
+        ):
+            raise TransactionError("Transaction failed: Snapshot out of date")
 
-    owner = catalog_entry.owner
-    table_id = catalog_entry.table_id
+        owner = catalog_entry.owner
+        table_id = catalog_entry.table_id
 
-    snapshot_root = build_root(SNAPSHOT_ROOT, owner=owner, table_id=table_id)
-    manifest_root = build_root(MANIFEST_ROOT, owner=owner, table_id=table_id)
+        snapshot_root = build_root(SNAPSHOT_ROOT, owner=owner, table_id=table_id)
+        manifest_root = build_root(MANIFEST_ROOT, owner=owner, table_id=table_id)
 
-    storage_provider = storage_factory()
-    catalog_provider = catalog_factory()
+        storage_provider = storage_factory()
+        catalog_provider = catalog_factory()
 
-    timestamp = int(time.time_ns() / 1e6)
-    snapshot_id = str(timestamp)
-    snapshot_path = f"{snapshot_root}/asat-{snapshot_id}.json"
+        timestamp = int(time.time_ns() / 1e6)
+        snapshot_id = str(timestamp)
+        snapshot_path = f"{snapshot_root}/asat-{snapshot_id}.json"
 
-    if transaction.parent_snapshot:
-        snapshot_file = storage_provider.read_blob(
-            f"{snapshot_root}/asat-{transaction.parent_snapshot}.json"
+        old_snapshot = load_old_snapshot(
+            storage_provider, snapshot_root, transaction.parent_snapshot
         )
-        old_snapshot = orjson.loads(snapshot_file)
-    else:
-        old_snapshot = {}
+        old_manifest = (
+            get_manifest(old_snapshot.get("manifest_path"), storage_provider)
+            if old_snapshot.get("manifest_path")
+            else []
+        )
 
-    # build the new manifest first
-    # simple single file manifest for now, this isn't size limited, we'll see how that goes
-    if transaction.truncate or old_snapshot.get("manifest_path") is None:
-        old_manifest = []
-    else:
-        old_manifest = get_manifest(old_snapshot.get("manifest_path"), storage_provider)
+        new_manifest = build_new_manifest(old_manifest, transaction, storage_provider)
+        manifest_id = generate_uuid()
+        manifest_path = f"{manifest_root}/manifest-{manifest_id}.avro"
+        write_manifest(
+            location=manifest_path, storage_provider=storage_provider, entries=new_manifest
+        )
 
-    # build the new snapshot
-    new_snaphot = Snapshot(
-        snapshot_id=snapshot_id,
-        parent_snapshot_path=transaction.parent_snapshot,
-        last_updated_ms=timestamp,
-        manifest_path="",
-        table_schema=catalog_entry.current_schema,
-        encryption_details=catalog_entry.encryption_details,
-    )
+        new_snapshot = create_new_snapshot(
+            snapshot_id, transaction, catalog_entry, manifest_path, timestamp
+        )
+        storage_provider.write_blob(snapshot_path, new_snapshot.serialize())
 
-    # build the file list for the new manifest
-    new_manifest = []
-    for entry in old_manifest:
-        if entry not in transaction.deletions:
-            new_manifest.append(entry)
-    for entry in transaction.additions:
-        new_manifest.append(build_manifest_entry(entry, storage_provider))
+        catalog_entry.last_updated_ms = timestamp
+        catalog_entry.current_snapshot_id = snapshot_id
+        catalog_provider.update_table(catalog_entry.table_id, catalog_entry)
 
-    manifest_id = generate_uuid()
-    manifest_path = f"{manifest_root}/manifest-{manifest_id}.avro"
-    write_manifest(location=manifest_path, storage_provider=storage_provider, entries=new_manifest)
-
-    new_snaphot.manifest_path = manifest_path
-    storage_provider.write_blob(snapshot_path, new_snaphot.serialize())
-
-    catalog_entry.last_updated_ms = timestamp
-    catalog_entry.current_snapshot_id = str(timestamp)
-
-    catalog_provider.update_table(catalog_entry.table_id, catalog_entry)
-
-    return {
-        "message": "Transaction committed successfully",
-        "transaction": transaction.transaction_id,
-        "snapshot": snapshot_id,
-        "notice": "this isn't actually completely written",
-    }
+        return {
+            "message": "Transaction committed successfully",
+            "transaction": transaction.transaction_id,
+            "snapshot": snapshot_id,
+        }
+    except TransactionError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal Server Error") from e
 
 
-@router.post("/tables/{owner}/{table}/stage")
-async def add_files_to_transaction(
-    file_paths: List[str],
-    encoded_transaction: str,
-    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
-    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
-):
+@router.post("/transactions/stage")
+async def add_files_to_transaction(file_paths: List[str], encoded_transaction: str):
     """
     Add files to a table.
 
     This operation can only be called as part of a transaction and does not make
     any changes to the table until the commit end-point is called.
     """
-    from tarchia.utils.catalogs import identify_table
-
-    catalog_entry = identify_table(owner=owner, table=table)
-
     transaction = verify_and_decode_transaction(encoded_transaction)
-    if transaction.table_id != catalog_entry.table_id:
-        raise TransactionError("Transaction operate on single tables")
 
     # Add file paths to the transaction's addition list
     transaction.additions.extend(file_paths)
@@ -226,25 +245,18 @@ async def add_files_to_transaction(
     return {"message": "Files added to transaction", "encoded_transaction": new_encoded_transaction}
 
 
-@router.post("/tables/{owner}/{table}/truncate")
-async def truncate_all_files(
-    encoded_transaction: str,
-    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
-    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
-):
+@router.post("/transactions/truncate")
+async def truncate_all_files(encoded_transaction: str):
     """
     Truncate (delete all records) from a table.
 
     This operation can only be called as part of a transaction and does not make
     any changes to the table until the commit end-point is called.
     """
-    from tarchia.utils.catalogs import identify_table
-
-    catalog_entry = identify_table(owner=owner, table=table)
-
     transaction = verify_and_decode_transaction(encoded_transaction)
-    if transaction.table_id != catalog_entry.table_id:
-        raise TransactionError("Transaction operate on single tables")
+
+    if len(transaction.additions) != 0:
+        raise TransactionError("Use 'truncate' before staging files in transaction.")
 
     # truncate everything
     transaction.truncate = True

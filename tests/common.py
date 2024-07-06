@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 from tarchia.models import CreateOwnerRequest, OwnerType
 from main import application
 
+TEST_OWNER = "tester"
 
 def ensure_owner():
     """
@@ -10,7 +11,7 @@ def ensure_owner():
     client = TestClient(application)
 
     owner = CreateOwnerRequest(
-        name="joocer", steward="billy", type=OwnerType.INDIVIDUAL, memberships=[]
+        name=TEST_OWNER, steward="billy", type=OwnerType.INDIVIDUAL, memberships=[]
     )
 
     # create the owner
