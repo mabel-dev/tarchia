@@ -14,6 +14,7 @@ from typing import Awaitable
 from typing import Callable
 
 import orjson
+from fastapi import HTTPException
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
@@ -36,6 +37,9 @@ class AuditMiddleware(BaseHTTPMiddleware):
             outcome = "success"
             return result
 
+        except HTTPException as error:
+            outcome = error
+            raise error
         except DataEntryError as e:
             outcome = "error"
             return Response(status_code=422, content=se)
