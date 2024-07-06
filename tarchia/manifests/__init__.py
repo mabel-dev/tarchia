@@ -11,7 +11,7 @@ from tarchia.storage import StorageProvider
 
 
 def get_manifest(
-    manifest: str,
+    location: str,
     storage_provider: StorageProvider,
     filter_conditions: Optional[List[Tuple[str, str, str]]],
 ) -> List[str]:
@@ -34,11 +34,13 @@ def get_manifest(
         with no possible matching records. Blobs will still need to be filtered
         and blobs may not contain any matches.
     """
+    from io import BytesIO
+
     manifest = []
 
     # get the manifest
-    manifest_bytes = storage_provider.read_blob(manifest)
-    manifest_complete = fastavro.reader(manifest_bytes)
+    manifest_bytes = storage_provider.read_blob(location)
+    manifest_complete = fastavro.reader(BytesIO(manifest_bytes))
 
     for entry in manifest_complete:
         manifest_entry = ManifestEntry(**entry)
@@ -115,7 +117,7 @@ def build_manifest_entry(path: str, storage_provider: StorageProvider) -> Manife
             if column_chunk.statistics is not None:
                 # Update lower bounds
                 min_value = to_int(column_chunk.statistics.min)
-                if min_value:
+                if min_value is not None:
                     if column not in new_manifest_entry.lower_bounds:
                         new_manifest_entry.lower_bounds[column] = min_value
                     else:
@@ -125,7 +127,7 @@ def build_manifest_entry(path: str, storage_provider: StorageProvider) -> Manife
 
                 # Update upper bounds
                 max_value = to_int(column_chunk.statistics.max)
-                if max_value:
+                if max_value is not None:
                     if column not in new_manifest_entry.upper_bounds:
                         new_manifest_entry.upper_bounds[column] = max_value
                     else:

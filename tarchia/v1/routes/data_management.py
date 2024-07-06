@@ -124,10 +124,13 @@ async def commit_transaction(
     transaction = verify_and_decode_transaction(encoded_transaction)
     catalog_entry = identify_table(owner=transaction.owner, table=transaction.table)
 
-    if not force and not catalog_entry.current_schema == transaction.parent_snapshot:
+    if (
+        not force
+        and transaction.parent_snapshot
+        and not catalog_entry.current_snapshot_id == transaction.parent_snapshot
+    ):
         raise TransactionError("Transaction failed: Snapshot out of date")
 
-    snaphot_id = generate_uuid()
     owner = catalog_entry.owner
     table_id = catalog_entry.table_id
 
@@ -137,8 +140,9 @@ async def commit_transaction(
     storage_provider = storage_factory()
     catalog_provider = catalog_factory()
 
-    snapshot_id = str(int(time.time_ns() / 1e6))
-    snapshot_path = f"{snapshot_root}/asat-{snaphot_id}.json"
+    timestamp = int(time.time_ns() / 1e6)
+    snapshot_id = str(timestamp)
+    snapshot_path = f"{snapshot_root}/asat-{snapshot_id}.json"
 
     if transaction.parent_snapshot:
         snapshot_file = storage_provider.read_blob(
@@ -159,7 +163,7 @@ async def commit_transaction(
     new_snaphot = Snapshot(
         snapshot_id=snapshot_id,
         parent_snapshot_path=transaction.parent_snapshot,
-        last_updated_ms=int(time.time_ns() / 1e6),
+        last_updated_ms=timestamp,
         manifest_path="",
         table_schema=catalog_entry.current_schema,
         encryption_details=catalog_entry.encryption_details,
@@ -178,16 +182,17 @@ async def commit_transaction(
     write_manifest(location=manifest_path, storage_provider=storage_provider, entries=new_manifest)
 
     new_snaphot.manifest_path = manifest_path
-
-    print(new_snaphot.as_dict())
     storage_provider.write_blob(snapshot_path, new_snaphot.serialize())
+
+    catalog_entry.last_updated_ms = timestamp
+    catalog_entry.current_snapshot_id = str(timestamp)
 
     catalog_provider.update_table(catalog_entry.table_id, catalog_entry)
 
     return {
         "message": "Transaction committed successfully",
         "transaction": transaction.transaction_id,
-        "snapshot": snaphot_id,
+        "snapshot": snapshot_id,
         "notice": "this isn't actually completely written",
     }
 

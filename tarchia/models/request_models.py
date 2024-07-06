@@ -84,7 +84,7 @@ class CreateTableRequest(TarchiaBaseModel):
 
     name: str
     steward: str
-    location: str
+    location: Optional[str]
     table_schema: Schema
     visibility: TableVisibility = TableVisibility.PRIVATE
     partitioning: Optional[List[str]] = Field(default_factory=default_partitioning)
