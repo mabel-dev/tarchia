@@ -170,7 +170,7 @@ async def get_table(
     if catalog_entry.current_snapshot_id is None:
         return catalog_entry.as_dict()
 
-    snapshot_id = catalog_entry.snapshot_id
+    snapshot_id = catalog_entry.current_snapshot_id
     table_id = catalog_entry.table_id
     snapshot_root = build_root(SNAPSHOT_ROOT, owner=owner, table_id=table_id)
 

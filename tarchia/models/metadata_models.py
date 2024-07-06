@@ -164,8 +164,8 @@ class TableCatalogEntry(TarchiaBaseModel):
     steward: str
     owner: str
     table_id: str
-    location: str
-    partitioning: List[str]
+    location: Optional[str]
+    partitioning: Optional[List[str]]
     last_updated_ms: int
     permissions: List[DatasetPermissions]
     visibility: TableVisibility
@@ -175,6 +175,13 @@ class TableCatalogEntry(TarchiaBaseModel):
     format_version: int = Field(default=1)
     disposition: TableDisposition = Field(default=TableDisposition.SNAPSHOT)
     metadata: dict = Field(default_factory=dict)
+
+    def validate(self):
+        # only columns in the schema can be encrypted
+
+        # partitioning requires a location
+
+        return True
 
 
 class OwnerEntry(TarchiaBaseModel):

@@ -120,6 +120,13 @@ flowchart TD
   - Too few indexes (one per dataset).
 - Index strategy is still being developed.
 
+## Compatibility
+
+Tarchia currently only supports:
+
+**Datafiles**: `parquet`
+**Catalogs**: FireStore and internal
+**Blob Stores**: local
 
 ## Git-Like Management
 

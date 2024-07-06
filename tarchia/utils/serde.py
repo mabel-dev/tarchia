@@ -44,4 +44,4 @@ def to_dict(obj: Any) -> Dict[str, Any]:
         else:
             return value
 
-    return {field: convert_value(getattr(obj, field)) for field in obj.model_fields_set}
+    return {field: convert_value(getattr(obj, field)) for field in obj.model_fields}
