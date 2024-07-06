@@ -133,7 +133,8 @@ def test_maintain_table_schema():
     # confirm we know the schema value before we start
     response = client.get(url=f"/v1/tables/{TEST_OWNER}/test_dataset_schema_test")
     assert response.status_code == 200, f"{response.status_code} - {response.content}"
-    assert response.json()["current_schema"] == {"columns": [{"name": "column"}]}
+    current_schema = response.json()["current_schema"] 
+    assert current_schema == {"columns": [{"name": "column", "aliases": [], "default": None, "description": "", "type": "VARCHAR"}]}, current_schema
 
     # update the schema
     response = client.patch(
@@ -148,7 +149,7 @@ def test_maintain_table_schema():
     schema = response.json()["current_schema"]
     assert schema is not None
     assert response.json()["current_schema"] == {
-        "columns": [{"name": "new", "type": "VARCHAR", "default": "true"}]
+        "columns": [{"name": "new", "aliases": [], "default": "true", "description": "", "type": "VARCHAR"}]
     }, schema
 
     # delete the table
