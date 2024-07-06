@@ -39,6 +39,7 @@ async def list_tables(owner: str, request: Request):
 
     base_url = request.url.scheme + "://" + request.url.netloc
     catalog_provider = catalog_factory()
+    table_list = []
 
     tables = catalog_provider.list_tables(owner)
     for table in tables:
@@ -59,14 +60,15 @@ async def list_tables(owner: str, request: Request):
                 "metadata",
             }
         }
-        table_id = table["table_id"]
         current_snapshot_id = table.get("current_snapshot_id")
+        table_name = table.get("name")
         if current_snapshot_id is not None:
-            # provide the URL to call to get the snapshot
+            # provide the URL to call to get the latest snapshot
             table["snapshot_url"] = (
-                f"{base_url}/tables/{owner}/{table_id}/snapshots/{current_snapshot_id}"
+                f"{base_url}/v1/tables/{owner}/{table_name}/snapshots/{current_snapshot_id}"
             )
-    return tables
+        table_list.append(table)
+    return table_list
 
 
 @router.post("/tables/{owner}", response_class=ORJSONResponse)
@@ -176,7 +178,7 @@ async def get_table(
 
     if as_at:
         # Get the snapshot before a given timestamp
-        candidates = storage_provider.blob_list(prefix=snapshot_root, as_at=as_at)
+        candidates = storage_provider.blob_list(prefix=snapshot_root + "/", as_at=as_at)
         if len(candidates) != 1:
             raise TableHasNoDataError(owner=owner, table=table, as_at=as_at)
         snapshot_id = candidates[0].split("-")[-1].split(".")[0]

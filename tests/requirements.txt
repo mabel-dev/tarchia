@@ -1,1 +1,4 @@
+types-PyYAML
+
 orso
+opteryx
