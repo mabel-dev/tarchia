@@ -115,14 +115,14 @@ async def start_transaction(table: TableRequest):
     catalog_entry = identify_table(owner=table.owner, table=table.table)
     table_id = catalog_entry.table_id
 
-    if snapshot is None:
-        snapshot = catalog_entry.current_snapshot_id
+    if table.snapshot is None:
+        table.snapshot = catalog_entry.current_snapshot_id
     else:
         snapshot_root = build_root(
             SNAPSHOT_ROOT, owner=table.owner, table_id=catalog_entry.table_id
         )
         storage_provider = storage_factory()
-        snapshot_file = storage_provider.read_blob(f"{snapshot_root}/asat-{snapshot}.json")
+        snapshot_file = storage_provider.read_blob(f"{snapshot_root}/asat-{table.snapshot}.json")
         if not snapshot_file:
             raise TransactionError("Snapshot not found")
 
@@ -133,7 +133,7 @@ async def start_transaction(table: TableRequest):
         table_id=table_id,
         table=table.table,
         owner=table.owner,
-        parent_snapshot=snapshot,
+        parent_snapshot=table.snapshot,
         additions=[],
         deletions=[],
         truncate=False,
