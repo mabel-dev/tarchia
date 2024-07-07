@@ -147,3 +147,12 @@ class TableRequest(TarchiaBaseModel):
     owner: str
     table: str
     snapshot: Optional[str] = None
+
+
+class TransactionRequest(TarchiaBaseModel):
+    encoded_transaction: str
+
+
+class StageFilesRequest(TarchiaBaseModel):
+    paths: List[str]
+    encoded_transaction: str

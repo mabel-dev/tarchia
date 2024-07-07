@@ -1,7 +1,6 @@
 import base64
 import hashlib
 import time
-from typing import List
 
 import orjson
 from fastapi import APIRouter
@@ -13,8 +12,10 @@ from tarchia.constants import MANIFEST_ROOT
 from tarchia.constants import SNAPSHOT_ROOT
 from tarchia.exceptions import TransactionError
 from tarchia.models import Snapshot
+from tarchia.models import StageFilesRequest
 from tarchia.models import TableRequest
 from tarchia.models import Transaction
+from tarchia.models import TransactionRequest
 
 router = APIRouter()
 
@@ -144,7 +145,7 @@ async def start_transaction(table: TableRequest):
 
 @router.post("/transactions/commit")
 async def commit_transaction(
-    encoded_transaction: str,
+    encoded: TransactionRequest,
     force=Query(
         False,
         description="Force a transaction to complete, even if operating on a non-latest snapshot",
@@ -170,7 +171,7 @@ async def commit_transaction(
     from tarchia.utils.catalogs import identify_table
 
     try:
-        transaction = verify_and_decode_transaction(encoded_transaction)
+        transaction = verify_and_decode_transaction(encoded.encoded_transaction)
         catalog_entry = identify_table(owner=transaction.owner, table=transaction.table)
 
         if (
@@ -230,17 +231,17 @@ async def commit_transaction(
 
 
 @router.post("/transactions/stage")
-async def add_files_to_transaction(file_paths: List[str], encoded_transaction: str):
+async def add_files_to_transaction(stage: StageFilesRequest):
     """
     Add files to a table.
 
     This operation can only be called as part of a transaction and does not make
     any changes to the table until the commit end-point is called.
     """
-    transaction = verify_and_decode_transaction(encoded_transaction)
+    transaction = verify_and_decode_transaction(stage.encoded_transaction)
 
     # Add file paths to the transaction's addition list
-    transaction.additions.extend(file_paths)
+    transaction.additions.extend(stage.paths)
 
     # Reissue the updated transaction token
     new_encoded_transaction = encode_and_sign_transaction(transaction)
