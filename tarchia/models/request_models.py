@@ -141,3 +141,9 @@ class UpdateMetadataRequest(TarchiaBaseModel):
 
 class UpdateValueRequest(TarchiaBaseModel):
     value: Any
+
+
+class TableRequest(TarchiaBaseModel):
+    owner: str
+    table: str
+    snapshot: Optional[str] = None

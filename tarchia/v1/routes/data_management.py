@@ -2,7 +2,6 @@ import base64
 import hashlib
 import time
 from typing import List
-from typing import Optional
 
 import orjson
 from fastapi import APIRouter
@@ -14,6 +13,7 @@ from tarchia.constants import MANIFEST_ROOT
 from tarchia.constants import SNAPSHOT_ROOT
 from tarchia.exceptions import TransactionError
 from tarchia.models import Snapshot
+from tarchia.models import TableRequest
 from tarchia.models import Transaction
 
 router = APIRouter()
@@ -106,19 +106,21 @@ def create_new_snapshot(snapshot_id, transaction, catalog_entry, manifest_path, 
 
 
 @router.post("/transactions/start")
-async def start_transaction(owner: str, table: str, snapshot: Optional[str] = None):
+async def start_transaction(table: TableRequest):
     from tarchia.storage import storage_factory
     from tarchia.utils import build_root
     from tarchia.utils import generate_uuid
     from tarchia.utils.catalogs import identify_table
 
-    catalog_entry = identify_table(owner=owner, table=table)
+    catalog_entry = identify_table(owner=table.owner, table=table.table)
     table_id = catalog_entry.table_id
 
     if snapshot is None:
         snapshot = catalog_entry.current_snapshot_id
     else:
-        snapshot_root = build_root(SNAPSHOT_ROOT, owner=owner, table_id=catalog_entry.table_id)
+        snapshot_root = build_root(
+            SNAPSHOT_ROOT, owner=table.owner, table_id=catalog_entry.table_id
+        )
         storage_provider = storage_factory()
         snapshot_file = storage_provider.read_blob(f"{snapshot_root}/asat-{snapshot}.json")
         if not snapshot_file:
@@ -129,8 +131,8 @@ async def start_transaction(owner: str, table: str, snapshot: Optional[str] = No
         transaction_id=transaction_id,
         expires_at=int(time.time()),
         table_id=table_id,
-        table=table,
-        owner=owner,
+        table=table.table,
+        owner=table.owner,
         parent_snapshot=snapshot,
         additions=[],
         deletions=[],
