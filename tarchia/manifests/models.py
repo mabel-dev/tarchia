@@ -80,7 +80,7 @@ MANIFEST_SCHEMA = {
         {"name": "record_count", "type": ["null", "int"], "default": None},
         {"name": "file_size", "type": ["null", "int"], "default": None},
         {"name": "sha256_checksum", "type": ["null", "string"], "default": None},
-        {"name": "lower_bounds", "type": {"type": "map", "values": "int"}},
-        {"name": "upper_bounds", "type": {"type": "map", "values": "int"}},
+        {"name": "lower_bounds", "type": {"type": "map", "values": "long"}},
+        {"name": "upper_bounds", "type": {"type": "map", "values": "long"}},
     ],
 }
