@@ -10,5 +10,4 @@ We do that by reading 10k rows
             - The number of rows to loose to get back to 2Mb
             - The number of rows to add to get to 2Mb
         We add/remove those rows
-
 """

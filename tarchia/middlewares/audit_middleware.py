@@ -30,27 +30,39 @@ class AuditMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
+        audit_record = {
+            "service": "tarchia",
+            "end_point": request.url.path,
+            "method": request.method,
+        }
+
         outcome = "unknown"
         start = time.monotonic_ns()
         try:
             result = await call_next(request)
             outcome = "success"
+
             return result
 
         except HTTPException as error:
-            outcome = error
+            outcome = "error"
+            audit_record["message"] = str(e)
             raise error
         except DataEntryError as e:
             outcome = "error"
+            audit_record["message"] = str(e)
             return Response(status_code=422, content=se)
         except (TableNotFoundError, OwnerNotFoundError) as e:
             outcome = "error"
+            audit_record["message"] = str(e)
             return Response(status_code=404, content=str(e))
         except AlreadyExistsError as e:
             outcome = "error"
+            audit_record["message"] = str(e)
             return Response(status_code=409, content=str(e))
         except Exception as e:
             outcome = "error"
+            audit_record["message"] = str(e)
             from uuid import uuid4
 
             code = str(uuid4())
@@ -58,11 +70,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
             raise e
             return Response(status_code=500, content=f"Unexpected Error ({code})")
         finally:
-            audit_record = {
-                "service": "tarchia",
-                "end_point": request.url.path,
-                "method": request.method,
-                "duration_ms": ((time.monotonic_ns() - start) / 1e6),
-                "outcome": outcome,
-            }
+            audit_record["duration_ms"] = (time.monotonic_ns() - start) / 1e6
+            audit_record["outcome"] = outcome
+
             print(orjson.dumps(audit_record).decode())
