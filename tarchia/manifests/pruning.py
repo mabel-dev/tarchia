@@ -1,12 +1,24 @@
 from typing import Any
 from typing import List
-from typing import Optional
 from typing import Tuple
+
+from orso.tools import parse_iso
+
+from tarchia.models import Schema
+from tarchia.utils.to_int import to_int
 
 from .models import ManifestEntry
 
 
-def parse_filters(filter_string: Optional[str] = None) -> List[Tuple[str, str, str]]:
+def parse_value(field: str, value: Any, schema: Schema) -> int:
+    for column in schema.columns:
+        if column.name == field:
+            value = column.type.parse(value)
+            return to_int(value)
+    return None
+
+
+def parse_filters(filter_string: str, schema: Schema) -> List[Tuple[str, str, str]]:
     """
     Parse a filter string into a list of tuples.
 
@@ -26,7 +38,13 @@ def parse_filters(filter_string: Optional[str] = None) -> List[Tuple[str, str, s
         for operator in operators:
             if operator in item:
                 column, value = item.split(operator, 1)
-                filters.append((column.strip(), operator, value.strip()))
+                value = value.strip()
+                column = column.strip()
+                if value[0] == value[-1] == "'":
+                    value = value[1:-1]
+                int_value = parse_value(column, value, schema)
+                if int_value is not None:
+                    filters.append((column, operator, int_value))
                 break
 
     return filters
@@ -42,13 +60,12 @@ def prune(record: ManifestEntry, condition: List[Tuple[str, str, Any]]) -> bool:
     Returns:
         bool: True to prune the record
     """
-    # TODO: implement pruning
-    return False
 
     for predicate in condition:
         column, op, value = predicate
         try:
-            value = type.parse(value)
+            # value = type.parse(value)
+            value = int(value)
         except:
             return False
 
@@ -77,14 +94,3 @@ def prune(record: ManifestEntry, condition: List[Tuple[str, str, Any]]) -> bool:
                 return True
 
         return False
-
-
-# Example usage
-user_filters = [
-    ("age", "=", 18),
-    ("salary", ">", 50000),
-    ("height", ">=", 170),
-    ("experience", "<", 5),
-    ("rating", "<=", 4.5),
-    ("score", "in", [1, 2, 3]),
-]
