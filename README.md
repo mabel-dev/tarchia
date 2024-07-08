@@ -1,18 +1,23 @@
 # Tarchia
 
-Tarchia is a table format for huge analytic tables.
+Tarchia is an Active Data Catalog.
 
-Resource      | Location
-------------- | -------------
-Source Code   | https://github.com/mabel-dev/tarchia
-Documentation | https://github.com/mabel-dev/tarchia
-Download      | https://github.com/mabel-dev/tarchia
+Tarchia actively manages and catalogs data in real-time. Unlike traditional catalogs that serve merely as passive records, our Active Data Catalog is essential to the operational workflow, ensuring meta data is always up-to-date and readily accessible for system processes.
+
+Key Features:
+- Real-time updates and synchronization with the system.
+- Active role in data management and operations.
+- Interactive interface for seamless data access and manipulation.
+
+The Active Data Catalog is designed to enhance data accessibility, reliability, and operational efficiency, making it a cornerstone of our data management strategy.
+
+It is not yet-another-system-to-update, it is a vital component.
 
 **Terminology**
 
 - **Catalog** - A collection of tables.
 - **Data File** - Files that contain the rows of the table.
-- **Manifest** - Files that list and describe data files in the table.
+- **Manifest** - A list which describes the data files in the table.
 - **Metadata** - Information used to manage and describe tables.
 - **Owner** - Namespace for table.
 - **Schema** - The structure defining the columns of the table.
@@ -185,25 +190,21 @@ End Point                | GET | POST | PATCH | DELETE
 
 ## Request Fulfillment
 
-**I want to know what datasets there are for an owner**
-
-    [GET]       /v1/tables
-
 **I want to retrive the current instance of a dataset**
 
-    [GET]       /v1/tables/{owner}/{table}?
+    [GET]       /v1/tables/{owner}/{table}
 
 **I want to create a new dataset**
 
-    [POST]      /v1/tables
+    [POST]      /v1/tables/{owner}
 
 **I want to retrieve a dataset as at a date in the past**
 
-    [GET]       /v1/tables/{owner}/{table}?
+    [GET]       /v1/tables/{owner}/{table}?as_at=timestamp
 
 **I want to update the schema for a dataset**
 
-    [POST]       /v1/views/{viewIdentifier}/schemas
+    [POST]       /v1/views/{owner}/{table}/schemas
 
 **I want to update the metadata for a dataset**
 
@@ -212,21 +213,16 @@ End Point                | GET | POST | PATCH | DELETE
 **I want to add another file to a dataset**
 
     [POST]      /v1/transactions/start
-    [POST]      /v1/tables/{owner}/{table}/files
+    [POST]      /v1/transactions/stage
     [POST]      /v1/transactions/commit
 
 **I want to write a new instance of a dataset**
 
     [POST]      /v1/transactions/start
-    [POST]      /v1/tables/{owner}/{table}/files/truncate
-    [POST]      /v1/tables/{owner}/{table}/files
+    [POST]      /v1/transactions/truncate
+    [POST]      /v1/transactions/stage
     [POST]      /v1/transactions/commit
 
-**I want to copy a dataset**
+**I want to know what datasets an owner has**
 
-    [POST]      /v1/tables/{owner}/{table}/clone
-
-**I want to make a new version the latest**
-
-    [POST]      /v1/tables/{owner}/{table}/promote
-
+    [GET]       /v1/tables/{owner}
