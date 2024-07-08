@@ -187,7 +187,10 @@ async def get_table(
     snapshot = orjson.loads(snapshot_file)
 
     # retrieve the list of blobs from the manifests
-    blobs = get_manifest(snapshot.get("manifest_path"), storage_provider, None)
+    blobs = [
+        (entry.file_path, entry.file_size, entry.record_count)
+        for entry in get_manifest(snapshot.get("manifest_path"), storage_provider, None)
+    ]
 
     # build the response
     table_definition = catalog_entry.as_dict()
@@ -219,7 +222,10 @@ async def get_table_snapshot(
     snapshot = orjson.loads(snapshot_file)
 
     # retrieve the list of blobs from the manifests
-    blobs = get_manifest(snapshot.get("manifest_path"), storage_provider, None)
+    blobs = [
+        (entry.file_path, entry.file_size, entry.record_count)
+        for entry in get_manifest(snapshot.get("manifest_path"), storage_provider, None)
+    ]
 
     # build the response
     table_definition = catalog_entry.as_dict()
