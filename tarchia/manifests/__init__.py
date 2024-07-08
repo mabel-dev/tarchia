@@ -12,7 +12,7 @@ def get_manifest(
     location: str,
     storage_provider: StorageProvider,
     filter_conditions: Optional[List[Tuple[str, str, str]]],
-) -> List[str]:
+) -> List[ManifestEntry]:
     """
     Return the blobs from the manifests.
 
@@ -51,11 +51,9 @@ def get_manifest(
 
         # if the rows are manifests, call get_manifest
         if manifest_entry.file_type == EntryType.Manifest:
-            manifest.extend(
-                get_manifest(manifest_entry.file_path, storage_provider, filter_conditions)
-            )
+            manifest.extend(get_manifest(manifest_entry, storage_provider, filter_conditions))
         else:
-            manifest.append(manifest_entry.file_path)
+            manifest.append(manifest_entry)
 
     # return accumulated records
     return manifest

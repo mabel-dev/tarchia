@@ -21,7 +21,7 @@ Download      | https://github.com/mabel-dev/tarchia
 
 **Physical Structure**
 
-~~~python
+~~~
 table/
  |- metadata
  |   |- manifests/
@@ -36,7 +36,7 @@ table/
                      +- data-0000-0000.parquet
 ~~~
 
-## Metadata Catalog
+**Logical Structure**
 
 ~~~mermaid
 flowchart TD
@@ -53,67 +53,84 @@ flowchart TD
 ## Design
 
 ### Catalog Overview
-- Hosted in a datastore like FireStore.
-- Contains references to Schemas and Snapshots.
+
+- Hosted in a persistent datastore such as FireStore (Document Store Opinionated).
+- Contains entries for Owners and Tables.
+- Table entries contains Metadata, schema and permissions, and a pointer to the current Snapshot.
 
 ### Table Creation and Updates
+
 - **Creation**:
   - Created with a schema but no snapshot (no data initially).
+
 - **Writing to a Table**:
-  - Obtain the latest schema (may differ from the latest snapshot if updated).
+  - Obtain the latest schema (may differ from the latest snapshot if updated since).
   - Write the data and save the snapshot.
-  - Use a transaction system to ensure complete datasets/updates before catalog updates.
+  - Use a transaction system to ensure complete datasets/updates before Catalog updates.
 
 ### Handling Clashes
-- Ensure the dataset version (latest snapshot) at the start of the transaction matches the version at the end.
-- If versions don't match, another change has occurred:
-  - The transaction should fail or require a hard override.
+
+- Ensure the dataset version (latest Snapshot) at the start of the transaction matches the version at the end.
+- If versions don't match, another change has occurred so the transaction should fail, or require a hard override.
 
 ### Streaming Datasets
-- Add new files to the dataset and create a new manifest.
+
+- Use a transaction to add new files to the dataset, this will update the manifest and create a new snapshot.
+
+### Scheme Evolution
+
 - Schema changes are limited to:
   - Adding and removing columns.
   - Limited type conversions (e.g., int to float).
-- Larger changes are treated as different datasets.
+- Larger changes will be treated treated as different datasets.
 
 ### Table Reading
-- Retrieve the schema and the manifest.
-- Each snapshot can only have one schema.
+
+- Retrieve the snapshot, this contains the schema, permissions and encryption information and the root manifest.
 
 ### Catalog References
+
 - The latest schema.
 - The latest snapshot.
 - Key information about the table.
 
 ### Manifests
-- First split at 4097, (11 years of daily writes, 61m if 15k/file, 200m if 50k/file)
-- Otherwise, limited to 2048 rows (aiming for most files to be <2MB to fit in remote cache).
+
+- Manifests are immutable, adding a new file creates a new manifest.
+- First split at 4097, (11 years of daily writes, 61 million records if 15k/file, 200 million if 50k/file)
+- Otherwise, limited to 2048 rows (aiming for most files to be <2MB to support caching).
 - If a manifest exceeds this number, it is split, and a Manifest List is created.
 - Use B-Tree style management for efficient pruning:
+
   - **Read and Write Overheads**:
     - 1 million row dataset: single manifest.
     - 1 billion row dataset: 33 manifests (1 root and 1 layer with 32 children).
     - 1 trillion row dataset: 32568 manifests in three layers.
-  - **Parallel Access**:
-    - 1 trillion rows, 32568 manifests: about 16GB of data.
-    - Parallel access reduces read and process time.
+    - Parallel/Async access reduces read and process time.
     - Pruning can quickly reduce reads.
 
 ### Data Files
+
 - Manifest and snapshot files do not need to be colocated with the data files.
 - Data files do not need to be colocated with each other.
 
-### Updates and Atomicity
-- Updates are atomic, effective when the catalog is updated.
+### ACIDity
+
+- Updates are Atomic, effective only when the catalog is updated.
+- Updates are Consistent, primarily due to no consistency functionality to violate.
+- Updates are Isolated, via Snapshot version checking, this is brutish but effective.
+- Updated are Durable, use of a database like FireStore and Cloud Storage ensure writes are persistent.
 - Failed updates may leave artifacts (e.g., orphan files), but the update itself is either successful or not.
 - Storage cost for failed commits (orphaned tables) is considered acceptable.
 
 ### Pruning
+
 - Effective for columns that are sorted, nearly sorted, or have values appearing for limited periods.
 - Ineffective for columns with very few, highly recurrent values (e.g., Gender).
 - Effective for columns like dates when working with log entries.
 
 ### Indexes
+
 - Intended to operate at a leaf manifest level.
 - Aim to balance between:
   - Too many indexes (one per blob).
@@ -122,7 +139,7 @@ flowchart TD
 
 ## Compatibility
 
-Tarchia currently only supports:
+Tarchia alpha currently only supports:
 
 **Datafiles**: `parquet`
 **Catalogs**: FireStore and internal
@@ -144,61 +161,31 @@ Git      | Function                               | Tarchia
 
 End Point            | GET | POST | PATCH | DELETE
 -------------------- | --- | ---- | ----- | ------
-/v1/owners           | - | Create Owner | - | -
-/v1/owners/_{owner}_ | Read Owner | - | Update Owner | Delete Owner
+/v1/owners           | -   | Create Owner | - | -
+/v1/owners/_{owner}_ | Read Owner | - | - | Delete Owner
+/v1/owners/_{owner}_/_{attribute}_ | - | - | Update Attribute | -
 
-### Schema Management
+### Table Management
 
 End Point            | GET | POST | PATCH | DELETE
 -------------------- | --- | ---- | ----- | ------
-/v1/tables/_{owner}_/_{table}_/schemas | Read Schema | - | Update Schema | -
+/v1/tables/_{owner}_ | List Tables | Create Table | - | -
+/v1/tables/_{owner}_/_{table}_ | Read Table | - | - | Delete Table
+/v1/tables/_{owner}_/_{table}_/snapshots/{snapshot} | Read Snapshot | - | - | -
+/v1/tables/_{owner}_/_{table}_/_{attribute}_ | - | - | Update Attribute | -
 
----
+### Data Management
 
-[POST]      /v1/tables/{owner}/{table}/stage  
-[POST]      /v1/tables/{owner}/{table}/truncate  
-[POST]      /v1/transactions/start  
-[POST]      /v1/transactions/commit   
-
-[POST]      /v1/tables/{owner}/{table}/push/{snapshot}  
-[POST]      /v1/tables/{owner}/{table}/fork
-
-**Table Management**
-
-**[POST]**      /v1/tables/{owner}  
-**[GET]**       /v1/tables/{owner}  
-**[PATCH]**     /v1/tables/{owner}/{table}  
-**[DELETE]**    /v1/tables/{owner}/{table}  
-**[GET]**       /v1/tables/{owner}/{table}?as_at={timestamp}&filter={filter}  
-**[GET]**       /v1/tables/{owner}/{table}/snaphots/{snapshot}?filter={filter}  
-<!---
-    
-
-    [POST]      /v1/tables/{owner}/{table}/permissions
-    [GET]       /v1/tables/{owner}/{table}/permissions/check
-    [POST]      /v1/tables/{owner}/{table}/maintenance/compact
-    [POST]      /v1/tables/{owner}/{table}/maintenance/refresh_metadata
-
-    [POST]      /v1/views/{owner}
-    [GET]       /v1/views/{owner}
-    [GET]       /v1/views/{owner}/{view}
-    [DELETE]    /v1/views/{owner}/{view}
-
-    [GET]       /v1/search?query=searchTerm
-
-    [GET]       /v1/tables/{owner}/{table}/lineage
-    [GET]       /v1/tables/{owner}/{table}/audit-logs
-    [GET]       /v1/views/{owner}/{view}/audit-logs
-
-    [POST]      /v1/tables/{owner}/{table}/actions
-    [GET]       /v1/tables/{owner}/{table}/actions
-    [DELETE]    /v1/tables/{owner}/{table}/actions/{action}
-
---->
+End Point                | GET | POST | PATCH | DELETE
+------------------------ | --- | ---- | ----- | ------
+/v1/transaction/start    | - | Start Transaction | - | -
+/v1/transaction/commit   | - | Commit Transaction | - | -
+/v1/transaction/stage    | - | Add file to Transaction | - | -
+/v1/transaction/truncate | - | Truncate table | - | -
 
 ## Request Fulfillment
 
-**I want to know what datasets there are**
+**I want to know what datasets there are for an owner**
 
     [GET]       /v1/tables
 
