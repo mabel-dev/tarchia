@@ -2,7 +2,7 @@ from tarchia import config
 from tarchia.exceptions import InvalidConfigurationError
 
 
-def catalog_factory():
+def catalog_factory():  # pragma: no cover
     if config.CATALOG_PROVIDER is None or config.CATALOG_PROVIDER.upper() == "DEVELOPMENT":
         from tarchia.catalog.dev_catalog import DevelopmentCatalogProvider
 

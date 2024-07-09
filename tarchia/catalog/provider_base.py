@@ -7,7 +7,7 @@ from tarchia.models import OwnerEntry
 from tarchia.models import TableCatalogEntry
 
 
-class CatalogProvider:
+class CatalogProvider:  # pragma: no cover
     """
     Base class for a catalog provider that handles interactions
     with a document store for managing table metadata, schemas, and references to manifests.

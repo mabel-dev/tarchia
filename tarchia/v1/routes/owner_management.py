@@ -17,6 +17,7 @@ Exceptions:
 """
 
 from fastapi import APIRouter
+from fastapi import HTTPException
 from fastapi.responses import ORJSONResponse
 
 from tarchia.exceptions import AlreadyExistsError
@@ -101,7 +102,7 @@ async def update_owner(owner: str, attribute: str, request: UpdateValueRequest):
     from tarchia.utils.catalogs import identify_owner
 
     if attribute not in {"steward"}:
-        raise ValueError(f"Unable to update {attribute}")
+        raise HTTPException(status_code=405, detail=f"Attribute {attribute} cannot be PATCHed.")
 
     catalog_provider = catalog_factory()
     entry = identify_owner(owner)
@@ -130,7 +131,7 @@ async def delete_owner(owner: str):
     catalog_provider = catalog_factory()
 
     if catalog_provider.list_tables(owner):
-        raise ValueError("Cannot delete an owner of tables")
+        raise HTTPException(status_code=409, detail="Cannot delete an owner with active tables.")
 
     catalog_provider.delete_owner(entry.owner_id)
 

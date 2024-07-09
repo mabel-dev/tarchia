@@ -16,7 +16,7 @@ def parse_value(field: str, value: Any, schema: Schema) -> int:
     return None
 
 
-def parse_filters(filter_string: str, schema: Schema) -> List[Tuple[str, str, str]]:
+def parse_filters(filter_string: str, schema: Schema) -> List[Tuple[str, str, int]]:
     """
     Parse a filter string into a list of tuples.
 
@@ -48,12 +48,12 @@ def parse_filters(filter_string: str, schema: Schema) -> List[Tuple[str, str, st
     return filters
 
 
-def prune(record: ManifestEntry, condition: List[Tuple[str, str, Any]]) -> bool:
+def prune(record: ManifestEntry, condition: List[Tuple[str, str, int]]) -> bool:
     """
     Convert user-provided filters to manifest filters using min/max information.
 
     Parameters:
-        user_filter (Tuple[str, str, Any]): User-provided filter in the form (column, operator, value).
+        user_filter (Tuple[str, str, int]): User-provided filter in the form (column, operator, value).
 
     Returns:
         bool: True to prune the record
@@ -61,11 +61,6 @@ def prune(record: ManifestEntry, condition: List[Tuple[str, str, Any]]) -> bool:
 
     for predicate in condition:
         column, op, value = predicate
-        try:
-            # value = type.parse(value)
-            value = int(value)
-        except:
-            return False
 
         if op == "=":
             if record.lower_bounds.get(column) > value:
@@ -83,12 +78,6 @@ def prune(record: ManifestEntry, condition: List[Tuple[str, str, Any]]) -> bool:
                 return True
         elif op == "<=":
             if record.lower_bounds.get(column) > value:
-                return True
-        elif op == "_in_" and isinstance(value, list):
-            min_value, max_value = min(value), max(value)
-            if record.lower_bounds.get(column) > max_value:
-                return True
-            if record.upper_bounds.get(column) < min_value:
                 return True
 
         return False

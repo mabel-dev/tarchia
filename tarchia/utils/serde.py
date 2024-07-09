@@ -6,15 +6,6 @@ import orjson
 from pydantic import BaseModel
 
 
-def to_json(self) -> bytes:
-    def default_serializer(o):
-        if isinstance(o, Enum):
-            return o.__value__
-        raise TypeError(f"Object of type {o.__class__.__name__} is not JSON serializable")
-
-    return orjson.dumps(to_dict(self), default=default_serializer)
-
-
 def to_dict(obj: Any) -> Dict[str, Any]:
     """
     Recursively converts a dataclass to a dictionary.

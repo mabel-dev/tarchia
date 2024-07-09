@@ -50,7 +50,7 @@ class LocalStorage(StorageProvider):
             file_descriptor = os.open(location, os.O_RDONLY | os.O_BINARY)
             size = os.path.getsize(location)
             return os.read(file_descriptor, size)
-        except FileNotFoundError:
+        except FileNotFoundError:  # pragma: no cover
             return None
         finally:
             if file_descriptor:

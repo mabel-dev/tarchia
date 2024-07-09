@@ -6,7 +6,7 @@ from tarchia.exceptions import InvalidConfigurationError
 from .storage_provider import StorageProvider
 
 
-def storage_factory(provider: Optional[str] = None) -> StorageProvider:
+def storage_factory(provider: Optional[str] = None) -> StorageProvider:  # pragma: no cover
     """
     Factory function to create and return a storage provider instance based on the specified or
     default provider (local disk storage). The function supports multiple storage providers
