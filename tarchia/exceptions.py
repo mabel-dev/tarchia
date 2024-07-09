@@ -51,7 +51,11 @@ class DataEntryError(Exception):  # pragma: no cover
         super().__init__(message)
 
 
-class TableNotFoundError(Exception):  # pragma: no cover
+class NotFoundError(Exception):
+    pass
+
+
+class TableNotFoundError(NotFoundError):  # pragma: no cover
     def __init__(self, owner: str, table: str):
         self.owner = owner
         self.table = table
@@ -60,11 +64,21 @@ class TableNotFoundError(Exception):  # pragma: no cover
         super().__init__(message)
 
 
-class OwnerNotFoundError(Exception):  # pragma: no cover
+class OwnerNotFoundError(NotFoundError):  # pragma: no cover
     def __init__(self, owner: str):
         self.owner = owner
 
         message = f"Owner with reference {owner} could not be found."
+        super().__init__(message)
+
+
+class SnapshotNotFoundError(NotFoundError):  # pragma: no cover
+    def __init__(self, owner: str, table: str, snapshot: str):
+        self.snapshot = snapshot
+        self.owner = owner
+        self.table = table
+
+        message = f"Snaphot with reference {snapshot} for {owner}.{table} could not be found."
         super().__init__(message)
 
 
