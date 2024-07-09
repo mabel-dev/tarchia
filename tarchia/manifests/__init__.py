@@ -4,6 +4,7 @@ from typing import Tuple
 
 from tarchia.manifests.models import EntryType
 from tarchia.manifests.models import ManifestEntry
+from tarchia.manifests.pruning import parse_filters
 from tarchia.manifests.pruning import prune
 from tarchia.storage import StorageProvider
 
@@ -11,7 +12,7 @@ from tarchia.storage import StorageProvider
 def get_manifest(
     location: str,
     storage_provider: StorageProvider,
-    filter_conditions: Optional[List[Tuple[str, str, str]]],
+    filter_conditions: Optional[List[Tuple[str, str, int]]],
 ) -> List[ManifestEntry]:
     """
     Return the blobs from the manifests.

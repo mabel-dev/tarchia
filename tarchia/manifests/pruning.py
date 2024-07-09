@@ -2,8 +2,6 @@ from typing import Any
 from typing import List
 from typing import Tuple
 
-from orso.tools import parse_iso
-
 from tarchia.models import Schema
 from tarchia.utils.to_int import to_int
 
@@ -31,7 +29,7 @@ def parse_filters(filter_string: str, schema: Schema) -> List[Tuple[str, str, st
     if filter_string is None:
         return None
 
-    operators = ["=", ">", ">=", "<", "<=", "_in_"]
+    operators = ("=", ">", ">=", "<", "<=")
     filters = []
 
     for item in filter_string.split(","):
