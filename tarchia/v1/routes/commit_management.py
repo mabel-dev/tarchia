@@ -22,7 +22,6 @@ from tarchia.constants import HISTORY_ROOT
 from tarchia.constants import IDENTIFIER_REG_EX
 from tarchia.constants import MAIN_BRANCH
 from tarchia.exceptions import CommitNotFoundError
-from tarchia.exceptions import TableHasNoDataError
 from tarchia.models import Schema
 
 router = APIRouter()
@@ -96,6 +95,9 @@ async def get_list_of_table_commits(
     from tarchia.utils import build_root
     from tarchia.utils.catalogs import identify_table
 
+    base_url = request.url.scheme + "://" + request.url.netloc
+    branch = MAIN_BRANCH
+
     # read the data from the catalog for this table
     catalog_entry = identify_table(owner, table)
     table_id = catalog_entry.table_id
@@ -107,10 +109,26 @@ async def get_list_of_table_commits(
         history_file = f"{history_root}/history-{catalog_entry.current_history}.avro"
         history_raw = storage_provider.read_blob(history_file)
         if history_raw:
-            history = HistoryTree.load_from_avro(history_raw)
+            history = HistoryTree.load_from_avro(history_raw, branch)
 
+    response = {"table": f"{owner}.{table}", "branch": branch, "commits": []}
     if history:
-        for commit in history.walk_branch(MAIN_BRANCH):
-            print(commit)
+        walker = history.walk_branch(MAIN_BRANCH)
+        commit = next(walker, None)
+        while commit:
+            commit_timestamp = commit.timestamp
+            if before and commit.timestamp > before:
+                continue
+            if after and commit.timestamp < after:
+                break
+            response["commits"].append(commit)
+            commit = next(walker, None)
+            if len(response["commits"]) >= page_size:
+                if commit:
+                    after_block = f"&after={after}" if after else ""
+                    response["next_page"] = (
+                        f"{base_url}/tables/{owner}/{table}/commits?page_size={page_size}{after_block}&before={commit_timestamp}"
+                    )
+                break
 
-    # if there's more, give the URL for the next page
+    return response
