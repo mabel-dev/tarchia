@@ -16,12 +16,12 @@ It is not yet-another-system-to-update, it is a vital component.
 **Terminology**
 
 - **Catalog** - A collection of tables.
+- **Commit** - The state of the table at a specific point in time.
 - **Data File** - Files that contain the rows of the table.
 - **Manifest** - A list which describes the data files in the table.
 - **Metadata** - Information used to manage and describe tables.
 - **Owner** - Namespace for table.
 - **Schema** - The structure defining the columns of the table.
-- **Commit** - The state of the table at a specific point in time.
 - **Table** - A dataset stored in a structured and managed way.
 
 **Physical Structure**
@@ -39,8 +39,7 @@ table/
      +- year=2000/
          +- month=01/
              +- day=01/
-                 +- as_at_0000/
-                     +- data-0000-0000.parquet
+                 +- data-0000-0000.parquet
 ~~~
 
 **Logical Structure**
@@ -63,21 +62,22 @@ flowchart TD
 
 - Hosted in a persistent datastore such as FireStore (Document Store Opinionated).
 - Contains entries for Owners and Tables.
-- Table entries contains Metadata, schema and permissions, and a pointer to the current Snapshot.
+- Table entries contains Metadata, schema and permissions, and a pointer to the latest Commit.
 
 ### Table Creation and Updates
 
 - **Creation**:
-  - Created with a schema but no snapshot (no data initially).
+
+  - Created with a schema but no commit (no data initially).
 
 - **Writing to a Table**:
-  - Obtain the latest schema (may differ from the latest snapshot if updated since).
-  - Write the data and save the snapshot.
+  - Obtain the latest schema (may differ from the latest commit if updated since).
+  - Write the data and save the commit.
   - Use a transaction system to ensure complete datasets/updates before Catalog updates.
 
 ### Handling Clashes
 
-- Ensure the dataset version (latest Snapshot) at the start of the transaction matches the version at the end.
+- Ensure the dataset version (latest Commit) at the start of the transaction matches the version at the end.
 - If versions don't match, another change has occurred so the transaction should fail, or require a hard override.
 
 ### Streaming Datasets
@@ -178,8 +178,6 @@ End Point            | GET | POST | PATCH | DELETE
 -------------------- | --- | ---- | ----- | ------
 /v1/tables/_{owner}_ | List Tables | Create Table | - | -
 /v1/tables/_{owner}_/_{table}_ | Table Exists | - | - | Delete Table
-/v1/tables/_{owner}_/_{table}_/snapshots/_{snapshot}_ | Read Snapshot | - | - | -
-/v1/tables/_{owner}_/_{table}_/snapshots/@/_{timestamp}_ | Read Snapshot | - | - | -
 /v1/tables/_{owner}_/_{table}_/_{attribute}_ | - | - | Update Attribute | -
 
 ### Data Management
@@ -191,19 +189,27 @@ End Point                | GET | POST | PATCH | DELETE
 /v1/transaction/stage    | - | Add file to Transaction | - | -
 /v1/transaction/truncate | - | Truncate table | - | -
 
+### Commit Management
+
+End Point                | GET | POST | PATCH | DELETE
+------------------------ | --- | ---- | ----- | ------
+/v1/tables/_{owner}_/_{table}_/commits/_{commit}_ | Read Commit | - | - | -
+/v1/tables/_{owner}_/_{table}_/commits | List Commits | - | - | -
+
 ## Request Fulfillment
 
 **I want to retrive the current instance of a dataset**
 
-    [GET]       /v1/tables/{owner}/{table}/snapshots/latest
+    [GET]       /v1/tables/{owner}/{table}/commits/latest
 
 **I want to create a new dataset**
 
     [POST]      /v1/tables/{owner}
 
-**I want to retrieve a dataset as at a date in the past**
+**I want to retrieve a dataset as at a specific date in the past**
 
-    [GET]       /v1/tables/{owner}/{table}/snapshots/@/{timestamp}
+    [GET]       /v1/tables/{owner}/{table}/commits?before={timestamp}&limit=1
+    [GET]       /v1/tables/{owner}/{table}/commits/{commit}
 
 **I want to update the schema for a dataset**
 

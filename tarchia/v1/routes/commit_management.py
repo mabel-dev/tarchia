@@ -32,7 +32,7 @@ async def get_table_commit(
     request: Request,
     owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
     table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
-    commit_sha: Union[int, Literal["latest"]] = Path(description="The commit to retrieve."),
+    commit_sha: Union[str, Literal["latest"]] = Path(description="The commit to retrieve."),
     filters: Optional[str] = Query(None, description="Filters to push to manifest reader"),
 ):
     from tarchia.manifests import get_manifest

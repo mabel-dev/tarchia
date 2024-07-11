@@ -90,10 +90,16 @@ def load_old_commit(storage_provider, commit_root, parent_commit):
 def build_new_manifest(old_manifest, transaction, storage_provider):
     from tarchia.manifests import build_manifest_entry
 
+    existing_entries = {e.file_path for e in old_manifest}
+    new_entries = [
+        e for e in transaction.additions if e not in set(transaction.deletions).union(existing_entries)
+    ]
+
     new_manifest = [entry for entry in old_manifest if entry not in transaction.deletions]
     new_manifest.extend(
-        build_manifest_entry(entry, storage_provider) for entry in transaction.additions
+        build_manifest_entry(entry, storage_provider) for entry in new_entries
     )
+
     return new_manifest
 
 
@@ -203,7 +209,7 @@ async def commit_transaction(commit_request: CommitRequest):
         # get the commit we're based on
         old_commit = load_old_commit(storage_provider, commit_root, transaction.parent_commit_sha)
         old_manifest = (
-            get_manifest(old_commit.get("manifest_path"), storage_provider)
+            get_manifest(old_commit.get("manifest_path"), storage_provider, None)
             if old_commit.get("manifest_path")
             else []
         )
