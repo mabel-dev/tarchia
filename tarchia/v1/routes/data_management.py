@@ -1,21 +1,22 @@
 import base64
 import hashlib
 import time
+from typing import List
 
 import orjson
 from fastapi import APIRouter
 from fastapi import HTTPException
-from fastapi import Query
 
 from tarchia import config
+from tarchia.constants import COMMITS_ROOT
+from tarchia.constants import HISTORY_ROOT
+from tarchia.constants import MAIN_BRANCH
 from tarchia.constants import MANIFEST_ROOT
-from tarchia.constants import SNAPSHOT_ROOT
 from tarchia.exceptions import TransactionError
-from tarchia.models import Snapshot
+from tarchia.models import CommitRequest
 from tarchia.models import StageFilesRequest
 from tarchia.models import TableRequest
 from tarchia.models import Transaction
-from tarchia.models import TransactionRequest
 
 router = APIRouter()
 
@@ -78,10 +79,11 @@ def verify_and_decode_transaction(transaction_data: str) -> Transaction:
     return Transaction(**transaction)
 
 
-def load_old_snapshot(storage_provider, snapshot_root, parent_snapshot):
-    if parent_snapshot:
-        snapshot_file = storage_provider.read_blob(f"{snapshot_root}/asat-{parent_snapshot}.json")
-        return orjson.loads(snapshot_file)
+def load_old_commit(storage_provider, commit_root, parent_commit):
+    if parent_commit:
+        commit_file = storage_provider.read_blob(f"{commit_root}/commit-{parent_commit}.json")
+        if commit_file:
+            return orjson.loads(commit_file)
     return {}
 
 
@@ -95,15 +97,26 @@ def build_new_manifest(old_manifest, transaction, storage_provider):
     return new_manifest
 
 
-def create_new_snapshot(snapshot_id, transaction, catalog_entry, manifest_path, timestamp):
-    return Snapshot(
-        snapshot_id=snapshot_id,
-        parent_snapshot_path=transaction.parent_snapshot,
-        last_updated_ms=timestamp,
-        manifest_path=manifest_path,
-        table_schema=catalog_entry.current_schema,
-        encryption_details=catalog_entry.encryption_details,
-    )
+def xor_hex_strings(hex_strings: List[str]) -> str:
+    """
+    XOR a list of hexadecimal strings and return the result as a hexadecimal string.
+
+    Parameters:
+        hex_strings: List[str]
+            The list of hexadecimal strings to XOR.
+
+    Returns:
+        str
+            The resulting hexadecimal string after XOR.
+    """
+    if not hex_strings:
+        return "0" * 64  # Return a 64-character string of zeros if the list is empty
+
+    result_bytes = bytes.fromhex(hex_strings[0])
+    for hex_str in hex_strings[1:]:
+        result_bytes = bytes(a ^ b for a, b in zip(result_bytes, bytes.fromhex(hex_str)))
+
+    return result_bytes.hex()
 
 
 @router.post("/transactions/start")
@@ -116,15 +129,13 @@ async def start_transaction(table: TableRequest):
     catalog_entry = identify_table(owner=table.owner, table=table.table)
     table_id = catalog_entry.table_id
 
-    if table.snapshot is None:
-        table.snapshot = catalog_entry.current_snapshot_id
+    if table.commit_sha is None:
+        table.commit_sha = catalog_entry.current_commit_sha
     else:
-        snapshot_root = build_root(
-            SNAPSHOT_ROOT, owner=table.owner, table_id=catalog_entry.table_id
-        )
+        commit_root = build_root(COMMITS_ROOT, owner=table.owner, table_id=catalog_entry.table_id)
         storage_provider = storage_factory()
-        snapshot_file = storage_provider.read_blob(f"{snapshot_root}/asat-{table.snapshot}.json")
-        if not snapshot_file:
+        commit_file = storage_provider.read_blob(f"{commit_root}/commit-{table.commit_sha}.json")
+        if not commit_file:
             raise TransactionError("Snapshot not found")
 
     transaction_id = generate_uuid()
@@ -134,7 +145,7 @@ async def start_transaction(table: TableRequest):
         table_id=table_id,
         table=table.table,
         owner=table.owner,
-        parent_snapshot=table.snapshot,
+        parent_commit_sha=table.commit_sha,
         additions=[],
         deletions=[],
         truncate=False,
@@ -144,90 +155,114 @@ async def start_transaction(table: TableRequest):
 
 
 @router.post("/transactions/commit")
-async def commit_transaction(
-    encoded: TransactionRequest,
-    force=Query(
-        False,
-        description="Force a transaction to complete, even if operating on a non-latest snapshot",
-    ),
-):
+async def commit_transaction(commit_request: CommitRequest):
     """
-    Commits a transaction by verifying it, updating the manifest and snapshot,
+    Commits a transaction by verifying it, updating the manifest and commit,
     and updating the catalog.
 
     Parameters:
         encoded_transaction (str): Encoded transaction string.
-        force (bool): Force transaction to complete even if the snapshot is not the latest.
+        force (bool): Force transaction to complete even if the commit is not the latest.
 
     Returns:
         dict: Result of the transaction commit.
     """
     from tarchia.catalog import catalog_factory
+    from tarchia.history import HistoryTree
     from tarchia.manifests import get_manifest
     from tarchia.manifests import write_manifest
+    from tarchia.models import Commit
     from tarchia.storage import storage_factory
     from tarchia.utils import build_root
     from tarchia.utils import generate_uuid
     from tarchia.utils.catalogs import identify_table
 
+    timestamp = int(time.time_ns() / 1e6)
+    uuid = generate_uuid()
+
     try:
-        transaction = verify_and_decode_transaction(encoded.encoded_transaction)
+        transaction = verify_and_decode_transaction(commit_request.encoded_transaction)
         catalog_entry = identify_table(owner=transaction.owner, table=transaction.table)
 
         if (
-            not force
-            and transaction.parent_snapshot
-            and catalog_entry.current_snapshot_id != transaction.parent_snapshot
+            transaction.parent_commit_sha
+            and catalog_entry.current_commit_sha != transaction.parent_commit_sha
         ):
-            raise TransactionError("Transaction failed: Snapshot out of date")
+            raise TransactionError("Transaction failed: Commit out of date")
 
         owner = catalog_entry.owner
         table_id = catalog_entry.table_id
 
-        snapshot_root = build_root(SNAPSHOT_ROOT, owner=owner, table_id=table_id)
+        commit_root = build_root(COMMITS_ROOT, owner=owner, table_id=table_id)
         manifest_root = build_root(MANIFEST_ROOT, owner=owner, table_id=table_id)
+        history_root = build_root(HISTORY_ROOT, owner=owner, table_id=table_id)
 
         storage_provider = storage_factory()
         catalog_provider = catalog_factory()
 
-        timestamp = int(time.time_ns() / 1e6)
-        snapshot_id = str(timestamp)
-        snapshot_path = f"{snapshot_root}/asat-{snapshot_id}.json"
-
-        old_snapshot = load_old_snapshot(
-            storage_provider, snapshot_root, transaction.parent_snapshot
-        )
+        # get the commit we're based on
+        old_commit = load_old_commit(storage_provider, commit_root, transaction.parent_commit_sha)
         old_manifest = (
-            get_manifest(old_snapshot.get("manifest_path"), storage_provider)
-            if old_snapshot.get("manifest_path")
+            get_manifest(old_commit.get("manifest_path"), storage_provider)
+            if old_commit.get("manifest_path")
             else []
         )
 
         new_manifest = build_new_manifest(old_manifest, transaction, storage_provider)
-        manifest_id = generate_uuid()
-        manifest_path = f"{manifest_root}/manifest-{manifest_id}.avro"
+        manifest_path = f"{manifest_root}/manifest-{uuid}.avro"
         write_manifest(
             location=manifest_path, storage_provider=storage_provider, entries=new_manifest
         )
 
-        new_snapshot = create_new_snapshot(
-            snapshot_id, transaction, catalog_entry, manifest_path, timestamp
+        # hash the manifests together
+        combined_hash = xor_hex_strings([e.sha256_checksum for e in new_manifest])
+
+        # build the new commit record
+        commit = Commit(
+            data_hash=combined_hash,
+            user="user",
+            message=commit_request.commit_message,
+            branch=MAIN_BRANCH,
+            parent_commit_sha=transaction.parent_commit_sha,
+            last_updated_ms=timestamp,
+            manifest_path=manifest_path,
+            table_schema=catalog_entry.current_schema,
+            encryption_details=catalog_entry.encryption_details,
         )
-        storage_provider.write_blob(snapshot_path, new_snapshot.serialize())
+
+        commit_path = f"{commit_root}/commit-{commit.commit_sha}.json"
+        storage_provider.write_blob(commit_path, commit.serialize())
+
+        if catalog_entry.current_history:
+            history_file = f"{history_root}/history-{catalog_entry.current_history}.avro"
+            history_raw = storage_provider.read_blob(history_file)
+            if history_raw:
+                history = HistoryTree.load_from_avro(history_raw)
+            else:
+                history = HistoryTree(MAIN_BRANCH)
+        else:
+            history = HistoryTree(MAIN_BRANCH)
+
+        history.commit(commit.history_entry)
+        history_raw = history.save_to_avro()
+        history_file = f"{history_root}/history-{uuid}.avro"
+        storage_provider.write_blob(history_file, history_raw)
 
         catalog_entry.last_updated_ms = timestamp
-        catalog_entry.current_snapshot_id = snapshot_id
+        catalog_entry.current_commit_sha = commit.commit_sha
+        catalog_entry.current_history = uuid
         catalog_provider.update_table(catalog_entry.table_id, catalog_entry)
 
         return {
             "message": "Transaction committed successfully",
             "transaction": transaction.transaction_id,
-            "snapshot": snapshot_id,
+            "commit": commit.commit_sha,
         }
     except TransactionError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal Server Error") from e
+        raise e
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/transactions/stage")

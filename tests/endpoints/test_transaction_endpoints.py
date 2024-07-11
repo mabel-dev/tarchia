@@ -4,4 +4,5 @@ TESTS TO WRITE
 - cannot commit a transaction twice
 - cannot truncate after adding
 - after transaction, table GET returns the latest
+- cannot add a file with mismatched columns
 """

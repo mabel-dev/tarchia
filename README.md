@@ -21,7 +21,7 @@ It is not yet-another-system-to-update, it is a vital component.
 - **Metadata** - Information used to manage and describe tables.
 - **Owner** - Namespace for table.
 - **Schema** - The structure defining the columns of the table.
-- **Snapshot** - The state of the table at a specific point in time.
+- **Commit** - The state of the table at a specific point in time.
 - **Table** - A dataset stored in a structured and managed way.
 
 **Physical Structure**
@@ -29,10 +29,12 @@ It is not yet-another-system-to-update, it is a vital component.
 ~~~
 table/
  |- metadata
+ |   |- commits/
+ |   |   +- commit-00000000.avro
  |   |- manifests/
  |   |   +- manifest-00000000.avro
- |   +- snapshots/
- |       +- as_at-00000000.json
+ |   +- history/
+ |       +- history-00000000.json
  +- data/
      +- year=2000/
          +- month=01/

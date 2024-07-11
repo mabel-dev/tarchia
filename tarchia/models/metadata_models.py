@@ -117,25 +117,59 @@ class Schema(TarchiaBaseModel):
     columns: List[Column]
 
 
-class Snapshot(TarchiaBaseModel):
-    """
-    Model representing a snapshot.
+class HistoryEntry(TarchiaBaseModel):
+    sha: str
+    branch: str
+    message: str
+    user: str
+    timestamp: int
+    parent_sha: Optional[str] = None
 
-    Attributes:
-        snapshot_id (str): The unique identifier for the snapshot.
-        parent_snapshot_path (Optional[str]): The path to the parent snapshot.
-        last_updated_ms (int): The last update timestamp in milliseconds.
-        manifest_path (Optional[str]): The path to the manifest.
-        table_schema (Schema): The schema associated with the snapshot.
-        encryption_details (EncryptionDetails): The encryption details for the snapshot.
+
+class Commit(TarchiaBaseModel):
+    """
+    Model representing a commit.
     """
 
-    snapshot_id: str
-    parent_snapshot_path: Optional[str]
+    data_hash: str
+    user: str
+    message: str
+    branch: str
+    parent_commit_sha: Optional[str]
     last_updated_ms: int
     manifest_path: Optional[str]
     table_schema: Schema
     encryption_details: Optional[EncryptionDetails]
+    commit_sha: Optional[str] = None
+
+    def calculate_hash(self) -> str:
+        import hashlib
+
+        hasher = hashlib.sha256()
+        hasher.update(self.data_hash.encode())
+        hasher.update(self.message.encode())
+        hasher.update(self.user.encode())
+        hasher.update(self.branch.encode())
+        hasher.update(str(self.last_updated_ms).encode())
+        if self.parent_commit_sha:
+            hasher.update(self.parent_commit_sha.encode())
+        return hasher.hexdigest()
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        self.commit_sha = self.calculate_hash()
+
+    @property
+    def history_entry(self):
+        """Slimemed record for Merkle Tree"""
+        return HistoryEntry(
+            sha=self.commit_sha,
+            branch=self.branch,
+            message=self.message,
+            user=self.user,
+            timestamp=self.last_updated_ms,
+            parent_sha=self.parent_commit_sha,
+        )
 
 
 class TableCatalogEntry(TarchiaBaseModel):
@@ -143,21 +177,6 @@ class TableCatalogEntry(TarchiaBaseModel):
     The Catalog entry for a table.
 
     This is intended to be stored in a document store like FireStore or MongoDB.
-
-    Attributes:
-        name (str): The name of the table.
-        steward (str): The individual responsible for this table.
-        owner (str): The namespace of the table.
-        location (str): The location of the table data.
-        partitioning (List[str]): The partitioning information.
-        last_updated_ms (int): The last update timestamp in milliseconds.
-        permissions (List[DatasetPermissions]): The permissions associated with the table.
-        current_schema (Schema): The schema of the table.
-        current_snapshot_id (Optional[str]): The current snapshot identifier.
-        format_version (int): The format version of the table.
-        table_id (str): The unique identifier for the table.
-        disposition (TableDisposition): The disposition of the table.
-        metadata (dict): Additional metadata for the table.
     """
 
     name: str
@@ -170,7 +189,8 @@ class TableCatalogEntry(TarchiaBaseModel):
     permissions: List[DatasetPermissions]
     visibility: TableVisibility
     current_schema: Schema
-    current_snapshot_id: Optional[str] = None
+    current_commit_sha: Optional[str] = None
+    current_history: Optional[str] = None
     encryption_details: Optional[EncryptionDetails] = None
     format_version: int = Field(default=1)
     disposition: TableDisposition = Field(default=TableDisposition.SNAPSHOT)
@@ -208,7 +228,7 @@ class Transaction(TarchiaBaseModel):
     table_id: str
     table: str
     owner: str
-    parent_snapshot: Optional[str] = None
+    parent_commit_sha: Optional[str] = None
     additions: List[str] = Field(default_factory=list)
     deletions: List[str] = Field(default_factory=list)
     truncate: bool = False
