@@ -41,11 +41,11 @@ def to_int(value: Any) -> Optional[int]:
         return _ensure_64bit_range(round(value))
     if isinstance(value, str):
         padded_value = (value + "\x00" * 8)[:8]  # Pad with nulls to ensure at least 8 characters
-        int_value = int.from_bytes(padded_value.encode(), "big")
+        int_value = int.from_bytes(padded_value.encode(), "big", signed=True)
         return _ensure_64bit_range(int_value)
     if isinstance(value, bytes):
         padded_value = value[:8].ljust(8, b"\x00")  # Pad with null bytes to ensure at least 8 bytes
-        int_value = int.from_bytes(padded_value, "big")
+        int_value = int.from_bytes(padded_value, "big", signed=True)
         return _ensure_64bit_range(int_value)
 
     return None  # Return None for anything else
