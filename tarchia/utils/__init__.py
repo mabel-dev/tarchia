@@ -11,7 +11,7 @@ def generate_uuid() -> str:
 
 
 def is_valid_sql_identifier(identifier: str) -> bool:
-    """Is the string a valid SQL identifier"""
+    """Is the string a valid identifier"""
     return identifier and re.match(IDENTIFIER_REG_EX, identifier)
 
 

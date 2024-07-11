@@ -21,7 +21,7 @@ It is not yet-another-system-to-update, it is a vital component.
 - **Metadata** - Information used to manage and describe tables.
 - **Owner** - Namespace for table.
 - **Schema** - The structure defining the columns of the table.
-- **Snapshot** - The state of the table at a specific point in time.
+- **Commit** - The state of the table at a specific point in time.
 - **Table** - A dataset stored in a structured and managed way.
 
 **Physical Structure**
@@ -29,10 +29,12 @@ It is not yet-another-system-to-update, it is a vital component.
 ~~~
 table/
  |- metadata
+ |   |- commits/
+ |   |   +- commit-00000000.avro
  |   |- manifests/
  |   |   +- manifest-00000000.avro
- |   +- snapshots/
- |       +- as_at-00000000.json
+ |   +- history/
+ |       +- history-00000000.json
  +- data/
      +- year=2000/
          +- month=01/
@@ -175,8 +177,9 @@ End Point            | GET | POST | PATCH | DELETE
 End Point            | GET | POST | PATCH | DELETE
 -------------------- | --- | ---- | ----- | ------
 /v1/tables/_{owner}_ | List Tables | Create Table | - | -
-/v1/tables/_{owner}_/_{table}_ | Read Table | - | - | Delete Table
-/v1/tables/_{owner}_/_{table}_/snapshots/{snapshot} | Read Snapshot | - | - | -
+/v1/tables/_{owner}_/_{table}_ | Table Exists | - | - | Delete Table
+/v1/tables/_{owner}_/_{table}_/snapshots/_{snapshot}_ | Read Snapshot | - | - | -
+/v1/tables/_{owner}_/_{table}_/snapshots/@/_{timestamp}_ | Read Snapshot | - | - | -
 /v1/tables/_{owner}_/_{table}_/_{attribute}_ | - | - | Update Attribute | -
 
 ### Data Management
@@ -192,7 +195,7 @@ End Point                | GET | POST | PATCH | DELETE
 
 **I want to retrive the current instance of a dataset**
 
-    [GET]       /v1/tables/{owner}/{table}
+    [GET]       /v1/tables/{owner}/{table}/snapshots/latest
 
 **I want to create a new dataset**
 
@@ -200,7 +203,7 @@ End Point                | GET | POST | PATCH | DELETE
 
 **I want to retrieve a dataset as at a date in the past**
 
-    [GET]       /v1/tables/{owner}/{table}?as_at=timestamp
+    [GET]       /v1/tables/{owner}/{table}/snapshots/@/{timestamp}
 
 **I want to update the schema for a dataset**
 

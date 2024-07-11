@@ -39,17 +39,6 @@ def default_partitioning() -> List[str]:
     return ["year", "month", "day"]
 
 
-class AddSnapshotRequest(TarchiaBaseModel):
-    """
-    Model for adding a snapshot request.
-
-    Attributes:
-        parent (str): The parent snapshot identifier.
-    """
-
-    parent: str
-
-
 class CreateOwnerRequest(TarchiaBaseModel):
     """
     Model for creating an owner (an org or individual).
@@ -112,18 +101,6 @@ class CreateTableRequest(TarchiaBaseModel):
         return name
 
 
-class TableCloneRequest(TarchiaBaseModel):
-    """
-    Model for table clone request.
-
-    Attributes:
-        name (str): The name of the cloned table.
-        metadata (Dict[str, Any]): Additional metadata for the cloned table, default is an empty dictionary.
-    """
-
-    name: str
-
-
 class UpdateSchemaRequest(TarchiaBaseModel):
     """
     Model for updating schema request.
@@ -146,11 +123,12 @@ class UpdateValueRequest(TarchiaBaseModel):
 class TableRequest(TarchiaBaseModel):
     owner: str
     table: str
-    snapshot: Optional[str] = None
+    commit_sha: Optional[str] = None
 
 
-class TransactionRequest(TarchiaBaseModel):
+class CommitRequest(TarchiaBaseModel):
     encoded_transaction: str
+    commit_message: str
 
 
 class StageFilesRequest(TarchiaBaseModel):

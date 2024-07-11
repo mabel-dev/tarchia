@@ -46,28 +46,28 @@ class AuditMiddleware(BaseHTTPMiddleware):
 
         except HTTPException as error:
             outcome = "error"
-            audit_record["message"] = str(e)
+            audit_record["message"] = str(error)
             raise error
-        except DataEntryError as e:
+        except DataEntryError as error:
             outcome = "error"
-            audit_record["message"] = str(e)
-            return Response(status_code=422, content=se)
-        except (TableNotFoundError, OwnerNotFoundError) as e:
+            audit_record["message"] = str(error)
+            return Response(status_code=422, content=error)
+        except (TableNotFoundError, OwnerNotFoundError) as error:
             outcome = "error"
-            audit_record["message"] = str(e)
-            return Response(status_code=404, content=str(e))
-        except AlreadyExistsError as e:
+            audit_record["message"] = str(error)
+            return Response(status_code=404, content=str(error))
+        except AlreadyExistsError as error:
             outcome = "error"
-            audit_record["message"] = str(e)
-            return Response(status_code=409, content=str(e))
-        except Exception as e:
+            audit_record["message"] = str(error)
+            return Response(status_code=409, content=str(error))
+        except Exception as error:
             outcome = "error"
-            audit_record["message"] = str(e)
+            audit_record["message"] = str(error)
             from uuid import uuid4
 
             code = str(uuid4())
-            print(f"{code}\n{e}")
-            raise e
+            print(f"{code}\n{error}")
+            raise error
             return Response(status_code=500, content=f"Unexpected Error ({code})")
         finally:
             audit_record["duration_ms"] = (time.monotonic_ns() - start) / 1e6

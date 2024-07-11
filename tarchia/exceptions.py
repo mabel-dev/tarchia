@@ -72,13 +72,13 @@ class OwnerNotFoundError(NotFoundError):  # pragma: no cover
         super().__init__(message)
 
 
-class SnapshotNotFoundError(NotFoundError):  # pragma: no cover
-    def __init__(self, owner: str, table: str, snapshot: str):
-        self.snapshot = snapshot
+class CommitNotFoundError(NotFoundError):  # pragma: no cover
+    def __init__(self, owner: str, table: str, commit: str):
+        self.commit = commit
         self.owner = owner
         self.table = table
 
-        message = f"Snaphot with reference {snapshot} for {owner}.{table} could not be found."
+        message = f"Commit with reference {commit} for {owner}.{table} could not be found."
         super().__init__(message)
 
 

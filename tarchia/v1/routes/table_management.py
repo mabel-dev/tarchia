@@ -1,25 +1,14 @@
-""" """
-
 import time
-from typing import Literal
-from typing import Optional
-from typing import Union
 
-import orjson
 from fastapi import APIRouter
 from fastapi import Path
-from fastapi import Query
 from fastapi import Request
 from fastapi.responses import ORJSONResponse
 
 from tarchia.config import METADATA_ROOT
 from tarchia.constants import IDENTIFIER_REG_EX
-from tarchia.constants import SNAPSHOT_ROOT
 from tarchia.exceptions import AlreadyExistsError
-from tarchia.exceptions import SnapshotNotFoundError
-from tarchia.exceptions import TableHasNoDataError
 from tarchia.models import CreateTableRequest
-from tarchia.models import Schema
 from tarchia.models import TableCatalogEntry
 from tarchia.models import UpdateMetadataRequest
 from tarchia.models import UpdateSchemaRequest
@@ -31,13 +20,13 @@ router = APIRouter()
 @router.get("/tables/{owner}", response_class=ORJSONResponse)
 async def list_tables(owner: str, request: Request):
     """
-    Retrieve a list of tables and their current snapshots.
+    Retrieve a list of tables and their current commits.
 
     This endpoint queries the catalog provider for the list of tables and
-    augments each table's data with the URL to its current snapshot, if available.
+    augments each table's data with the URL to its current commit, if available.
 
     Returns:
-        List[Dict[str, Any]]: A list of tables with their metadata, including the snapshot URL if applicable.
+        List[Dict[str, Any]]: A list of tables with their metadata, including the commit URL if applicable.
     """
     from tarchia.catalog import catalog_factory
 
@@ -54,7 +43,7 @@ async def list_tables(owner: str, request: Request):
             if k
             in {
                 "table_id",
-                "current_snapshot_id",
+                "current_commit_sha",
                 "name",
                 "description",
                 "visibility",
@@ -64,12 +53,12 @@ async def list_tables(owner: str, request: Request):
                 "metadata",
             }
         }
-        current_snapshot_id = table.get("current_snapshot_id")
+        current_commit_sha = table.get("current_commit_sha")
         table_name = table.get("name")
-        if current_snapshot_id is not None:
-            # provide the URL to call to get the latest snapshot
-            table["snapshot_url"] = (
-                f"{base_url}/v1/tables/{owner}/{table_name}/snapshots/{current_snapshot_id}"
+        if current_commit_sha is not None:
+            # provide the URL to call to get the latest commit
+            table["commit_url"] = (
+                f"{base_url}/v1/tables/{owner}/{table_name}/commits/{current_commit_sha}"
             )
         table_list.append(table)
     return table_list
@@ -106,8 +95,8 @@ async def create_table(
 
     table_id = generate_uuid()
 
-    # We create tables without any snapshot, at create-time the table has no data and some
-    # table types (external) we never record snapshots for.
+    # We create tables without any commit, at create-time the table has no data and some
+    # table types (external) we never record commits for.
     new_table = TableCatalogEntry(
         name=request.name,
         owner=owner,
@@ -120,7 +109,7 @@ async def create_table(
         permissions=request.permissions,
         disposition=request.disposition,
         metadata=request.metadata,
-        current_snapshot_id=None,
+        current_commit_sha=None,
         current_schema=request.table_schema,
         last_updated_ms=int(time.time_ns() / 1e6),
         encryption_details=request.encryption_details,
@@ -144,7 +133,7 @@ async def get_table(
     table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
 ):
     """
-    This is essentially a test that a table exists. It doesn't read the snapshot or
+    This is essentially a test that a table exists. It doesn't read the commits or
     manifests so it can reply faster.
 
     Parameters:
@@ -161,95 +150,14 @@ async def get_table(
 
     table = catalog_entry.as_dict()
 
-    current_snapshot_id = catalog_entry.current_snapshot_id
-    if current_snapshot_id is not None:
+    current_commit_sha = catalog_entry.current_commit_sha
+    if current_commit_sha is not None:
         # provide the URL to call to get the latest snapshot
-        table["snapshot_url"] = (
-            f"{base_url}/v1/tables/{catalog_entry.owner}/{catalog_entry.name}/snapshots/{current_snapshot_id}"
+        table["commit_url"] = (
+            f"{base_url}/v1/tables/{catalog_entry.owner}/{catalog_entry.name}/commits/{current_commit_sha}"
         )
 
     return table
-
-
-@router.get("/tables/{owner}/{table}/snapshots/{snapshot}", response_class=ORJSONResponse)
-async def get_table_snapshot(
-    request: Request,
-    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
-    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
-    snapshot: Union[int, Literal["latest"]] = Path(description="The snapshot to retrieve."),
-    filters: Optional[str] = Query(None, description="Filters to push to manifest reader"),
-):
-    from tarchia.manifests import get_manifest
-    from tarchia.manifests.pruning import parse_filters
-    from tarchia.storage import storage_factory
-    from tarchia.utils import build_root
-    from tarchia.utils.catalogs import identify_table
-
-    base_url = request.url.scheme + "://" + request.url.netloc
-
-    # read the data from the catalog for this table
-    catalog_entry = identify_table(owner, table)
-    table_id = catalog_entry.table_id
-    if snapshot == "latest":
-        snapshot = catalog_entry.current_snapshot_id
-
-    snapshot_root = build_root(SNAPSHOT_ROOT, owner=owner, table_id=table_id)
-    storage_provider = storage_factory()
-    snapshot_file = storage_provider.read_blob(f"{snapshot_root}/asat-{snapshot}.json")
-    if not snapshot_file:
-        raise SnapshotNotFoundError(owner, table, snapshot)
-
-    snapshot_entry = orjson.loads(snapshot_file)
-
-    # retrieve the list of blobs from the manifests
-    filters = parse_filters(filters, Schema(**snapshot_entry["table_schema"]))
-    blobs = [
-        (entry.file_path, entry.file_size, entry.record_count)
-        for entry in get_manifest(snapshot_entry.get("manifest_path"), storage_provider, filters)
-    ]
-
-    # build the response
-    table_definition = catalog_entry.as_dict()
-    table_definition.update(snapshot_entry)
-    table_definition.pop("current_snapshot_id", None)
-    table_definition.pop("current_schema", None)
-    table_definition.pop("last_updated_ms", None)
-    table_definition.pop("partitioning")
-    table_definition.pop("location")
-    table_definition["snapshot_id"] = snapshot
-    table_definition["snapshot_url"] = (
-        f"{base_url}/v1/tables/{catalog_entry.owner}/{catalog_entry.name}/snapshots/{snapshot}"
-    )
-    table_definition["blobs"] = blobs
-
-    return table_definition
-
-
-@router.get("/tables/{owner}/{table}/snapshots/@/{timestamp}", response_class=ORJSONResponse)
-async def get_table_snapshot_at_timestamp(
-    request: Request,
-    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
-    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
-    timestamp: int = Path(description="The snapshot to retrieve."),
-    filters: Optional[str] = Query(None, description="Filters to push to manifest reader"),
-):
-    from tarchia.storage import storage_factory
-    from tarchia.utils import build_root
-    from tarchia.utils.catalogs import identify_table
-
-    # read the data from the catalog for this table
-    catalog_entry = identify_table(owner, table)
-    table_id = catalog_entry.table_id
-    snapshot_root = build_root(SNAPSHOT_ROOT, owner=owner, table_id=table_id)
-    storage_provider = storage_factory()
-
-    # Get the snapshot before a given timestamp
-    candidates = storage_provider.blob_list(prefix=snapshot_root + "/", as_at=timestamp)
-    if len(candidates) != 1:
-        raise TableHasNoDataError(owner=owner, table=table, as_at=timestamp)
-    snapshot = candidates[0].split("-")[-1].split(".")[0]
-
-    return await get_table_snapshot(request, owner, table, snapshot, filters)
 
 
 @router.delete("/tables/{owner}/{table}", response_class=ORJSONResponse)

@@ -3,7 +3,7 @@ from typing import List
 from typing import Optional
 
 
-class StorageProvider:
+class StorageProvider:  # pragma: no cover
     def write_blob(self, location: str, content: bytes):
         raise NotImplementedError(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name} is not implemented."

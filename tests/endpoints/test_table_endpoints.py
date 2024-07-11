@@ -1,7 +1,7 @@
 """
-scenarios to test
-TABLES
-- cannot create a table for non existant owner
+
+- cannot create a column with an invalid name
+- cannot create an alias with an invalid name
 """
 
 import sys
@@ -39,6 +39,10 @@ def test_create_read_update_delete_table():
         steward="bob",
         table_schema=Schema(columns=[Column(name="column")]),
     )
+
+    # can't create the table for non-existent owner
+    response = client.post(url=f"/v1/tables/s{TEST_OWNER}", content=new_table.serialize())
+    assert response.status_code == 404, f"{response.status_code} - {response.content}"
 
     # create the table
     response = client.post(url=f"/v1/tables/{TEST_OWNER}", content=new_table.serialize())
