@@ -38,7 +38,7 @@ def parse_filters(filter_string: str, schema: Schema) -> List[Tuple[str, str, in
                 column, value = item.split(operator, 1)
                 value = value.strip()
                 column = column.strip()
-                if value[0] == value[-1] == "'":
+                if value and value[0] == value[-1] == "'":
                     value = value[1:-1]
                 int_value = parse_value(column, value, schema)
                 if int_value is not None:
