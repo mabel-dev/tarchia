@@ -60,7 +60,7 @@ async def get_table_commit(
     # retrieve the list of blobs from the manifests
     filters = parse_filters(filters, Schema(**commit_entry["table_schema"]))
     blobs = [
-        (entry.file_path, entry.file_size, entry.record_count)
+        {"path": entry.file_path, "bytes": entry.file_size, "records": entry.record_count}
         for entry in get_manifest(commit_entry.get("manifest_path"), storage_provider, filters)
     ]
 

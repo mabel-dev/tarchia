@@ -92,13 +92,13 @@ def build_new_manifest(old_manifest, transaction, storage_provider):
 
     existing_entries = {e.file_path for e in old_manifest}
     new_entries = [
-        e for e in transaction.additions if e not in set(transaction.deletions).union(existing_entries)
+        e
+        for e in transaction.additions
+        if e not in set(transaction.deletions).union(existing_entries)
     ]
 
     new_manifest = [entry for entry in old_manifest if entry not in transaction.deletions]
-    new_manifest.extend(
-        build_manifest_entry(entry, storage_provider) for entry in new_entries
-    )
+    new_manifest.extend(build_manifest_entry(entry, storage_provider) for entry in new_entries)
 
     return new_manifest
 
