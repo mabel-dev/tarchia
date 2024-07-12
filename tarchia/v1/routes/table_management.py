@@ -209,7 +209,7 @@ async def update_schema(
 
     # is the new schema valid
     for col in schema.columns:
-        col.validate()
+        col.is_valid()
 
     catalog_entry = identify_table(owner=owner, table=table)
 

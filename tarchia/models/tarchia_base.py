@@ -16,3 +16,7 @@ class TarchiaBaseModel(BaseModel):
     def serialize(self) -> bytes:
         """Convert the model object to a JSON byte string"""
         return orjson.dumps(self.as_dict())
+
+    def is_valid(self):
+        """Any specific validation"""
+        return True

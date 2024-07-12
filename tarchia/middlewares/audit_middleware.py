@@ -20,10 +20,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
 from tarchia.exceptions import AlreadyExistsError
-from tarchia.exceptions import AmbiguousTableError
 from tarchia.exceptions import DataEntryError
-from tarchia.exceptions import OwnerNotFoundError
-from tarchia.exceptions import TableNotFoundError
+from tarchia.exceptions import NotFoundError
 
 
 class AuditMiddleware(BaseHTTPMiddleware):
@@ -51,8 +49,11 @@ class AuditMiddleware(BaseHTTPMiddleware):
         except DataEntryError as error:
             outcome = "error"
             audit_record["message"] = str(error)
-            return Response(status_code=422, content=error)
-        except (TableNotFoundError, OwnerNotFoundError) as error:
+            return Response(
+                status_code=422,
+                content=orjson.dumps({"fields": error.fields, "message": error.message}),
+            )
+        except NotFoundError as error:
             outcome = "error"
             audit_record["message"] = str(error)
             return Response(status_code=404, content=str(error))

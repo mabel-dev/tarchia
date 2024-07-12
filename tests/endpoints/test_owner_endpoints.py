@@ -1,7 +1,3 @@
-"""
-- cannot create an owner with an invalid name
-"""
-
 import sys
 import os
 
@@ -96,6 +92,19 @@ def test_owner_rules():
     # can't create an owner with an invalid name
     response = client.post(url="/v1/owners", content=owner.serialize())
     assert response.status_code == 409, f"{response.status_code} - {response.content}"
+
+
+def test_invalid_owner():
+
+    client = TestClient(application)
+
+    owner = CreateOwnerRequest(
+        name="$owner", steward="billy", type=OwnerType.INDIVIDUAL, memberships=[]
+    )
+
+    # can't crreate an owner with an invalid name
+    response = client.post(url="/v1/owners", content=owner.serialize())
+    assert response.status_code == 422, f"{response.status_code} - {response.content}"
 
 
 if __name__ == "__main__":  # pragma: no cover

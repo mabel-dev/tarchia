@@ -7,7 +7,7 @@ from orso.schema import FlatColumn
 from orso.schema import OrsoTypes
 from pydantic import Field
 
-from tarchia.utils import is_valid_sql_identifier
+from tarchia.exceptions import DataEntryError
 
 from .tarchia_base import TarchiaBaseModel
 
@@ -96,10 +96,13 @@ class Column(TarchiaBaseModel):
     description: Optional[str] = ""
     aliases: List[str] = []
 
-    def validate(self):
+    def is_valid(self):
         # The name must be valid SQL
-        if not is_valid_sql_identifier(self.name):
-            raise ValueError(f"Invalid column name '{self.name}'.")
+        if not self.name.isidentifier():
+            raise DataEntryError(
+                fields=["name"],
+                message="Column names cannot start with a digit and can only contain alphanumerics and underscores.",
+            )
 
         # We need to be able to build valid Orso FlatColumns
         # it has validation we can leverage
@@ -196,7 +199,7 @@ class TableCatalogEntry(TarchiaBaseModel):
     disposition: TableDisposition = Field(default=TableDisposition.SNAPSHOT)
     metadata: dict = Field(default_factory=dict)
 
-    def validate(self):
+    def is_valid(self):
         # only columns in the schema can be encrypted
 
         # partitioning requires a location
@@ -220,6 +223,13 @@ class OwnerEntry(TarchiaBaseModel):
     type: OwnerType
     steward: str
     memberships: List[str]
+
+    def is_valid(self):
+        if not self.name.isidentifier():
+            raise DataEntryError(
+                fields=["name"],
+                message="Owner name cannot start with a digit and can only contain alphanumerics and underscores.",
+            )
 
 
 class Transaction(TarchiaBaseModel):
