@@ -43,7 +43,7 @@ class UnmetRequirementError(Exception):  # pragma: no cover
 
 
 class DataEntryError(Exception):  # pragma: no cover
-    def __init__(self, endpoint: str, fields: List[str], message: str):
+    def __init__(self, endpoint: str = None, fields: List[str] = None, message: str = None):
         self.endpoint = endpoint
         self.fields = fields
         self.message = message

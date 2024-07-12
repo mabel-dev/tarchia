@@ -6,7 +6,7 @@ from typing import Optional
 from pydantic import Field
 from pydantic import field_validator
 
-from tarchia.utils import is_valid_sql_identifier
+from tarchia.exceptions import DataEntryError
 
 from .metadata_models import Column
 from .metadata_models import DatasetPermissions
@@ -96,8 +96,11 @@ class CreateTableRequest(TarchiaBaseModel):
         Raises:
             ValueError: If the name does not match the required pattern.
         """
-        if not is_valid_sql_identifier(name):
-            raise ValueError("Invalid table name")
+        if not name.isidentifier():
+            raise DataEntryError(
+                fields=["name"],
+                message="Table name cannot start with a digit and can only contain alphanumerics and underscores.",
+            )
         return name
 
 

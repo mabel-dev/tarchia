@@ -36,11 +36,12 @@ from os import environ
 from fastapi import FastAPI
 from uvicorn import run
 
+from tarchia import __version__
 from tarchia.middlewares import AuditMiddleware
 from tarchia.middlewares import AuthorizationMiddleware
 from tarchia.v1 import routes as v1_routes
 
-application = FastAPI(title="Tarchia Metastore")
+application = FastAPI(title="Tarchia Metastore", version=__version__)
 
 application.include_router(v1_routes.v1_router)
 application.add_middleware(AuthorizationMiddleware)

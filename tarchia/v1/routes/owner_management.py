@@ -18,8 +18,12 @@ Exceptions:
 
 from fastapi import APIRouter
 from fastapi import HTTPException
+from fastapi import Path
+from fastapi import Request
 from fastapi.responses import ORJSONResponse
 
+from tarchia.config import METADATA_ROOT
+from tarchia.constants import IDENTIFIER_REG_EX
 from tarchia.exceptions import AlreadyExistsError
 from tarchia.models import CreateOwnerRequest
 from tarchia.models import OwnerEntry
@@ -56,6 +60,7 @@ async def create_owner(request: CreateOwnerRequest):
         steward=request.steward,
         memberships=request.memberships,
     )
+    new_owner.is_valid()
     catalog_provider.update_owner(new_owner)
 
     return {
@@ -65,7 +70,9 @@ async def create_owner(request: CreateOwnerRequest):
 
 
 @router.get("/owners/{owner}", response_class=ORJSONResponse)
-async def read_owner(owner: str):
+async def read_owner(
+    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
+):
     """
     Read an owner by name.
 
