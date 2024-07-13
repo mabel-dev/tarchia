@@ -72,4 +72,7 @@ TRANSACTION_SIGNER: str = get("TRANSACTION_SIGNER", "secret")
 BUCKET_NAME: str = get("BUCKET_NAME") 
 """S3/GCP Metadata Bucket Name"""
 
+GCP_PROJECT_ID: str = get("GCP_PROJECT_ID") 
+"""GCP Project ID - for Google Cloud Platform hosted systems"""
+
 # fmt:on
