@@ -93,7 +93,7 @@ async def create_table(
     # can we find the owner?
     identify_owner(name=owner)
 
-    table_id = generate_uuid().replace("-", "")[-16:]
+    table_id = generate_uuid()
 
     # We create tables without any commit, at create-time the table has no data and some
     # table types (external) we never record commits for.
@@ -145,12 +145,12 @@ async def get_table(
     """
     from tarchia.utils.catalogs import identify_table
 
-    base_url = request.url.scheme + "://" + request.url.netloc
     catalog_entry = identify_table(owner, table)
 
     table = catalog_entry.as_dict()
 
     current_commit_sha = catalog_entry.current_commit_sha
+    base_url = request.url.scheme + "://" + request.url.netloc
     if current_commit_sha is not None:
         # provide the URL to call to get the latest snapshot
         table["commit_url"] = (

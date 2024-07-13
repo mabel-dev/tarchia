@@ -52,6 +52,7 @@ class FirestoreCatalogProvider(CatalogProvider):
             self.project_id = _get_project_id()
 
         self.collection = db_path
+        self.database = firestore.Client(project=self.project_id)
 
     def get_table(self, owner: str, table: str) -> dict:
         """
@@ -63,12 +64,9 @@ class FirestoreCatalogProvider(CatalogProvider):
         Returns:
             Dict[str, Any]: A dictionary containing the metadata of the table.
         """
-        from google.cloud import firestore
         from google.cloud.firestore_v1.base_query import FieldFilter
 
-        database = firestore.Client(project=self.project_id)
-        documents = database.collection(self.collection)
-
+        documents = self.database.collection(self.collection)
         documents = documents.where(filter=FieldFilter("owner", "==", owner)).where(
             filter=FieldFilter("name", "==", table)
         )
@@ -88,10 +86,7 @@ class FirestoreCatalogProvider(CatalogProvider):
             table_id (str): The identifier of the table.
             metadata (Dict[str, Any]): A dictionary containing the metadata to be updated.
         """
-        from google.cloud import firestore
-
-        database = firestore.Client(project=self.project_id)
-        database.collection(self.collection).document(f"table-{entry.table_id}").set(
+        self.database.collection(self.collection).document(f"table-{entry.table_id}").set(
             entry.as_dict()
         )
 
@@ -102,11 +97,9 @@ class FirestoreCatalogProvider(CatalogProvider):
         Returns:
             List[Dict[str, Any]]: A list of dictionaries, each representing the metadata of a table.
         """
-        from google.cloud import firestore
         from google.cloud.firestore_v1.base_query import FieldFilter
 
-        database = firestore.Client(project=self.project_id)
-        documents = database.collection(self.collection)
+        documents = self.database.collection(self.collection)
 
         documents = documents.where(filter=FieldFilter("owner", "==", owner))
         documents = documents.stream()
@@ -119,18 +112,12 @@ class FirestoreCatalogProvider(CatalogProvider):
         Parameters:
             table_id (str): The identifier of the table to be deleted.
         """
-        from google.cloud import firestore
-
-        database = firestore.Client(project=self.project_id)
-        database.collection(self.collection).document(f"table-{table_id}").delete()
+        self.database.collection(self.collection).document(f"table-{table_id}").delete()
 
     def get_owner(self, name: str) -> dict:
-        from google.cloud import firestore
         from google.cloud.firestore_v1.base_query import FieldFilter
 
-        database = firestore.Client(project=self.project_id)
-
-        documents = database.collection(self.collection)
+        documents = self.database.collection(self.collection)
 
         documents = documents.where(filter=FieldFilter("name", "==", name))
         documents = documents.stream()
@@ -140,15 +127,9 @@ class FirestoreCatalogProvider(CatalogProvider):
         return None
 
     def update_owner(self, entry: OwnerEntry) -> None:
-        from google.cloud import firestore
-
-        database = firestore.Client(project=self.project_id)
-        database.collection(self.collection).document(f"owner-{entry.owner_id}").set(
+        self.database.collection(self.collection).document(f"owner-{entry.owner_id}").set(
             entry.as_dict()
         )
 
     def delete_owner(self, owner_id: str) -> None:
-        from google.cloud import firestore
-
-        database = firestore.Client(project=self.project_id)
-        database.collection(self.collection).delete(f"owner-{owner_id}")
+        self.database.collection(self.collection).delete(f"owner-{owner_id}")

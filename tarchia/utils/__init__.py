@@ -5,7 +5,7 @@ from tarchia.config import METADATA_ROOT
 
 def generate_uuid() -> str:
     """Generate a new UUID."""
-    return str(uuid.uuid4())
+    return str(uuid.uuid4()).replace("-", "")[-16:]
 
 
 def build_root(root: str, owner: str, table_id: str) -> str:
