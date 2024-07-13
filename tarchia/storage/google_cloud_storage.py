@@ -1,5 +1,7 @@
 import os
 
+from tarchia.config import BUCKET_NAME
+
 from .storage_provider import StorageProvider
 
 
@@ -29,15 +31,14 @@ class GoogleCloudStorage(StorageProvider):
             ConnectionResetError, ProtocolError, InternalServerError, TooManyRequests
         )
         self.retry = retry.Retry(predicate)
+        self.bucket_name = BUCKET_NAME
 
     def write_blob(self, location: str, content: bytes):
-        bucket_name, blob_name = location.split("/", 1)
-        bucket = self.client.get_bucket(bucket_name)
-        blob = bucket.blob(blob_name)
+        bucket = self.client.get_bucket(self.bucket_name)
+        blob = bucket.blob(location)
         self.retry(blob.upload_from_string)(content, content_type="application/octet-stream")
 
     def read_blob(self, location: str) -> bytes:
-        bucket, blob_name = location.split("/", 1)
-        gcs_bucket = self.client.get_bucket(bucket)
-        blob = gcs_bucket.get_blob(blob_name)
+        bucket = self.client.get_bucket(self.bucket_name)
+        blob = bucket.get_blob(location)
         return blob.download_as_bytes()
