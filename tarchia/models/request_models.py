@@ -19,26 +19,6 @@ from .metadata_models import TableVisibility
 from .tarchia_base import TarchiaBaseModel
 
 
-def default_permissions() -> List[DatasetPermissions]:
-    """
-    Default permissions for a dataset.
-
-    Returns:
-        List[DatasetPermissions]: A list containing default read permission for all roles.
-    """
-    return [DatasetPermissions(role="*", permission=RolePermission.READ)]
-
-
-def default_partitioning() -> List[str]:
-    """
-    Default partitioning fields.
-
-    Returns:
-        List[str]: A list containing default partitioning fields (year, month, day).
-    """
-    return ["year", "month", "day"]
-
-
 class CreateOwnerRequest(TarchiaBaseModel):
     """
     Model for creating an owner (an org or individual).
@@ -76,9 +56,11 @@ class CreateTableRequest(TarchiaBaseModel):
     location: Optional[str]
     table_schema: Schema
     visibility: TableVisibility = TableVisibility.PRIVATE
-    partitioning: Optional[List[str]] = Field(default_factory=default_partitioning)
+    partitioning: Optional[List[str]] = ["year", "month", "day"]
     disposition: TableDisposition = TableDisposition.SNAPSHOT
-    permissions: List[DatasetPermissions] = Field(default_factory=default_permissions)
+    permissions: List[DatasetPermissions] = [
+        DatasetPermissions(role="*", permission=RolePermission.READ)
+    ]
     metadata: Dict[str, Any] = Field(default_factory=dict)
     encryption_details: Optional[EncryptionDetails] = None
 
