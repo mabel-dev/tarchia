@@ -93,7 +93,7 @@ async def create_table(
     # can we find the owner?
     identify_owner(name=owner)
 
-    table_id = generate_uuid()
+    table_id = generate_uuid().replace("-", "")[-16:]
 
     # We create tables without any commit, at create-time the table has no data and some
     # table types (external) we never record commits for.
