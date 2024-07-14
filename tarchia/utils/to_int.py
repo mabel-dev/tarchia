@@ -1,5 +1,6 @@
 import datetime
 from decimal import Decimal
+from math import isnan
 from typing import Any
 from typing import Optional
 
@@ -27,6 +28,12 @@ def to_int(value: Any) -> Optional[int]:
     if isinstance(value, int):
         return _ensure_64bit_range(value)
     if isinstance(value, float):
+        if value == float("inf"):
+            return MAX_SIGNED_64BIT
+        if value == float("-inf"):
+            return MIN_SIGNED_64BIT
+        if isnan(value):
+            return None
         return _ensure_64bit_range(round(value))
     if isinstance(value, datetime.datetime):
         timestamp = round(value.timestamp())

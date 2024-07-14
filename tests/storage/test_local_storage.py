@@ -3,6 +3,9 @@ import os
 import shutil
 import time
 
+os.environ["CATALOG_NAME"] = "test_catalog.json"
+os.environ["TARCHIA_DEBUG"] = "TRUE"
+
 sys.path.insert(1, os.path.join(sys.path[0], "../.."))
 
 from tarchia.storage import storage_factory

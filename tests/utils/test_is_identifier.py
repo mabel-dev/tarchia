@@ -7,6 +7,9 @@ import sys
 import re
 import pytest
 
+os.environ["CATALOG_NAME"] = "test_catalog.json"
+os.environ["TARCHIA_DEBUG"] = "TRUE"
+
 sys.path.insert(1, os.path.join(sys.path[0], "../.."))
 
 from tarchia.constants import IDENTIFIER_REG_EX

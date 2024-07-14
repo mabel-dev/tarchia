@@ -1,6 +1,9 @@
 import sys
 import os
 
+os.environ["CATALOG_NAME"] = "test_catalog.json"
+os.environ["TARCHIA_DEBUG"] = "TRUE"
+
 sys.path.insert(1, os.path.join(sys.path[0], "../.."))
 
 from tarchia.utils.to_int import to_int
@@ -17,6 +20,17 @@ def test_to_int():
 
     # Test float
     assert isinstance(to_int(3.14), int)
+
+    # Test extreme float values
+    assert isinstance(to_int(float('inf')), int)
+    assert isinstance(to_int(float('-inf')), int)
+    assert to_int(float('nan')) is None
+
+    # Test large int
+    assert isinstance(to_int(2**63 - 1), int)  # Maximum 64-bit signed int
+    assert isinstance(to_int(-2**63), int)  # Minimum 64-bit signed int
+    assert to_int(2**64) ==  (2**63 - 1) # Maximum 64-bit signed int
+    assert to_int(-2**64) == (-2**63)  # Minimum 64-bit signed int
 
     # Test date
     assert isinstance(to_int(datetime.date(2020, 1, 1)), int)
@@ -41,6 +55,10 @@ def test_to_int():
 
     # Test unsupported type (dict)
     assert to_int({"key": "value"}) is None
+
+    # Test empty string and bytes
+    assert to_int("") == 0
+    assert to_int(b"") == 0
 
 def test_cropping():
 
@@ -82,7 +100,7 @@ def test_string_order_preservation_with_bytes():
 
 
 def test_float_order_preservation():
-    floats = [1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7]
+    floats = [1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, float('inf'), float('-inf')]
     floats = random.sample(floats, len(floats))
     sorted_floats = sorted(floats)
     int_values = [to_int(f) for f in sorted_floats]

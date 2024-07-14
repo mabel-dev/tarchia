@@ -29,6 +29,11 @@ TEST_OWNER = "tester"
 
 def test_create_read_update_delete_table():
 
+    try:
+        os.remove(os.environ["CATALOG_NAME"])
+    except FileNotFoundError:
+        pass
+
     ensure_owner()
 
     client = TestClient(application)
@@ -78,6 +83,11 @@ def test_create_read_update_delete_table():
 
 def test_maintain_table_metadata():
 
+    try:
+        os.remove(os.environ["CATALOG_NAME"])
+    except FileNotFoundError:
+        pass
+
     ensure_owner()
 
     client = TestClient(application)
@@ -118,6 +128,11 @@ def test_maintain_table_metadata():
 
 
 def test_maintain_table_schema():
+
+    try:
+        os.remove(os.environ["CATALOG_NAME"])
+    except FileNotFoundError:
+        pass
 
     ensure_owner()
 
@@ -164,5 +179,4 @@ def test_maintain_table_schema():
 if __name__ == "__main__":  # pragma: no cover
     from tests.tools import run_tests
 
-    test_maintain_table_schema()
     run_tests()
