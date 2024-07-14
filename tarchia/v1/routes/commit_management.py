@@ -126,9 +126,16 @@ async def get_list_of_table_commits(
             commit = next(walker, None)
             if len(response["commits"]) >= page_size:
                 if commit:
-                    after_block = f"&after={after}" if after else ""
+                    if after:
+                        after_timestamp = after.strftime("%Y-%m-%dT%H:%M:%S")
+                        after_block = f"&after={after_timestamp}"
+                    else:
+                        after_block = ""
+                    before_timestamp = datetime.datetime.fromtimestamp(commit_timestamp).strftime(
+                        "%Y-%m-%dT%H:%M:%S"
+                    )
                     response["next_page"] = (
-                        f"{base_url}/tables/{owner}/{table}/commits?page_size={page_size}{after_block}&before={commit_timestamp}"
+                        f"{base_url}/tables/{owner}/{table}/commits?page_size={page_size}{after_block}&before={before_timestamp}"
                     )
                 break
 
