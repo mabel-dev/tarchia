@@ -87,7 +87,6 @@ def build_manifest_entry(path: str) -> ManifestEntry:
 
     Parameters:
         path (str): The file path of the Parquet file.
-        storage_provider (StorageProvider): An instance of StorageProvider to read the file.
 
     Returns:
         ManifestEntry: The constructed manifest entry with file details and column statistics.
