@@ -41,11 +41,11 @@ def storage_factory(provider: Optional[str] = None) -> StorageProvider:  # pragm
     if provider is not None:
         provider = provider.upper()
 
-    if provider is None or provider == "LOCAL":
+    if provider is None or provider in ("LOCAL", "FILE"):
         from .local_storage import LocalStorage
 
         return LocalStorage()
-    if provider in ("GOOGLE", "GCP", "GCS"):
+    if provider in ("GOOGLE", "GCP", "GCS", "GS"):
         from .google_cloud_storage import GoogleCloudStorage
 
         return GoogleCloudStorage()
