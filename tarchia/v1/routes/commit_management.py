@@ -126,9 +126,9 @@ async def get_list_of_table_commits(
             commit = next(walker, None)
             if len(response["commits"]) >= page_size:
                 if commit:
-                    before_timestamp = datetime.datetime.fromtimestamp(commit.timestamp / 1000).strftime(
-                        "%Y-%m-%dT%H:%M:%S"
-                    )
+                    before_timestamp = datetime.datetime.fromtimestamp(
+                        commit.timestamp / 1000
+                    ).strftime("%Y-%m-%dT%H:%M:%S")
                     response["next_page"] = (
                         f"{base_url}/v1/tables/{owner}/{table}/commits?page_size={page_size}&before={before_timestamp}"
                     )

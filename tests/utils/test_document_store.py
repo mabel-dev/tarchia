@@ -1,6 +1,9 @@
 import sys
 import os
 
+os.environ["CATALOG_NAME"] = "test_catalog.json"
+os.environ["TARCHIA_DEBUG"] = "TRUE"
+
 sys.path.insert(1, os.path.join(sys.path[0], "../.."))
 
 from tarchia.utils.doc_store import DocumentStore

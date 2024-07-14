@@ -35,9 +35,7 @@ def parse_filters(filter_string: str, schema: Schema) -> List[Tuple[str, str, in
     for item in filter_string.split(","):
         for operator in operators:
             if operator in item:
-                column, value = item.split(operator, 1)
-                value = value.strip()
-                column = column.strip()
+                column, value = map(str.strip, item.split(operator, 1))
                 if value and value[0] == value[-1] == "'":
                     value = value[1:-1]
                 int_value = parse_value(column, value, schema)
@@ -59,25 +57,14 @@ def prune(record: ManifestEntry, condition: List[Tuple[str, str, int]]) -> bool:
         bool: True to prune the record
     """
 
-    for predicate in condition:
-        column, op, value = predicate
+    for column, op, value in condition:
+        lower_bound = record.lower_bounds.get(column)
+        upper_bound = record.upper_bounds.get(column)
 
         if op == "=":
-            if record.lower_bounds.get(column) > value:
-                return True
-            if record.upper_bounds.get(column) < value:
-                return True
-        elif op == ">":
-            if record.upper_bounds.get(column) < value:
-                return True
-        elif op == ">=":
-            if record.upper_bounds.get(column) <= value:
-                return True
-        elif op == "<":
-            if record.lower_bounds.get(column) > value:
-                return True
-        elif op == "<=":
-            if record.lower_bounds.get(column) >= value:
-                return True
-
+            return lower_bound > value or upper_bound < value
+        if op in (">", ">="):
+            return upper_bound < value
+        if op in ("<", "<="):
+            return lower_bound > value
         return False

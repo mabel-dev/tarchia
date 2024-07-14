@@ -1,7 +1,10 @@
 import sys
 import os
 
-sys.path.insert(1, os.path.join(sys.path[0], ".."))
+os.environ["CATALOG_NAME"] = "test_catalog.json"
+os.environ["TARCHIA_DEBUG"] = "TRUE"
+
+sys.path.insert(1, os.path.join(sys.path[0], "../.."))
 
 import pytest
 

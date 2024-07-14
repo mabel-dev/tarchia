@@ -24,6 +24,11 @@ TEST_OWNER = "tester"
 
 def test_create_read_update_delete_owner():
 
+    try:
+        os.remove(os.environ["CATALOG_NAME"])
+    except FileNotFoundError:
+        pass
+
     client = TestClient(application)
 
     owner = CreateOwnerRequest(
@@ -66,6 +71,11 @@ def test_create_read_update_delete_owner():
 
 def test_owner_rules():
 
+    try:
+        os.remove(os.environ["CATALOG_NAME"])
+    except FileNotFoundError:
+        pass
+
     ensure_owner()
 
     client = TestClient(application)
@@ -95,6 +105,11 @@ def test_owner_rules():
 
 
 def test_invalid_owner():
+
+    try:
+        os.remove(os.environ["CATALOG_NAME"])
+    except FileNotFoundError:
+        pass
 
     client = TestClient(application)
 
