@@ -33,7 +33,7 @@ steps:
         "managed",
         "--allow-unauthenticated",
         "--timeout",
-        "600",
+        "300",
         "--cpu",
         "1",
         "--memory",
