@@ -117,7 +117,7 @@ async def get_list_of_table_commits(
         commit = next(walker, None)
         while commit:
             commit_timestamp = int(commit.timestamp / 1000)
-            if before and commit_timestamp > int(before.timestamp()):
+            if before and commit_timestamp >= int(before.timestamp()):
                 commit = next(walker, None)
                 continue
             if after and commit_timestamp < int(after.timestamp()):
@@ -131,11 +131,11 @@ async def get_list_of_table_commits(
                         after_block = f"&after={after_timestamp}"
                     else:
                         after_block = ""
-                    before_timestamp = datetime.datetime.fromtimestamp(commit_timestamp).strftime(
+                    before_timestamp = datetime.datetime.fromtimestamp(commit.timestamp / 1000).strftime(
                         "%Y-%m-%dT%H:%M:%S"
                     )
                     response["next_page"] = (
-                        f"{base_url}/tables/{owner}/{table}/commits?page_size={page_size}{after_block}&before={before_timestamp}"
+                        f"{base_url}/v1/tables/{owner}/{table}/commits?page_size={page_size}{after_block}&before={before_timestamp}"
                     )
                 break
 
