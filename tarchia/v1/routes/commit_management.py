@@ -116,27 +116,25 @@ async def get_list_of_table_commits(
         walker = history.walk_branch(MAIN_BRANCH)
         commit = next(walker, None)
         while commit:
-            commit_timestamp = int(commit.timestamp / 1000)
-            if before and commit_timestamp > int(before.timestamp()):
+            commit_timestamp = commit.timestamp
+            if before and commit_timestamp >= int(before.timestamp() * 1000):
                 commit = next(walker, None)
                 continue
-            if after and commit_timestamp < int(after.timestamp()):
+            if after and commit_timestamp < int(after.timestamp() * 1000):
                 break
             response["commits"].append(commit)
             commit = next(walker, None)
             if len(response["commits"]) >= page_size:
                 if commit:
-                    if after:
-                        after_timestamp = after.strftime("%Y-%m-%dT%H:%M:%S")
-                        after_block = f"&after={after_timestamp}"
-                    else:
-                        after_block = ""
-                    before_timestamp = datetime.datetime.fromtimestamp(commit_timestamp).strftime(
+                    before_timestamp = datetime.datetime.fromtimestamp(commit.timestamp / 1000).strftime(
                         "%Y-%m-%dT%H:%M:%S"
                     )
                     response["next_page"] = (
-                        f"{base_url}/tables/{owner}/{table}/commits?page_size={page_size}{after_block}&before={before_timestamp}"
+                        f"{base_url}/v1/tables/{owner}/{table}/commits?page_size={page_size}&before={before_timestamp}"
                     )
+                    if after:
+                        after_timestamp = after.strftime("%Y-%m-%dT%H:%M:%S")
+                        response["next_page"] += f"&after={after_timestamp}"
                 break
 
     return response
