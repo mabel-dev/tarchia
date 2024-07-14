@@ -122,7 +122,13 @@ async def get_list_of_table_commits(
                 continue
             if after and commit_timestamp < int(after.timestamp() * 1000):
                 break
-            response["commits"].append(commit)
+
+            commit_dict = commit.as_dict()
+            commit_dict["commit_url"] = (
+                f"{base_url}/v1/tables/{catalog_entry.owner}/{catalog_entry.name}/commits/{commit.sha}"
+            )
+            response["commits"].append(commit_dict)
+
             commit = next(walker, None)
             if len(response["commits"]) >= page_size:
                 if commit:
