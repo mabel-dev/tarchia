@@ -117,7 +117,7 @@ async def get_list_of_table_commits(
         commit = next(walker, None)
         while commit:
             commit_timestamp = int(commit.timestamp / 1000)
-            if before and commit_timestamp >= int(before.timestamp()):
+            if before and commit_timestamp > int(before.timestamp()):
                 commit = next(walker, None)
                 continue
             if after and commit_timestamp < int(after.timestamp()):
