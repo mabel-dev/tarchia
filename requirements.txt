@@ -6,3 +6,4 @@ orjson
 orso
 pyarrow
 pydantic
+zstandard
