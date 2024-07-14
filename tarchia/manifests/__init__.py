@@ -7,6 +7,7 @@ from tarchia.manifests.models import ManifestEntry
 from tarchia.manifests.pruning import parse_filters
 from tarchia.manifests.pruning import prune
 from tarchia.storage import StorageProvider
+from tarchia.storage import storage_factory
 
 
 def get_manifest(
@@ -80,7 +81,7 @@ def write_manifest(location: str, storage_provider: StorageProvider, entries: Li
     storage_provider.write_blob(location, stream.read())
 
 
-def build_manifest_entry(path: str, storage_provider: StorageProvider) -> ManifestEntry:
+def build_manifest_entry(path: str) -> ManifestEntry:
     """
     Build a manifest entry for a given Parquet file.
 
@@ -98,12 +99,19 @@ def build_manifest_entry(path: str, storage_provider: StorageProvider) -> Manife
 
     from tarchia.utils.to_int import to_int
 
+    if "://" in path:
+        host, blob_path = path.split("://")
+        storage_provider = storage_factory(host)
+    else:
+        blob_path = path
+        storage_provider = storage_factory("LOCAL")
+
     new_manifest_entry = ManifestEntry(
         file_path=path, file_format="parquet", file_type=EntryType.Data
     )
 
     # Read the file bytes and initialize the Parquet file object
-    file_bytes = storage_provider.read_blob(path)
+    file_bytes = storage_provider.read_blob(blob_path)
     new_manifest_entry.file_size = len(file_bytes)
     new_manifest_entry.sha256_checksum = sha256(file_bytes).hexdigest()
 
