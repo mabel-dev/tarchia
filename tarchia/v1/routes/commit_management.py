@@ -116,11 +116,11 @@ async def get_list_of_table_commits(
         walker = history.walk_branch(MAIN_BRANCH)
         commit = next(walker, None)
         while commit:
-            commit_timestamp = commit.timestamp
-            if before and commit_timestamp > int(before.timestamp() * 1000):
+            commit_timestamp = int(commit.timestamp / 1000)
+            if before and commit_timestamp > int(before.timestamp()):
                 commit = next(walker, None)
                 continue
-            if after and commit_timestamp < int(after.timestamp() * 1000):
+            if after and commit_timestamp < int(after.timestamp()):
                 break
             response["commits"].append(commit)
             commit = next(walker, None)
