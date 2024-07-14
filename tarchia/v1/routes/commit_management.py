@@ -118,6 +118,7 @@ async def get_list_of_table_commits(
         while commit:
             commit_timestamp = commit.timestamp
             if before and commit_timestamp > before.timestamp():
+                commit = next(walker, None)
                 continue
             if after and commit_timestamp < after.timestamp():
                 break
