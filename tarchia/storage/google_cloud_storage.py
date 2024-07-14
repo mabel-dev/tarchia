@@ -38,7 +38,11 @@ class GoogleCloudStorage(StorageProvider):
         blob = bucket.blob(location)
         self.retry(blob.upload_from_string)(content, content_type="application/octet-stream")
 
-    def read_blob(self, location: str) -> bytes:
-        bucket = self.client.get_bucket(self.bucket_name)
+    def read_blob(self, location: str, bucket_in_path: bool = False) -> bytes:
+        if bucket_in_path:
+            bucket_name, location = location.split("/", 1)
+        else:
+            bucket_name = self.bucket_name
+        bucket = self.client.get_bucket(bucket_name)
         blob = bucket.get_blob(location)
         return blob.download_as_bytes()
