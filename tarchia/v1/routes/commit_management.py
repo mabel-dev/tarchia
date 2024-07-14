@@ -117,9 +117,9 @@ async def get_list_of_table_commits(
         commit = next(walker, None)
         while commit:
             commit_timestamp = commit.timestamp
-            if before and commit.timestamp > before:
+            if before and commit_timestamp > before.timestamp():
                 continue
-            if after and commit.timestamp < after:
+            if after and commit_timestamp < after.timestamp():
                 break
             response["commits"].append(commit)
             commit = next(walker, None)
