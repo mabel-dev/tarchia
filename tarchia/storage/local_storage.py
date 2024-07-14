@@ -27,7 +27,7 @@ class LocalStorage(StorageProvider):
         finally:
             os.close(file_descriptor)
 
-    def read_blob(self, location: str) -> bytes:
+    def read_blob(self, location: str, bucket_in_path: bool = False) -> bytes:
         """
         Read a blob (binary large object) from disk.
 
