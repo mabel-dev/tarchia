@@ -46,14 +46,15 @@ table/
 
 ~~~mermaid
 flowchart TD
-    CATALOG[(Catalog)] --> SNAPSHOT(Snapshot)
-    CATALOG  --> SCHEMA(Schema)
+    CATALOG  --> COMMITS(Commit History)
+    CATALOG[(Catalog)] --> |Current| COMMIT(Commit)
+    CATALOG  --> |Current| SCHEMA(Schema)
     subgraph  
-        MAN_LIST --> MANIFEST(Manifest)
-        SNAPSHOT --> SCHEMA
-        SNAPSHOT --> MAN_LIST(Manifest List)
+        COMMITS  -..-> |Historical| COMMIT
+        COMMIT --> SCHEMA
+        COMMIT --> MAN_LIST(Manifest/List)
     end
-    MANIFEST --> DATA(Data Files)
+    MAN_LIST --> DATA(Data Files)
 ~~~
 
 ## Design
@@ -68,11 +69,11 @@ flowchart TD
 
 - **Creation**:
 
-  - Created with a schema but no commit (no data initially).
+  - Created with a schema but no Commits (no data initially).
 
 - **Writing to a Table**:
-  - Obtain the latest schema (may differ from the latest commit if updated since).
-  - Write the data and save the commit.
+  - Obtain the latest Schema (may differ from the latest Commit if updated since).
+  - Write the data and save the Commit.
   - Use a transaction system to ensure complete datasets/updates before Catalog updates.
 
 ### Handling Clashes
@@ -82,28 +83,30 @@ flowchart TD
 
 ### Streaming Datasets
 
-- Use a transaction to add new files to the dataset, this will update the manifest and create a new snapshot.
+- Use a transaction to add new files to the dataset, this will update the Manifest and create a new Commit.
 
 ### Scheme Evolution
 
 - Schema changes are limited to:
   - Adding and removing columns.
   - Limited type conversions (e.g., int to float).
-- Larger changes will be treated treated as different datasets.
+- Larger changes must be treated treated as different datasets.
 
 ### Table Reading
 
-- Retrieve the snapshot, this contains the schema, permissions and encryption information and the root manifest.
+- Retrieve the Commit, this contains the schema, permissions and encryption information and the root manifest.
 
 ### Catalog References
 
-- The latest schema.
-- The latest snapshot.
-- Key information about the table.
+- The latest Schema (for writing).
+- The location of the Data Files (for writing).
+- The partitioning of Data Files (for writing).
+- The latest Commit.
+- The Commit History File.
 
 ### Manifests
 
-- Manifests are immutable, adding a new file creates a new manifest.
+- Manifests are immutable, adding a new file creates a new Manifest.
 - First split at 4097, (11 years of daily writes, 61 million records if 15k/file, 200 million if 50k/file)
 - Otherwise, limited to 2048 rows (aiming for most files to be <2MB to support caching).
 - If a manifest exceeds this number, it is split, and a Manifest List is created.
@@ -118,23 +121,28 @@ flowchart TD
 
 ### Data Files
 
-- Manifest and snapshot files do not need to be colocated with the data files.
-- Data files do not need to be colocated with each other.
+- Manifest and Commit files do not need to be colocated with the data files.
+- Data Files do not need to be colocated with each other, but must be on the same storage platform (e.g. all on GCS, all on S3)
 
 ### ACIDity
 
-- Updates are Atomic, effective only when the catalog is updated.
+- Updates are Atomic, effective only when the Catalog is updated.
 - Updates are Consistent, primarily due to no consistency functionality to violate.
-- Updates are Isolated, via Snapshot version checking, this is brutish but effective.
+- Updates are Isolated, via Commit version checking, this is brutish but effective.
 - Updated are Durable, use of a database like FireStore and Cloud Storage ensure writes are persistent.
 - Failed updates may leave artifacts (e.g., orphan files), but the update itself is either successful or not.
-- Storage cost for failed commits (orphaned tables) is considered acceptable.
+- Storage cost for failed commits (orphaned files) is considered acceptable.
 
 ### Pruning
 
 - Effective for columns that are sorted, nearly sorted, or have values appearing for limited periods.
 - Ineffective for columns with very few, highly recurrent values (e.g., Gender).
 - Effective for columns like dates when working with log entries.
+- Eliminates Data Files, not rows.
+- Various rules around pruning:
+    - Can prune on `=`, `<`, `>`, `>=`, and `<=` conditions.
+    - Cannot prune on complex columns (ARRAY, STRUCT).
+    - VARCHAR and BLOB are truncated to 8 characters for pruning.
 
 ### Indexes
 
@@ -150,7 +158,7 @@ Tarchia alpha currently only supports:
 
 **Datafiles**: `parquet`
 **Catalogs**: FireStore and internal
-**Blob Stores**: local
+**Blob Stores**: local and google cloud storage
 
 ## Git-Like Management
 
@@ -159,7 +167,7 @@ Git      | Function                               | Tarchia
 `init`   | Initialize a new dataset               | [POST] /v1/tables/{owner} 
 `add`    | Stage changes to be included in commit | [POST] /v1/tables/{owner}/{table}/stage
 `commit` | Save the staged changes to the dataset | [POST] /v1/transactions/commit 
-`branch` | Create a new branch of the dataset     | [POST] /v1/transactions/start
+<!--`branch` | Create a new branch of the dataset     | [POST] /v1/transactions/start -->
 <!--`fork`   | Create a copy of a dataset             | [POST] /v1/tables/{owner}/{table}/fork-->
 
 ## API Definition
@@ -219,13 +227,13 @@ End Point                | GET | POST | PATCH | DELETE
 
     [POST]      /v1/tables/{owner}/{table}/metadata
 
-**I want to add another file to a dataset**
+**I want to add another file to a dataset (add file to streaming dataset)**
 
     [POST]      /v1/transactions/start
     [POST]      /v1/transactions/stage
     [POST]      /v1/transactions/commit
 
-**I want to write a new instance of a dataset**
+**I want to write a new instance of a dataset (rewrite a snapshot dataset)**
 
     [POST]      /v1/transactions/start
     [POST]      /v1/transactions/truncate
