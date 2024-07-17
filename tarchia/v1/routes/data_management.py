@@ -87,7 +87,7 @@ def load_old_commit(storage_provider, commit_root, parent_commit):
     return {}
 
 
-def build_new_manifest(old_manifest, transaction):
+def build_new_manifest(old_manifest, transaction, schema):
     from tarchia.manifests import build_manifest_entry
 
     existing_entries = {e.file_path for e in old_manifest}
@@ -98,7 +98,7 @@ def build_new_manifest(old_manifest, transaction):
     ]
 
     new_manifest = [entry for entry in old_manifest if entry not in transaction.deletions]
-    new_manifest.extend(build_manifest_entry(entry) for entry in new_entries)
+    new_manifest.extend(build_manifest_entry(entry, schema) for entry in new_entries)
 
     return new_manifest
 
@@ -214,7 +214,7 @@ async def commit_transaction(commit_request: CommitRequest):
             else []
         )
 
-        new_manifest = build_new_manifest(old_manifest, transaction)
+        new_manifest = build_new_manifest(old_manifest, transaction, catalog_entry.current_schema)
         manifest_path = f"{manifest_root}/manifest-{uuid}.avro"
         write_manifest(
             location=manifest_path, storage_provider=storage_provider, entries=new_manifest

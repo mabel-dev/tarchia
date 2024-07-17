@@ -14,6 +14,11 @@ from typing import List
 from typing import Optional
 
 
+class DataError(Exception):  # pragma: no cover
+    def __init__(self, message: str):
+        super().__init__(message)
+
+
 class MissingDependencyError(Exception):  # pragma: no cover
     def __init__(self, dependency: str):
         self.dependency = dependency
