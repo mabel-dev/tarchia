@@ -2,10 +2,12 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
+from tarchia.exceptions import DataError
 from tarchia.manifests.models import EntryType
 from tarchia.manifests.models import ManifestEntry
-from tarchia.manifests.pruning import parse_filters
 from tarchia.manifests.pruning import prune
+from tarchia.models import Column
+from tarchia.models import Schema
 from tarchia.storage import StorageProvider
 from tarchia.storage import storage_factory
 
@@ -81,7 +83,7 @@ def write_manifest(location: str, storage_provider: StorageProvider, entries: Li
     storage_provider.write_blob(location, stream.read())
 
 
-def build_manifest_entry(path: str) -> ManifestEntry:
+def build_manifest_entry(path: str, expected_schema: Schema) -> ManifestEntry:
     """
     Build a manifest entry for a given Parquet file.
 
@@ -117,6 +119,14 @@ def build_manifest_entry(path: str) -> ManifestEntry:
     stream = BytesIO(file_bytes)
     parquet_file = parquet.ParquetFile(stream)
     new_manifest_entry.record_count = parquet_file.metadata.num_rows
+
+    parquet_columns_names = set(parquet_file.schema.names)
+    for column in expected_schema.columns:
+        all_names = [column.name] + column.aliases
+        if column.default is None and not parquet_columns_names.intersection(all_names):
+            raise DataError(
+                f"File '{path}' is missing column '{column.name}'. To avoid this error, ensure this column has a default value or is present in all files."
+            )
 
     # Initialize statistics for each column
     for column in parquet_file.schema_arrow.names:

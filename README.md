@@ -127,7 +127,7 @@ flowchart TD
 ### ACIDity
 
 - Updates are Atomic, effective only when the Catalog is updated.
-- Updates are Consistent, primarily due to no consistency functionality to violate.
+- Updates are Consistent, commits are checked if they match the schema.
 - Updates are Isolated, via Commit version checking, this is brutish but effective.
 - Updated are Durable, use of a database like FireStore and Cloud Storage ensure writes are persistent.
 - Failed updates may leave artifacts (e.g., orphan files), but the update itself is either successful or not.
