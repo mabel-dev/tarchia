@@ -61,10 +61,11 @@ def prune(record: ManifestEntry, condition: List[Tuple[str, str, int]]) -> bool:
         lower_bound = record.lower_bounds.get(column)
         upper_bound = record.upper_bounds.get(column)
 
-        if op == "=":
-            return lower_bound > value or upper_bound < value
-        if op in (">", ">="):
-            return upper_bound < value
-        if op in ("<", "<="):
-            return lower_bound > value
-        return False
+        if op == "=" and (lower_bound > value or upper_bound < value):
+            return True
+        if op in (">", ">=") and upper_bound < value:
+            return True
+        if op in ("<", "<=") and lower_bound > value:
+            return True
+
+    return False
