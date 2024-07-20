@@ -2,3 +2,4 @@ types-PyYAML
 
 orso
 opteryx
+requests
