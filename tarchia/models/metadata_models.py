@@ -9,6 +9,7 @@ from pydantic import Field
 
 from tarchia.exceptions import DataEntryError
 
+from .eventable import Eventable
 from .tarchia_base import TarchiaBaseModel
 
 
@@ -175,12 +176,17 @@ class Commit(TarchiaBaseModel):
         )
 
 
-class TableCatalogEntry(TarchiaBaseModel):
+class TableCatalogEntry(TarchiaBaseModel, Eventable):
     """
     The Catalog entry for a table.
 
     This is intended to be stored in a document store like FireStore or MongoDB.
     """
+
+    class EventTypes(Enum):
+        """Supported Eventables"""
+
+        NEW_COMMIT = "NEW_COMMIT"
 
     name: str
     steward: str
@@ -207,7 +213,7 @@ class TableCatalogEntry(TarchiaBaseModel):
         return True
 
 
-class OwnerEntry(TarchiaBaseModel):
+class OwnerEntry(Eventable, TarchiaBaseModel):
     """
     Model for owners.
 
@@ -217,6 +223,12 @@ class OwnerEntry(TarchiaBaseModel):
         user (str): The name of the user/group that owns this group.
         memberships (List(str)): Identifiers to automatically map users to Owners
     """
+
+    class EventTypes(Enum):
+        """Supported Eventables"""
+
+        DATASET_CREATED = "DATASET_CREATED"
+        DATASET_DELETED = "DATASET_DELETED"
 
     name: str
     owner_id: str

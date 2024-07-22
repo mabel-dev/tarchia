@@ -72,6 +72,7 @@ async def get_table_commit(
     table_definition.pop("last_updated_ms", None)
     table_definition.pop("partitioning")
     table_definition.pop("location")
+    table_definition.pop("subscriptions")
     table_definition["commit_sha"] = commit_sha
     table_definition["commit_url"] = (
         f"{base_url}/v1/tables/{catalog_entry.owner}/{catalog_entry.name}/commits/{commit_sha}"

@@ -69,7 +69,8 @@ async def list_tables(owner: str, request: Request):
 
 @router.post("/tables/{owner}", response_class=ORJSONResponse)
 async def create_table(
-    request: CreateTableRequest,
+    request: Request,
+    table_definition: CreateTableRequest,
     owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
 ):
     """
@@ -84,46 +85,57 @@ async def create_table(
     from tarchia.utils import generate_uuid
     from tarchia.utils.catalogs import identify_owner
 
-    # check if we have a table with that name already
+    base_url = request.url.scheme + "://" + request.url.netloc
 
-    catalog_entry = catalog_provider.get_table(owner=owner, table=request.name)
+    # check if we have a table with that name already
+    catalog_entry = catalog_provider.get_table(owner=owner, table=table_definition.name)
     if catalog_entry:
         # return a 409
-        raise AlreadyExistsError(entity=request.name)
+        raise AlreadyExistsError(entity=table_definition.name)
 
     # can we find the owner?
-    identify_owner(name=owner)
+    owner_entry = identify_owner(name=owner)
 
     table_id = generate_uuid()
 
     # We create tables without any commit, at create-time the table has no data and some
     # table types (external) we never record commits for.
     new_table = TableCatalogEntry(
-        name=request.name,
+        name=table_definition.name,
         owner=owner,
-        steward=request.steward,
+        steward=table_definition.steward,
         table_id=table_id,
         format_version=1,
-        location=request.location,
-        partitioning=request.partitioning,
-        visibility=request.visibility,
-        permissions=request.permissions,
-        disposition=request.disposition,
-        metadata=request.metadata,
+        location=table_definition.location,
+        partitioning=table_definition.partitioning,
+        visibility=table_definition.visibility,
+        permissions=table_definition.permissions,
+        disposition=table_definition.disposition,
+        metadata=table_definition.metadata,
         current_commit_sha=None,
-        current_schema=request.table_schema,
+        current_schema=table_definition.table_schema,
         last_updated_ms=int(time.time_ns() / 1e6),
-        encryption_details=request.encryption_details,
+        encryption_details=table_definition.encryption_details,
     )
 
     # Save the table to the Catalog
     catalog_provider.update_table(table_id=new_table.table_id, entry=new_table)
     # create the metadata folder, put a file with the table name in there
-    storage_provider.write_blob(f"{METADATA_ROOT}/{owner}/{table_id}/{request.name}", b"")
+    storage_provider.write_blob(f"{METADATA_ROOT}/{owner}/{table_id}/{table_definition.name}", b"")
+
+    # trigger webhooks - this should be async so we don't wait for the outcome
+    owner_entry.notify_subscribers(
+        owner_entry.EventTypes.DATASET_CREATED,
+        {
+            "event": "DATASET_CREATED",
+            "table": f"{owner}.{table_definition.name}",
+            "url": f"{base_url}/v1/tables/{owner}/{table_definition}",
+        },
+    )
 
     return {
         "message": "Table Created",
-        "table": f"{owner}.{request.name}",
+        "table": f"{owner}.{table_definition.name}",
     }
 
 
@@ -176,8 +188,10 @@ async def delete_table(
         The metadata and data files for this table is NOT deleted.
     """
 
+    from tarchia.utils.catalogs import identify_owner
     from tarchia.utils.catalogs import identify_table
 
+    owner_entry = identify_owner(name=owner)
     catalog_entry = identify_table(owner=owner, table=table)
 
     table_id = catalog_entry.table_id
@@ -187,6 +201,12 @@ async def delete_table(
     # we save the catalog entry to give the option to manually restate the table
     storage_provider.write_blob(
         f"{METADATA_ROOT}/{owner}/{table_id}/deleted.json", catalog_entry.serialize()
+    )
+
+    # trigger webhooks - this should be async so we don't wait for the outcome
+    owner_entry.notify_subscribers(
+        owner_entry.EventTypes.DATASET_DELETED,
+        {"event": "DATASET_DELETED", "table": f"{owner}.{table}"},
     )
 
     return {

@@ -6,6 +6,7 @@ from typing import List
 import orjson
 from fastapi import APIRouter
 from fastapi import HTTPException
+from fastapi import Request
 
 from tarchia import config
 from tarchia.constants import COMMITS_ROOT
@@ -161,7 +162,7 @@ async def start_transaction(table: TableRequest):
 
 
 @router.post("/transactions/commit")
-async def commit_transaction(commit_request: CommitRequest):
+async def commit_transaction(request: Request, commit_request: CommitRequest):
     """
     Commits a transaction by verifying it, updating the manifest and commit,
     and updating the catalog.
@@ -183,6 +184,7 @@ async def commit_transaction(commit_request: CommitRequest):
     from tarchia.utils import generate_uuid
     from tarchia.utils.catalogs import identify_table
 
+    base_url = request.url.scheme + "://" + request.url.netloc
     timestamp = int(time.time_ns() / 1e6)
     uuid = generate_uuid()
 
@@ -259,15 +261,27 @@ async def commit_transaction(commit_request: CommitRequest):
         catalog_entry.current_history = uuid
         catalog_provider.update_table(catalog_entry.table_id, catalog_entry)
 
+        # trigger webhooks - this should be async so we don't wait for the outcome
+        catalog_entry.notify_subscribers(
+            catalog_entry.EventTypes.NEW_COMMIT,
+            {
+                "event": "NEW_COMMIT",
+                "table": f"{catalog_entry.owner}.{catalog_entry.name}",
+                "commit": commit.commit_sha,
+                "url": f"{base_url}/v1/tables/{catalog_entry.owner}/{catalog_entry.name}/commits/{commit.commit_sha}",
+            },
+        )
+
         return {
+            "table": f"{catalog_entry.owner}.{catalog_entry.name}",
             "message": "Transaction committed successfully",
             "transaction": transaction.transaction_id,
             "commit": commit.commit_sha,
+            "url": f"{base_url}/v1/tables/{catalog_entry.owner}/{catalog_entry.name}/commits/{commit.commit_sha}",
         }
     except TransactionError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise e
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
