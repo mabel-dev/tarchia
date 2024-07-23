@@ -143,7 +143,7 @@ async def create_table(
         permissions=table_definition.permissions,
         disposition=table_definition.disposition,
         metadata=table_definition.metadata,
-        current_commit_sha=new_commit.sha,
+        current_commit_sha=new_commit.commit_sha,
         last_updated_ms=timestamp,
         freshness_life_in_days=table_definition.freshness_life_in_days,
         retention_in_days=table_definition.retention_in_days,
@@ -156,7 +156,7 @@ async def create_table(
     catalog_provider.update_table(table_id=new_table.table_id, entry=new_table)
 
     # trigger webhooks - this should be async so we don't wait for the outcome
-    owner_entry.notify_subscribers(
+    owner_entry.trigger_event(
         owner_entry.EventTypes.TABLE_CREATED,
         {
             "event": "TABLE_CREATED",
@@ -236,7 +236,7 @@ async def delete_table(
     )
 
     # trigger webhooks - this should be async so we don't wait for the outcome
-    owner_entry.notify_subscribers(
+    owner_entry.trigger_event(
         owner_entry.EventTypes.TABLE_DELETED,
         {"event": "TABLE_DELETED", "table": f"{owner}.{table}"},
     )

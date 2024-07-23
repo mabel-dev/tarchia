@@ -50,7 +50,6 @@ class Commit(TarchiaBaseModel):
     table_schema: Schema
     encryption: Optional[EncryptionDetails] = None
     commit_sha: Optional[str] = None
-
     added_files: Optional[List[str]] = Field(default_factory=list)
     removed_files: Optional[List[str]] = Field(default_factory=list)
 

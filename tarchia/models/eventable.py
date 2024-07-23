@@ -26,6 +26,7 @@ import concurrent.futures
 from enum import Enum
 from typing import List
 
+import orjson
 import requests
 from orso.tools import retry
 from pydantic import BaseModel
@@ -89,7 +90,7 @@ class Eventable:
 
     def trigger_event(self, event: str, data: dict):
         """Trigger an event and notify all subscribers."""
-        if event not in self.EventTypes.__members__:
+        if event not in self.EventTypes:
             raise ValueError(f"Event '{event}' is not supported.")
         for subscription in self.subscriptions:
             if subscription.event == event:
@@ -100,9 +101,9 @@ class Eventable:
         try:
             self._ensure_executor()
             if is_valid_url(url):
-                self._executor.submit(self._send_request_with_retries, url, data)
+                self._executor.submit(self._send_request_with_retries, url, orjson.dumps(data))
         except Exception as err:
-            print(f"[TARCHIA] Error notifying subscribers. {err}")
+            print(f"[TARCHIA] Error notifying subscribers. {err} ({data})")
 
     @retry(
         max_tries=3,

@@ -264,7 +264,7 @@ async def commit_transaction(request: Request, commit_request: CommitRequest):
         catalog_provider.update_table(catalog_entry.table_id, catalog_entry)
 
         # trigger webhooks - this should be async so we don't wait for the outcome
-        catalog_entry.notify_subscribers(
+        catalog_entry.trigger_event(
             catalog_entry.EventTypes.NEW_COMMIT,
             {
                 "event": "NEW_COMMIT",

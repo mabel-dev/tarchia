@@ -186,4 +186,6 @@ def test_maintain_table_schema():
 if __name__ == "__main__":  # pragma: no cover
     from tests.tools import run_tests
 
+
+    test_create_read_update_delete_table()
     run_tests()
