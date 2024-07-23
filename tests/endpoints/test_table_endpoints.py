@@ -43,6 +43,8 @@ def test_create_read_update_delete_table():
         location="gs://dataset/",
         steward="bob",
         table_schema=Schema(columns=[Column(name="column")]),
+        freshness_life_in_days=0,
+        retention_in_days=0,
     )
 
     # can't create the table for non-existent owner
@@ -97,6 +99,8 @@ def test_maintain_table_metadata():
         location="gs://dataset/",
         steward="bob",
         table_schema=Schema(columns=[Column(name="column")]),
+        freshness_life_in_days=0,
+        retention_in_days=0
     )
 
     # create the table
@@ -128,6 +132,7 @@ def test_maintain_table_metadata():
 
 
 def test_maintain_table_schema():
+    assert False, "This isn't how we're going to manage schemas going forward"
 
     try:
         os.remove(os.environ["CATALOG_NAME"])
@@ -143,6 +148,8 @@ def test_maintain_table_schema():
         location="gs://dataset/",
         steward="bob",
         table_schema=Schema(columns=[Column(name="column")]),
+        freshness_life_in_days=0,
+        retention_in_days=0
     )
 
     # create the table

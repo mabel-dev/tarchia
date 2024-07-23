@@ -18,8 +18,8 @@ Methods:
 
 Example Usage:
     eventable = Eventable()
-    eventable.subscribe(user='user1', event='dataset_created', url='http://example.com/webhook_created')
-    eventable.trigger_event('dataset_created', {'table_id': '123', 'name': 'ExampleTable'})
+    eventable.subscribe(user='user1', event='TABLE_CREATED', url='http://example.com/webhook_created')
+    eventable.trigger_event('TABLE_CREATED', {'table_id': '123', 'name': 'ExampleTable'})
 """
 
 import concurrent.futures

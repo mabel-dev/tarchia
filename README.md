@@ -1,5 +1,14 @@
 # Tarchia
 
+Data As Code.
+
+- Data Changes as Commits
+- Branching for Development
+- Automated Testing
+- Merging and Deployment
+
+
+
 <!---
 - Schema changes in transaction commits
 - Multi-branch

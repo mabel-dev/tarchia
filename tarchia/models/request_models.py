@@ -8,10 +8,11 @@ from pydantic import field_validator
 
 from tarchia.exceptions import DataEntryError
 
-from .metadata_models import Column
 from .metadata_models import DatasetPermissions
+from .metadata_models import EncryptionDetails
 from .metadata_models import OwnerType
 from .metadata_models import RolePermission
+from .metadata_models import Schema
 from .metadata_models import TableDisposition
 from .metadata_models import TableVisibility
 from .tarchia_base import TarchiaBaseModel
@@ -40,8 +41,10 @@ class CreateTableRequest(TarchiaBaseModel):
 
     Attributes:
         name (str): The name of the table.
-        steward: (str): The indivial responsible for this table.
+        steward (str): The indivial responsible for this table.
         location (str): The location of the table data.
+        freshness_life_in_days (int): The number of days this data is considered live
+        retention_in_days (int): Days this data must be retained for
         table_schema (Schema): The schema of the table.
         partitioning (Optional[List[str]]): The partitioning information, default is ["year", "month", "day"].
         disposition (TableDisposition): The disposition of the table, default is SNAPSHOT.
@@ -52,16 +55,20 @@ class CreateTableRequest(TarchiaBaseModel):
     name: str
     steward: str
     location: Optional[str]
+    freshness_life_in_days: int
+    retention_in_days: int
+    table_schema: Schema
     visibility: TableVisibility = TableVisibility.PRIVATE
     partitioning: Optional[List[str]] = ["year", "month", "day"]
     disposition: TableDisposition = TableDisposition.SNAPSHOT
     permissions: List[DatasetPermissions] = [
         DatasetPermissions(role="*", permission=RolePermission.READ)
     ]
+    encryption: Optional[EncryptionDetails] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
     @field_validator("name")
-    def validate_name(self, name):
+    def validate_name(cls, name):
         """
         Validate the table name to ensure it matches the required pattern.
 
@@ -80,17 +87,6 @@ class CreateTableRequest(TarchiaBaseModel):
                 message="Table name cannot start with a digit and can only contain alphanumerics and underscores.",
             )
         return name
-
-
-class UpdateSchemaRequest(TarchiaBaseModel):
-    """
-    Model for updating schema request.
-
-    Attributes:
-        columns (List[Column]): The list of columns in the schema.
-    """
-
-    columns: List[Column]
 
 
 class UpdateMetadataRequest(TarchiaBaseModel):

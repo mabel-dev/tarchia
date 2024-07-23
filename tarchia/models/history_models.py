@@ -48,7 +48,7 @@ class Commit(TarchiaBaseModel):
     last_updated_ms: int
     manifest_path: Optional[str]
     table_schema: Schema
-    encryption_details: Optional[EncryptionDetails]
+    encryption: Optional[EncryptionDetails] = None
     commit_sha: Optional[str] = None
 
     added_files: Optional[List[str]] = Field(default_factory=list)

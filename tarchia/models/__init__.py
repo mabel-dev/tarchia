@@ -1,3 +1,4 @@
+from .history_models import HISTORY_SCHEMA
 from .history_models import Commit
 from .history_models import HistoryEntry
 from .metadata_models import Column
@@ -17,5 +18,4 @@ from .request_models import CreateTableRequest
 from .request_models import StageFilesRequest
 from .request_models import TableRequest
 from .request_models import UpdateMetadataRequest
-from .request_models import UpdateSchemaRequest
 from .request_models import UpdateValueRequest

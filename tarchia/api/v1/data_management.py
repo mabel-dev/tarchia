@@ -235,7 +235,9 @@ async def commit_transaction(request: Request, commit_request: CommitRequest):
             last_updated_ms=timestamp,
             manifest_path=manifest_path,
             table_schema=catalog_entry.current_schema,
-            encryption_details=catalog_entry.encryption_details,
+            encryption=catalog_entry.encryption,
+            added_files=transaction.additions,
+            removed_files=transaction.deletions,
         )
 
         commit_path = f"{commit_root}/commit-{commit.commit_sha}.json"

@@ -85,6 +85,8 @@ def test_owner_rules():
         location="gs://dataset/",
         steward="bob",
         table_schema=Schema(columns=[Column(name="column")]),
+        freshness_life_in_days=0,
+        retention_in_days=0,
     )
 
     # add a table

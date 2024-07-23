@@ -8,6 +8,7 @@ from typing import Optional
 from fastavro import reader
 from fastavro import writer
 
+from tarchia.models import HISTORY_SCHEMA
 from tarchia.models import HistoryEntry
 from tarchia.utils.constants import MAIN_BRANCH
 

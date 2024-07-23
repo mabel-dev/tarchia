@@ -140,6 +140,8 @@ class TableCatalogEntry(TarchiaBaseModel, Eventable):
     location: Optional[str]
     partitioning: Optional[List[str]]
     last_updated_ms: int
+    freshness_life_in_days: int
+    retention_in_days: int
     permissions: List[DatasetPermissions]
     visibility: TableVisibility
     current_commit_sha: Optional[str] = None
@@ -170,8 +172,8 @@ class OwnerEntry(Eventable, TarchiaBaseModel):
     class EventTypes(Enum):
         """Supported Eventables"""
 
-        DATASET_CREATED = "DATASET_CREATED"
-        DATASET_DELETED = "DATASET_DELETED"
+        TABLE_CREATED = "TABLE_CREATED"
+        TABLE_DELETED = "TABLE_DELETED"
 
     name: str
     owner_id: str

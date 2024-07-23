@@ -11,10 +11,12 @@ from tarchia.interfaces.storage import storage_factory
 from tarchia.models import CreateTableRequest
 from tarchia.models import TableCatalogEntry
 from tarchia.models import UpdateMetadataRequest
-from tarchia.models import UpdateSchemaRequest
 from tarchia.models import UpdateValueRequest
 from tarchia.utils.config import METADATA_ROOT
+from tarchia.utils.constants import COMMITS_ROOT
+from tarchia.utils.constants import HISTORY_ROOT
 from tarchia.utils.constants import IDENTIFIER_REG_EX
+from tarchia.utils.constants import MAIN_BRANCH
 
 router = APIRouter()
 catalog_provider = catalog_factory()
@@ -81,11 +83,14 @@ async def create_table(
     Parameters:
         request: CreateTableRequest - The request body containing the table metadata.
     """
-
+    from tarchia.metadata.history import HistoryTree
+    from tarchia.models import Commit
+    from tarchia.utils import build_root
     from tarchia.utils import generate_uuid
     from tarchia.utils.catalogs import identify_owner
 
     base_url = request.url.scheme + "://" + request.url.netloc
+    timestamp = int(time.time_ns() / 1e6)
 
     # check if we have a table with that name already
     catalog_entry = catalog_provider.get_table(owner=owner, table=table_definition.name)
@@ -95,11 +100,37 @@ async def create_table(
 
     # can we find the owner?
     owner_entry = identify_owner(name=owner)
-
     table_id = generate_uuid()
 
-    # We create tables without any commit, at create-time the table has no data and some
-    # table types (external) we never record commits for.
+    commit_root = build_root(COMMITS_ROOT, owner=owner, table_id=table_id)
+    history_root = build_root(HISTORY_ROOT, owner=owner, table_id=table_id)
+
+    # build the new commit record
+    new_commit = Commit(
+        data_hash="",
+        user="user",
+        message="Initial commit",
+        branch=MAIN_BRANCH,
+        parent_commit_sha=None,
+        last_updated_ms=timestamp,
+        manifest_path=None,
+        table_schema=table_definition.table_schema,
+        encryption=table_definition.encryption,
+    )
+
+    # write the initial commit to storage
+    commit_path = f"{commit_root}/commit-{new_commit.commit_sha}.json"
+    storage_provider.write_blob(commit_path, new_commit.serialize())
+
+    # we know we have no history, so we initialize it
+    history = HistoryTree(MAIN_BRANCH)
+    history.commit(new_commit.history_entry)
+    history_raw = history.save_to_avro()
+    history_uuid = generate_uuid()
+    history_file = f"{history_root}/history-{history_uuid}.avro"
+    storage_provider.write_blob(history_file, history_raw)
+
+    # We create tables without any data
     new_table = TableCatalogEntry(
         name=table_definition.name,
         owner=owner,
@@ -112,22 +143,23 @@ async def create_table(
         permissions=table_definition.permissions,
         disposition=table_definition.disposition,
         metadata=table_definition.metadata,
-        current_commit_sha=None,
-        current_schema=table_definition.table_schema,
-        last_updated_ms=int(time.time_ns() / 1e6),
-        encryption_details=table_definition.encryption_details,
+        current_commit_sha=new_commit.sha,
+        last_updated_ms=timestamp,
+        freshness_life_in_days=table_definition.freshness_life_in_days,
+        retention_in_days=table_definition.retention_in_days,
     )
 
-    # Save the table to the Catalog
-    catalog_provider.update_table(table_id=new_table.table_id, entry=new_table)
     # create the metadata folder, put a file with the table name in there
     storage_provider.write_blob(f"{METADATA_ROOT}/{owner}/{table_id}/{table_definition.name}", b"")
 
+    # Save the table to the Catalog - do this last
+    catalog_provider.update_table(table_id=new_table.table_id, entry=new_table)
+
     # trigger webhooks - this should be async so we don't wait for the outcome
     owner_entry.notify_subscribers(
-        owner_entry.EventTypes.DATASET_CREATED,
+        owner_entry.EventTypes.TABLE_CREATED,
         {
-            "event": "DATASET_CREATED",
+            "event": "TABLE_CREATED",
             "table": f"{owner}.{table_definition.name}",
             "url": f"{base_url}/v1/tables/{owner}/{table_definition}",
         },
@@ -205,8 +237,8 @@ async def delete_table(
 
     # trigger webhooks - this should be async so we don't wait for the outcome
     owner_entry.notify_subscribers(
-        owner_entry.EventTypes.DATASET_DELETED,
-        {"event": "DATASET_DELETED", "table": f"{owner}.{table}"},
+        owner_entry.EventTypes.TABLE_DELETED,
+        {"event": "TABLE_DELETED", "table": f"{owner}.{table}"},
     )
 
     return {
@@ -217,7 +249,7 @@ async def delete_table(
 
 @router.patch("/tables/{owner}/{table}/schema")
 async def update_schema(
-    schema: UpdateSchemaRequest,
+    schema: Request,
     owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
     table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
 ):
