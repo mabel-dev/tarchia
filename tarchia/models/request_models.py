@@ -10,10 +10,8 @@ from tarchia.exceptions import DataEntryError
 
 from .metadata_models import Column
 from .metadata_models import DatasetPermissions
-from .metadata_models import EncryptionDetails
 from .metadata_models import OwnerType
 from .metadata_models import RolePermission
-from .metadata_models import Schema
 from .metadata_models import TableDisposition
 from .metadata_models import TableVisibility
 from .tarchia_base import TarchiaBaseModel
@@ -54,7 +52,6 @@ class CreateTableRequest(TarchiaBaseModel):
     name: str
     steward: str
     location: Optional[str]
-    table_schema: Schema
     visibility: TableVisibility = TableVisibility.PRIVATE
     partitioning: Optional[List[str]] = ["year", "month", "day"]
     disposition: TableDisposition = TableDisposition.SNAPSHOT
@@ -62,10 +59,9 @@ class CreateTableRequest(TarchiaBaseModel):
         DatasetPermissions(role="*", permission=RolePermission.READ)
     ]
     metadata: Dict[str, Any] = Field(default_factory=dict)
-    encryption_details: Optional[EncryptionDetails] = None
 
     @field_validator("name")
-    def validate_name(cls, name):
+    def validate_name(self, name):
         """
         Validate the table name to ensure it matches the required pattern.
 

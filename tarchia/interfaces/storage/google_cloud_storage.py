@@ -1,6 +1,6 @@
 import os
 
-from tarchia.config import BUCKET_NAME
+from tarchia.utils.config import BUCKET_NAME
 
 from .storage_provider import StorageProvider
 

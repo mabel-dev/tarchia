@@ -121,61 +121,6 @@ class Schema(TarchiaBaseModel):
     columns: List[Column]
 
 
-class HistoryEntry(TarchiaBaseModel):
-    sha: str
-    branch: str
-    message: str
-    user: str
-    timestamp: int
-    parent_sha: Optional[str] = None
-
-
-class Commit(TarchiaBaseModel):
-    """
-    Model representing a commit.
-    """
-
-    data_hash: str
-    user: str
-    message: str
-    branch: str
-    parent_commit_sha: Optional[str]
-    last_updated_ms: int
-    manifest_path: Optional[str]
-    table_schema: Schema
-    encryption_details: Optional[EncryptionDetails]
-    commit_sha: Optional[str] = None
-
-    def calculate_hash(self) -> str:
-        import hashlib
-
-        hasher = hashlib.sha256()
-        hasher.update(self.data_hash.encode())
-        hasher.update(self.message.encode())
-        hasher.update(self.user.encode())
-        hasher.update(self.branch.encode())
-        hasher.update(str(self.last_updated_ms).encode())
-        if self.parent_commit_sha:
-            hasher.update(self.parent_commit_sha.encode())
-        return hasher.hexdigest()
-
-    def __init__(self, **data):
-        super().__init__(**data)
-        self.commit_sha = self.calculate_hash()
-
-    @property
-    def history_entry(self):
-        """Slimemed record for Merkle Tree"""
-        return HistoryEntry(
-            sha=self.commit_sha,
-            branch=self.branch,
-            message=self.message,
-            user=self.user,
-            timestamp=self.last_updated_ms,
-            parent_sha=self.parent_commit_sha,
-        )
-
-
 class TableCatalogEntry(TarchiaBaseModel, Eventable):
     """
     The Catalog entry for a table.
@@ -197,10 +142,8 @@ class TableCatalogEntry(TarchiaBaseModel, Eventable):
     last_updated_ms: int
     permissions: List[DatasetPermissions]
     visibility: TableVisibility
-    current_schema: Schema
     current_commit_sha: Optional[str] = None
     current_history: Optional[str] = None
-    encryption_details: Optional[EncryptionDetails] = None
     format_version: int = Field(default=1)
     disposition: TableDisposition = Field(default=TableDisposition.SNAPSHOT)
     metadata: dict = Field(default_factory=dict)

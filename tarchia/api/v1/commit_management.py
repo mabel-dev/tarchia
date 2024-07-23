@@ -17,12 +17,12 @@ from fastapi import Query
 from fastapi import Request
 from fastapi.responses import ORJSONResponse
 
-from tarchia.constants import COMMITS_ROOT
-from tarchia.constants import HISTORY_ROOT
-from tarchia.constants import IDENTIFIER_REG_EX
-from tarchia.constants import MAIN_BRANCH
 from tarchia.exceptions import CommitNotFoundError
 from tarchia.models import Schema
+from tarchia.utils.constants import COMMITS_ROOT
+from tarchia.utils.constants import HISTORY_ROOT
+from tarchia.utils.constants import IDENTIFIER_REG_EX
+from tarchia.utils.constants import MAIN_BRANCH
 
 router = APIRouter()
 
@@ -32,12 +32,12 @@ async def get_table_commit(
     request: Request,
     owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
     table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
-    commit_sha: Union[str, Literal["latest"]] = Path(description="The commit to retrieve."),
+    commit_sha: Union[str, Literal["head"]] = Path(description="The commit to retrieve."),
     filters: Optional[str] = Query(None, description="Filters to push to manifest reader"),
 ):
-    from tarchia.manifests import get_manifest
-    from tarchia.manifests.pruning import parse_filters
-    from tarchia.storage import storage_factory
+    from tarchia.interfaces.storage import storage_factory
+    from tarchia.metadata.manifests import get_manifest
+    from tarchia.metadata.manifests.pruning import parse_filters
     from tarchia.utils import build_root
     from tarchia.utils.catalogs import identify_table
 
@@ -46,7 +46,7 @@ async def get_table_commit(
     # read the data from the catalog for this table
     catalog_entry = identify_table(owner, table)
     table_id = catalog_entry.table_id
-    if commit_sha == "latest":
+    if commit_sha == "head":
         commit_sha = catalog_entry.current_commit_sha
 
     commit_root = build_root(COMMITS_ROOT, owner=owner, table_id=table_id)
@@ -91,8 +91,8 @@ async def get_list_of_table_commits(
     after: datetime.datetime = Query(None, description="Filter commits"),
     page_size: int = Query(100, description="Maximum items to show"),
 ):
-    from tarchia.history import HistoryTree
-    from tarchia.storage import storage_factory
+    from tarchia.interfaces.storage import storage_factory
+    from tarchia.metadata.history import HistoryTree
     from tarchia.utils import build_root
     from tarchia.utils.catalogs import identify_table
 

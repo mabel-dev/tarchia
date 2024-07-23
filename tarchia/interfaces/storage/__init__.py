@@ -1,7 +1,7 @@
 from typing import Optional
 
-from tarchia import config
 from tarchia.exceptions import InvalidConfigurationError
+from tarchia.utils import config
 
 from .storage_provider import StorageProvider
 

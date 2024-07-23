@@ -1,5 +1,16 @@
 # Tarchia
 
+<!---
+- Schema changes in transaction commits
+- Multi-branch
+- Data should have a stale timeframe and a purge timeframe
+- Native Masking capability
+- Native Sampling capability
+- Create/Maintain Triggers
+- Expectations Checks on Commit
+- Secrets/Protected Data Checks on Commit
+--->
+
 Tarchia is an Active Data Catalog.
 
 Tarchia actively manages and catalogs data in real-time. Unlike traditional catalogs that serve merely as passive records, our Active Data Catalog is essential to the operational workflow, ensuring meta data is always up-to-date and readily accessible for system processes.

@@ -8,16 +8,16 @@ from fastapi import APIRouter
 from fastapi import HTTPException
 from fastapi import Request
 
-from tarchia import config
-from tarchia.constants import COMMITS_ROOT
-from tarchia.constants import HISTORY_ROOT
-from tarchia.constants import MAIN_BRANCH
-from tarchia.constants import MANIFEST_ROOT
 from tarchia.exceptions import TransactionError
 from tarchia.models import CommitRequest
 from tarchia.models import StageFilesRequest
 from tarchia.models import TableRequest
 from tarchia.models import Transaction
+from tarchia.utils import config
+from tarchia.utils.constants import COMMITS_ROOT
+from tarchia.utils.constants import HISTORY_ROOT
+from tarchia.utils.constants import MAIN_BRANCH
+from tarchia.utils.constants import MANIFEST_ROOT
 
 router = APIRouter()
 
@@ -89,7 +89,7 @@ def load_old_commit(storage_provider, commit_root, parent_commit):
 
 
 def build_new_manifest(old_manifest, transaction, schema):
-    from tarchia.manifests import build_manifest_entry
+    from tarchia.metadata.manifests import build_manifest_entry
 
     existing_entries = {e.file_path for e in old_manifest}
     new_entries = [
@@ -128,7 +128,7 @@ def xor_hex_strings(hex_strings: List[str]) -> str:
 
 @router.post("/transactions/start")
 async def start_transaction(table: TableRequest):
-    from tarchia.storage import storage_factory
+    from tarchia.interfaces.storage import storage_factory
     from tarchia.utils import build_root
     from tarchia.utils import generate_uuid
     from tarchia.utils.catalogs import identify_table
@@ -174,12 +174,12 @@ async def commit_transaction(request: Request, commit_request: CommitRequest):
     Returns:
         dict: Result of the transaction commit.
     """
-    from tarchia.catalog import catalog_factory
-    from tarchia.history import HistoryTree
-    from tarchia.manifests import get_manifest
-    from tarchia.manifests import write_manifest
+    from tarchia.interfaces.catalog import catalog_factory
+    from tarchia.interfaces.storage import storage_factory
+    from tarchia.metadata.history import HistoryTree
+    from tarchia.metadata.manifests import get_manifest
+    from tarchia.metadata.manifests import write_manifest
     from tarchia.models import Commit
-    from tarchia.storage import storage_factory
     from tarchia.utils import build_root
     from tarchia.utils import generate_uuid
     from tarchia.utils.catalogs import identify_table

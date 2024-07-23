@@ -5,16 +5,16 @@ from fastapi import Path
 from fastapi import Request
 from fastapi.responses import ORJSONResponse
 
-from tarchia.catalog import catalog_factory
-from tarchia.config import METADATA_ROOT
-from tarchia.constants import IDENTIFIER_REG_EX
 from tarchia.exceptions import AlreadyExistsError
+from tarchia.interfaces.catalog import catalog_factory
+from tarchia.interfaces.storage import storage_factory
 from tarchia.models import CreateTableRequest
 from tarchia.models import TableCatalogEntry
 from tarchia.models import UpdateMetadataRequest
 from tarchia.models import UpdateSchemaRequest
 from tarchia.models import UpdateValueRequest
-from tarchia.storage import storage_factory
+from tarchia.utils.config import METADATA_ROOT
+from tarchia.utils.constants import IDENTIFIER_REG_EX
 
 router = APIRouter()
 catalog_provider = catalog_factory()
@@ -221,7 +221,7 @@ async def update_schema(
     owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
     table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
 ):
-    from tarchia.schemas import validate_schema_update
+    from tarchia.metadata.schemas import validate_schema_update
     from tarchia.utils.catalogs import identify_table
 
     # is the new schema valid

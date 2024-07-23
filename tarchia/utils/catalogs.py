@@ -1,6 +1,6 @@
-from tarchia.catalog import catalog_factory
 from tarchia.exceptions import OwnerNotFoundError
 from tarchia.exceptions import TableNotFoundError
+from tarchia.interfaces.catalog import catalog_factory
 from tarchia.models import OwnerEntry
 from tarchia.models import TableCatalogEntry
 

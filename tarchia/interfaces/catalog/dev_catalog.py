@@ -6,8 +6,8 @@ development, prototyping and for regression testing.
 from typing import List
 from typing import Optional
 
-from tarchia.catalog.provider_base import CatalogProvider
 from tarchia.exceptions import AmbiguousTableError
+from tarchia.interfaces.catalog.provider_base import CatalogProvider
 from tarchia.models import OwnerEntry
 from tarchia.models import TableCatalogEntry
 
@@ -23,7 +23,7 @@ class DevelopmentCatalogProvider(CatalogProvider):
         from tarchia.utils.doc_store import DocumentStore
 
         if not db_path:
-            from tarchia.config import CATALOG_NAME
+            from tarchia.utils.config import CATALOG_NAME
 
             db_path = CATALOG_NAME
 

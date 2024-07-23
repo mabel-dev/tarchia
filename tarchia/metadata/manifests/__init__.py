@@ -3,11 +3,11 @@ from typing import Optional
 from typing import Tuple
 
 from tarchia.exceptions import DataError
-from tarchia.manifests.models import EntryType
-from tarchia.manifests.models import ManifestEntry
 from tarchia.manifests.pruning import prune
 from tarchia.models import Column
 from tarchia.models import Schema
+from tarchia.models.manifest_models import EntryType
+from tarchia.models.manifest_models import ManifestEntry
 from tarchia.storage import StorageProvider
 from tarchia.storage import storage_factory
 
@@ -68,7 +68,7 @@ def write_manifest(location: str, storage_provider: StorageProvider, entries: Li
 
     import fastavro
 
-    from .models import MANIFEST_SCHEMA
+    from ..models.manifest_models import MANIFEST_SCHEMA
 
     stream = BytesIO()
 

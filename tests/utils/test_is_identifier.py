@@ -12,7 +12,7 @@ os.environ["TARCHIA_DEBUG"] = "TRUE"
 
 sys.path.insert(1, os.path.join(sys.path[0], "../.."))
 
-from tarchia.constants import IDENTIFIER_REG_EX
+from tarchia.utils.constants import IDENTIFIER_REG_EX
 
 # fmt:off
 test_cases = [

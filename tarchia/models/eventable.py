@@ -108,7 +108,7 @@ class Eventable:
         max_tries=3,
         backoff_seconds=5,
         exponential_backoff=True,
-        max_backoff=8,
+        max_backoff=60,
         retry_exceptions=(ConnectionError, Timeout),
     )
     def _send_request_with_retries(self, url: str, data: dict):

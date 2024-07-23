@@ -1,6 +1,6 @@
 import uuid
 
-from tarchia.config import METADATA_ROOT
+from tarchia.utils.config import METADATA_ROOT
 
 
 def generate_uuid() -> str:
