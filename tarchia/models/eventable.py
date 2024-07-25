@@ -25,9 +25,11 @@ Example Usage:
 import concurrent.futures
 from enum import Enum
 from typing import List
+from typing import Union
 
 import orjson
 import requests
+from orso.tools import counter
 from orso.tools import retry
 from pydantic import BaseModel
 from requests.exceptions import ConnectionError
@@ -71,29 +73,50 @@ class Eventable:
         if cls._executor is None or cls._executor._shutdown:
             cls._executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
-    def subscribe(self, user: str, event: str, url: str):
+    def subscribe(self, user: str, event: Union[str, EventTypes], url: str):
         """Subscribe a URL to a specific event for a user."""
-        if not event in self.EventTypes.__members__:
-            raise ValueError(f"Event '{event}' is not supported.")
+        if isinstance(event, str):
+            event = event.upper()  # Ensure the event string is in lowercase
+            try:
+                event = self.EventTypes(event)
+            except ValueError:
+                raise ValueError(f"Event '{event}' is not supported.")
+        elif not isinstance(event, self.EventTypes):
+            raise TypeError(f"Event must be a string or an instance of {self.EventTypes}.")
+
         if not is_valid_url(url):
             raise ValueError(f"URL does not appear to be valid")
-        subscription = Subscription(user=user, event=event, url=url)
+        subscription = Subscription(user=user, event=event.value, url=url)
         self.subscriptions.append(subscription)
 
-    def unsubscribe(self, user: str, event: str, url: str):
+    def unsubscribe(self, user: str, event: Union[str, EventTypes], url: str):
         """Unsubscribe a URL from a specific event for a user."""
+        if isinstance(event, str):
+            event = event.upper()  # Ensure the event string is in lowercase
+            try:
+                event = self.EventTypes(event)
+            except ValueError:
+                raise ValueError(f"Event '{event}' is not supported.")
+
         self.subscriptions = [
             s
             for s in self.subscriptions
-            if not (s.user == user and s.event == event and s.url == url)
+            if not (s.user == user and s.event == event.value and s.url == url)
         ]
 
-    def trigger_event(self, event: str, data: dict):
+    def trigger_event(self, event: Union[str, EventTypes], data: dict):
         """Trigger an event and notify all subscribers."""
-        if event not in self.EventTypes:
-            raise ValueError(f"Event '{event}' is not supported.")
+        if isinstance(event, str):
+            event = event.upper()  # Ensure the event string is in lowercase
+            try:
+                event = self.EventTypes(event)
+            except ValueError:
+                raise ValueError(f"Event '{event}' is not supported.")
+        elif not isinstance(event, self.EventTypes):
+            raise TypeError(f"Event must be a string or an instance of {self.EventTypes}.")
+
         for subscription in self.subscriptions:
-            if subscription.event == event:
+            if subscription.event == event.value:
                 self.notify_subscribers(subscription.url, data)
 
     def notify_subscribers(self, url: str, data: dict):

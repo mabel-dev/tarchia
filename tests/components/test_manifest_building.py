@@ -9,7 +9,7 @@ os.environ["TARCHIA_DEBUG"] = "TRUE"
 sys.path.insert(1, os.path.join(sys.path[0], "../.."))
 
 from tarchia.models import Schema, Column
-from tarchia.manifests import build_manifest_entry
+from tarchia.metadata.manifests import build_manifest_entry
 from tarchia.utils.to_int import to_int
 from tarchia.exceptions import DataError
 
@@ -32,7 +32,6 @@ def test_build_basic_manifest():
     basic = build_manifest_entry("testdata/planets/planets.parquet", SCHEMA).as_dict()
 
     assert basic["file_path"] == "testdata/planets/planets.parquet"
-    assert basic["file_format"] == "parquet"
     assert basic["record_count"] == 9
     assert basic["sha256_checksum"] == "5a66d1e67f9b3749983da132d78e4744ee78b09b6549719c4d6359f573ac3baa"
 

@@ -1,8 +1,5 @@
 """
-Commits only for the main branch.
 
-[GET] /repos/{owner}/{repo}/commits
-[GET] /repos/{owner}/{repo}/commits/{commit_sha}
 """
 
 import datetime

@@ -121,7 +121,7 @@ class Schema(TarchiaBaseModel):
     columns: List[Column]
 
 
-class TableCatalogEntry(TarchiaBaseModel, Eventable):
+class TableCatalogEntry(Eventable, TarchiaBaseModel):
     """
     The Catalog entry for a table.
 

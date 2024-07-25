@@ -3,13 +3,13 @@ from typing import Optional
 from typing import Tuple
 
 from tarchia.exceptions import DataError
-from tarchia.manifests.pruning import prune
+from tarchia.interfaces.storage import StorageProvider
+from tarchia.interfaces.storage import storage_factory
+from tarchia.metadata.manifests.pruning import prune
 from tarchia.models import Column
 from tarchia.models import Schema
 from tarchia.models.manifest_models import EntryType
 from tarchia.models.manifest_models import ManifestEntry
-from tarchia.storage import StorageProvider
-from tarchia.storage import storage_factory
 
 
 def get_manifest(

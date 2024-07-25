@@ -247,35 +247,6 @@ async def delete_table(
     }
 
 
-@router.patch("/tables/{owner}/{table}/schema")
-async def update_schema(
-    schema: Request,
-    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
-    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
-):
-    from tarchia.metadata.schemas import validate_schema_update
-    from tarchia.utils.catalogs import identify_table
-
-    # is the new schema valid
-    for col in schema.columns:
-        col.is_valid()
-
-    catalog_entry = identify_table(owner=owner, table=table)
-
-    # is the evolution valid
-    validate_schema_update(current_schema=catalog_entry.current_schema, updated_schema=schema)
-
-    # update the schema
-    table_id = catalog_entry.table_id
-    catalog_entry.current_schema = schema
-    catalog_provider.update_table(table_id, catalog_entry)
-
-    return {
-        "message": "Schema Updated",
-        "table": f"{owner}.{table}",
-    }
-
-
 @router.patch("/tables/{owner}/{table}/metadata")
 async def update_metadata(
     metadata: UpdateMetadataRequest,

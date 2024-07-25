@@ -7,8 +7,8 @@ os.environ["TARCHIA_DEBUG"] = "TRUE"
 sys.path.insert(1, os.path.join(sys.path[0], "../.."))
 
 from tarchia.models import Schema, Column
-from tarchia.manifests.pruning import parse_filters, prune
-from tarchia.manifests import ManifestEntry
+from tarchia.metadata.manifests.pruning import parse_filters, prune
+from tarchia.metadata.manifests import ManifestEntry
 
 def test_basic_parsing():
 

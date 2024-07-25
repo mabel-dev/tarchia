@@ -8,7 +8,7 @@ os.environ["TARCHIA_DEBUG"] = "TRUE"
 
 sys.path.insert(1, os.path.join(sys.path[0], "../.."))
 
-from tarchia.storage import storage_factory
+from tarchia.interfaces.storage import storage_factory
 
 TEMP_FOLDER = "_temp"
 

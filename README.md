@@ -67,11 +67,12 @@ table/
 ~~~mermaid
 flowchart TD
     CATALOG  --> COMMITS(Commit History)
+    CATALOG  --> PERMS(Permissions)
     CATALOG[(Catalog)] --> |Current| COMMIT(Commit)
-    CATALOG  --> |Current| SCHEMA(Schema)
     subgraph  
         COMMITS  -..-> |Historical| COMMIT
-        COMMIT --> SCHEMA
+        COMMIT --> SCHEMA(Schema)
+        COMMIT --> ENCRYPTION(Encryption)
         COMMIT --> MAN_LIST(Manifest/List)
     end
     MAN_LIST --> DATA(Data Files)
