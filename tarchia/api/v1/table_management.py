@@ -12,6 +12,7 @@ from tarchia.models import CreateTableRequest
 from tarchia.models import TableCatalogEntry
 from tarchia.models import UpdateMetadataRequest
 from tarchia.models import UpdateValueRequest
+from tarchia.utils import get_base_url
 from tarchia.utils.config import METADATA_ROOT
 from tarchia.utils.constants import COMMITS_ROOT
 from tarchia.utils.constants import HISTORY_ROOT
@@ -35,7 +36,7 @@ async def list_tables(owner: str, request: Request):
         List[Dict[str, Any]]: A list of tables with their metadata, including the commit URL if applicable.
     """
 
-    base_url = request.url.scheme + "://" + request.url.netloc
+    base_url = get_base_url(request=request)
 
     table_list = []
 
@@ -89,7 +90,7 @@ async def create_table(
     from tarchia.utils import generate_uuid
     from tarchia.utils.catalogs import identify_owner
 
-    base_url = request.url.scheme + "://" + request.url.netloc
+    base_url = get_base_url(request=request)
     timestamp = int(time.time_ns() / 1e6)
 
     # check if we have a table with that name already
@@ -107,7 +108,7 @@ async def create_table(
 
     # build the new commit record
     new_commit = Commit(
-        data_hash="",
+        data_hash="0" * 64,
         user="user",
         message="Initial commit",
         branch=MAIN_BRANCH,
@@ -280,10 +281,39 @@ async def update_table(
 
     catalog_entry = identify_table(owner, table)
     setattr(catalog_entry, attribute, value.value)
-
     catalog_provider.update_table(table_id=catalog_entry.table_id, entry=catalog_entry)
 
     return {
         "message": "Table updated",
+        "table": f"{owner}.{table}",
+    }
+
+
+@router.patch("/tables/{owner}/{table}/branches/{branch}/schema")
+async def update_schema(
+    schema: Request,
+    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
+):
+    raise NotImplementedError("Create a commit")
+    from tarchia.metadata.schemas import validate_schema_update
+    from tarchia.utils.catalogs import identify_table
+
+    # is the new schema valid
+    for col in schema.columns:
+        col.is_valid()
+
+    catalog_entry = identify_table(owner=owner, table=table)
+
+    # is the evolution valid
+    validate_schema_update(current_schema=catalog_entry.current_schema, updated_schema=schema)
+
+    # update the schema
+    table_id = catalog_entry.table_id
+    catalog_entry.current_schema = schema
+    catalog_provider.update_table(table_id, catalog_entry)
+
+    return {
+        "message": "Schema Updated",
         "table": f"{owner}.{table}",
     }

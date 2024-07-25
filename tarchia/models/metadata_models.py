@@ -195,6 +195,8 @@ class Transaction(TarchiaBaseModel):
     table_id: str
     table: str
     owner: str
+    encryption: Optional[EncryptionDetails]
+    table_schema: Schema
     parent_commit_sha: Optional[str] = None
     additions: List[str] = Field(default_factory=list)
     deletions: List[str] = Field(default_factory=list)

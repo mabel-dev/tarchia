@@ -97,12 +97,6 @@ class UpdateValueRequest(TarchiaBaseModel):
     value: Any
 
 
-class TableRequest(TarchiaBaseModel):
-    owner: str
-    table: str
-    commit_sha: Optional[str] = None
-
-
 class CommitRequest(TarchiaBaseModel):
     encoded_transaction: str
     commit_message: str

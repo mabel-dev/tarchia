@@ -1,28 +1,37 @@
 """
 Transaction control
 
-- additions and deletions
-- schema changes
+@router.post("/transactions/start")     -> [GET]    /tables/{owner}/{table}/commits/{commit}/pull/start
+@router.post("/transactions/commit")    -> [POST]   /pull/commit
+@router.post("/transactions/stage")     -> [POST]   /pull/stage
+@router.post("/transactions/truncate")  -> [POST]   /pull/truncate
+@router.patch("/transaction/encryption")-> [PATCH]  /pull/encryption
+                                        -> [POST]   /pull/abort
 """
 
 import base64
 import hashlib
 import time
 from typing import List
+from typing import Literal
+from typing import Optional
+from typing import Union
 
 import orjson
 from fastapi import APIRouter
 from fastapi import HTTPException
+from fastapi import Path
 from fastapi import Request
 
 from tarchia.exceptions import TransactionError
+from tarchia.models import Commit
 from tarchia.models import CommitRequest
 from tarchia.models import StageFilesRequest
-from tarchia.models import TableRequest
 from tarchia.models import Transaction
 from tarchia.utils import config
 from tarchia.utils.constants import COMMITS_ROOT
 from tarchia.utils.constants import HISTORY_ROOT
+from tarchia.utils.constants import IDENTIFIER_REG_EX
 from tarchia.utils.constants import MAIN_BRANCH
 from tarchia.utils.constants import MANIFEST_ROOT
 
@@ -87,12 +96,12 @@ def verify_and_decode_transaction(transaction_data: str) -> Transaction:
     return Transaction(**transaction)
 
 
-def load_old_commit(storage_provider, commit_root, parent_commit):
+def load_old_commit(storage_provider, commit_root, parent_commit) -> Optional[Commit]:
     if parent_commit:
         commit_file = storage_provider.read_blob(f"{commit_root}/commit-{parent_commit}.json")
         if commit_file:
-            return orjson.loads(commit_file)
-    return {}
+            return Commit(**orjson.loads(commit_file))
+    return None
 
 
 def build_new_manifest(old_manifest, transaction, schema):
@@ -133,42 +142,49 @@ def xor_hex_strings(hex_strings: List[str]) -> str:
     return result_bytes.hex()
 
 
-@router.post("/transactions/start")
-async def start_transaction(table: TableRequest):
+@router.post("/tables/{owner}/{table}/commits/{commit}/pull/start")
+async def start_transaction(
+    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
+    commit: Union[str, Literal["head"]] = Path(description="The commit to retrieve."),
+):
     from tarchia.interfaces.storage import storage_factory
     from tarchia.utils import build_root
     from tarchia.utils import generate_uuid
     from tarchia.utils.catalogs import identify_table
 
-    catalog_entry = identify_table(owner=table.owner, table=table.table)
+    catalog_entry = identify_table(owner=owner, table=table)
     table_id = catalog_entry.table_id
 
-    if table.commit_sha is None:
-        table.commit_sha = catalog_entry.current_commit_sha
-    else:
-        commit_root = build_root(COMMITS_ROOT, owner=table.owner, table_id=catalog_entry.table_id)
-        storage_provider = storage_factory()
-        commit_file = storage_provider.read_blob(f"{commit_root}/commit-{table.commit_sha}.json")
-        if not commit_file:
-            raise TransactionError("Snapshot not found")
+    if commit == "head":
+        commit = catalog_entry.current_commit_sha
+
+    commit_root = build_root(COMMITS_ROOT, owner=owner, table_id=catalog_entry.table_id)
+    storage_provider = storage_factory()
+    parent_commit = load_old_commit(storage_provider, commit_root, commit)
+
+    if parent_commit is None:
+        raise TransactionError("Commit not found")
 
     transaction_id = generate_uuid()
     transaction = Transaction(
         transaction_id=transaction_id,
         expires_at=int(time.time()),
         table_id=table_id,
-        table=table.table,
-        owner=table.owner,
-        parent_commit_sha=table.commit_sha,
+        table=table,
+        owner=owner,
+        parent_commit_sha=commit,
         additions=[],
         deletions=[],
         truncate=False,
+        encryption=parent_commit.encryption,
+        table_schema=parent_commit.table_schema,
     )
     encoded_data = encode_and_sign_transaction(transaction)
     return {"message": "Transaction started", "encoded_transaction": encoded_data}
 
 
-@router.post("/transactions/commit")
+@router.post("/pull/commit")
 async def commit_transaction(request: Request, commit_request: CommitRequest):
     """
     Commits a transaction by verifying it, updating the manifest and commit,
@@ -294,7 +310,7 @@ async def commit_transaction(request: Request, commit_request: CommitRequest):
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.post("/transactions/stage")
+@router.post("/pull/stage")
 async def add_files_to_transaction(stage: StageFilesRequest):
     """
     Add files to a table.
@@ -312,7 +328,7 @@ async def add_files_to_transaction(stage: StageFilesRequest):
     return {"message": "Files added to transaction", "encoded_transaction": new_encoded_transaction}
 
 
-@router.post("/transactions/truncate")
+@router.post("/pull/truncate")
 async def truncate_all_files(encoded_transaction: str):
     """
     Truncate (delete all records) from a table.
@@ -338,30 +354,19 @@ async def truncate_all_files(encoded_transaction: str):
     }
 
 
-@router.patch("/tables/{owner}/{table}/schema")
-async def update_schema(
+@router.patch("/pull/encryption")
+async def update_encryption(
     schema: Request,
     owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
     table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
 ):
-    from tarchia.metadata.schemas import validate_schema_update
-    from tarchia.utils.catalogs import identify_table
+    raise NotImplementedError("Create a commit")
 
-    # is the new schema valid
-    for col in schema.columns:
-        col.is_valid()
 
-    catalog_entry = identify_table(owner=owner, table=table)
-
-    # is the evolution valid
-    validate_schema_update(current_schema=catalog_entry.current_schema, updated_schema=schema)
-
-    # update the schema
-    table_id = catalog_entry.table_id
-    catalog_entry.current_schema = schema
-    catalog_provider.update_table(table_id, catalog_entry)
-
-    return {
-        "message": "Schema Updated",
-        "table": f"{owner}.{table}",
-    }
+@router.patch("/pull/abort")
+async def abort_pull(
+    schema: Request,
+    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
+):
+    raise NotImplementedError("Create a commit")

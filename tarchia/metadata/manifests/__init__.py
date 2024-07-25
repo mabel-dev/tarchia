@@ -13,7 +13,7 @@ from tarchia.models.manifest_models import ManifestEntry
 
 
 def get_manifest(
-    location: str,
+    location: Optional[str],
     storage_provider: StorageProvider,
     filter_conditions: Optional[List[Tuple[str, str, int]]],
 ) -> List[ManifestEntry]:
@@ -41,6 +41,9 @@ def get_manifest(
     import fastavro
 
     manifest = []
+
+    if location is None:
+        return manifest
 
     # get the manifest
     manifest_bytes = storage_provider.read_blob(location)

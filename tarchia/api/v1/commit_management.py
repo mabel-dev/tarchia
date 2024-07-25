@@ -1,5 +1,7 @@
 """
 
+[GET]   /tables/{owner}/{table}/commits/{commit_sha}
+[GET]   /tables/{owner}/{table}/commits?branch,user,before,after,page_size
 """
 
 import datetime
@@ -36,9 +38,10 @@ async def get_table_commit(
     from tarchia.metadata.manifests import get_manifest
     from tarchia.metadata.manifests.pruning import parse_filters
     from tarchia.utils import build_root
+    from tarchia.utils import get_base_url
     from tarchia.utils.catalogs import identify_table
 
-    base_url = request.url.scheme + "://" + request.url.netloc
+    base_url = get_base_url(request=request)
 
     # read the data from the catalog for this table
     catalog_entry = identify_table(owner, table)
@@ -84,17 +87,23 @@ async def get_list_of_table_commits(
     request: Request,
     owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
     table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
-    before: datetime.datetime = Query(None, description="Filter commits"),
-    after: datetime.datetime = Query(None, description="Filter commits"),
-    page_size: int = Query(100, description="Maximum items to show"),
+    branch: str = Query(
+        default=MAIN_BRANCH,
+        description="The commit branch of the table.",
+        pattern=IDENTIFIER_REG_EX,
+    ),
+    user: str = Query(default=None, description="The committer.", pattern=IDENTIFIER_REG_EX),
+    before: datetime.datetime = Query(None, description="Filter commits before this date."),
+    after: datetime.datetime = Query(None, description="Filter commits after this date."),
+    page_size: int = Query(100, description="Maximum items to show."),
 ):
     from tarchia.interfaces.storage import storage_factory
     from tarchia.metadata.history import HistoryTree
     from tarchia.utils import build_root
+    from tarchia.utils import get_base_url
     from tarchia.utils.catalogs import identify_table
 
-    base_url = request.url.scheme + "://" + request.url.netloc
-    branch = MAIN_BRANCH
+    base_url = get_base_url(request=request)
 
     # read the data from the catalog for this table
     catalog_entry = identify_table(owner, table)
