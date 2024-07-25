@@ -142,11 +142,11 @@ def xor_hex_strings(hex_strings: List[str]) -> str:
     return result_bytes.hex()
 
 
-@router.post("/tables/{owner}/{table}/commits/{commit}/pull/start")
+@router.post("/tables/{owner}/{table}/commits/{commit_sha}/pull/start")
 async def start_transaction(
     owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
     table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
-    commit: Union[str, Literal["head"]] = Path(description="The commit to retrieve."),
+    commit_sha: Union[str, Literal["head"]] = Path(description="The commit to retrieve."),
 ):
     from tarchia.interfaces.storage import storage_factory
     from tarchia.utils import build_root
@@ -156,12 +156,12 @@ async def start_transaction(
     catalog_entry = identify_table(owner=owner, table=table)
     table_id = catalog_entry.table_id
 
-    if commit == "head":
-        commit = catalog_entry.current_commit_sha
+    if commit_sha == "head":
+        commit_sha = catalog_entry.current_commit_sha
 
     commit_root = build_root(COMMITS_ROOT, owner=owner, table_id=catalog_entry.table_id)
     storage_provider = storage_factory()
-    parent_commit = load_old_commit(storage_provider, commit_root, commit)
+    parent_commit = load_old_commit(storage_provider, commit_root, commit_sha)
 
     if parent_commit is None:
         raise TransactionError("Commit not found")
@@ -173,7 +173,7 @@ async def start_transaction(
         table_id=table_id,
         table=table,
         owner=owner,
-        parent_commit_sha=commit,
+        parent_commit_sha=commit_sha,
         additions=[],
         deletions=[],
         truncate=False,
