@@ -1,9 +1,10 @@
+from typing import List
+
 from fastapi import APIRouter
 from fastapi import Request
 from fastapi.responses import ORJSONResponse
-from typing import List
-router = APIRouter()
 
+router = APIRouter()
 
 
 @router.get("/search", response_class=ORJSONResponse)

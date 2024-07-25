@@ -1,5 +1,5 @@
 """
-/tables/{owner}/{table}/hooks   
+/tables/{owner}/{table}/hooks
 /owners/{owner}/hooks
 
 /{hook_id}/
