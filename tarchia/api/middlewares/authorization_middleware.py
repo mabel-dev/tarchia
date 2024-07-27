@@ -9,6 +9,7 @@ import os
 from typing import Awaitable
 from typing import Callable
 
+from fastapi import FastAPI
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
@@ -33,3 +34,7 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
                 return Response(status_code=403)
 
         return await call_next(request)
+
+
+def bind(app: FastAPI):
+    app.add_middleware(AuthorizationMiddleware)

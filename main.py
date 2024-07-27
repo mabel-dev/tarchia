@@ -37,15 +37,19 @@ from fastapi import FastAPI
 from uvicorn import run
 
 from tarchia import __version__
-from tarchia.api.middlewares import AuditMiddleware
-from tarchia.api.middlewares import AuthorizationMiddleware
+from tarchia.api.middlewares import audit_middleware
+from tarchia.api.middlewares import authorization_middleware
+from tarchia.api.middlewares import brotli_middleware
+from tarchia.api.middlewares import cors_middleware
 from tarchia.api.v1 import v1_router
 
 application = FastAPI(title="Tarchia Metastore", version=__version__)
 
 application.include_router(v1_router)
-application.add_middleware(AuthorizationMiddleware)
-application.add_middleware(AuditMiddleware)
+brotli_middleware.bind(application)
+audit_middleware.bind(application)
+authorization_middleware.bind(application)
+cors_middleware.bind(application)
 
 if __name__ == "__main__":  # pragma: no cover
     try:
