@@ -71,7 +71,7 @@ def write_manifest(location: str, storage_provider: StorageProvider, entries: Li
 
     import fastavro
 
-    from ..models.manifest_models import MANIFEST_SCHEMA
+    from tarchia.models.manifest_models import MANIFEST_SCHEMA
 
     stream = BytesIO()
 
