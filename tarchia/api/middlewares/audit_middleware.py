@@ -14,6 +14,7 @@ from typing import Awaitable
 from typing import Callable
 
 import orjson
+from fastapi import FastAPI
 from fastapi import HTTPException
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -75,3 +76,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
             audit_record["outcome"] = outcome
 
             print(orjson.dumps(audit_record).decode())
+
+
+def bind(app: FastAPI):
+    app.add_middleware(AuditMiddleware)

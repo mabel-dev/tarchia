@@ -1,3 +1,4 @@
+brotli-asgi
 cityhash
 fastapi
 fastavro
@@ -6,4 +7,5 @@ orjson
 orso
 pyarrow
 pydantic
+uvicorn
 zstandard
