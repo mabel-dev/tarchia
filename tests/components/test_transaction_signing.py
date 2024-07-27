@@ -8,8 +8,8 @@ sys.path.insert(1, os.path.join(sys.path[0], "../.."))
 
 import pytest
 
-from tarchia.v1.routes.data_management import encode_and_sign_transaction
-from tarchia.v1.routes.data_management import verify_and_decode_transaction
+from tarchia.api.v1.data_management import encode_and_sign_transaction
+from tarchia.api.v1.data_management import verify_and_decode_transaction
 from tarchia.exceptions import TransactionError
 from tarchia.models import Transaction
 

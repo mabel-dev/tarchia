@@ -1,5 +1,25 @@
 # Tarchia
 
+Data As Code.
+
+- Data Changes as Commits
+- Branching for Development
+- Automated Testing
+- Merging and Deployment
+
+
+
+<!---
+- Schema changes in transaction commits
+- Multi-branch
+- Data should have a stale timeframe and a purge timeframe
+- Native Masking capability
+- Native Sampling capability
+- Create/Maintain Triggers
+- Expectations Checks on Commit
+- Secrets/Protected Data Checks on Commit
+--->
+
 Tarchia is an Active Data Catalog.
 
 Tarchia actively manages and catalogs data in real-time. Unlike traditional catalogs that serve merely as passive records, our Active Data Catalog is essential to the operational workflow, ensuring meta data is always up-to-date and readily accessible for system processes.
@@ -47,11 +67,12 @@ table/
 ~~~mermaid
 flowchart TD
     CATALOG  --> COMMITS(Commit History)
+    CATALOG  --> PERMS(Permissions)
     CATALOG[(Catalog)] --> |Current| COMMIT(Commit)
-    CATALOG  --> |Current| SCHEMA(Schema)
     subgraph  
         COMMITS  -..-> |Historical| COMMIT
-        COMMIT --> SCHEMA
+        COMMIT --> SCHEMA(Schema)
+        COMMIT --> ENCRYPTION(Encryption)
         COMMIT --> MAN_LIST(Manifest/List)
     end
     MAN_LIST --> DATA(Data Files)

@@ -3,9 +3,8 @@ from typing import List
 from typing import Tuple
 
 from tarchia.models import Schema
+from tarchia.models.manifest_models import ManifestEntry
 from tarchia.utils.to_int import to_int
-
-from .models import ManifestEntry
 
 
 def parse_value(field: str, value: Any, schema: Schema) -> int:

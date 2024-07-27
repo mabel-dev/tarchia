@@ -9,6 +9,7 @@ from pydantic import Field
 
 from tarchia.exceptions import DataEntryError
 
+from .eventable import Eventable
 from .tarchia_base import TarchiaBaseModel
 
 
@@ -120,67 +121,17 @@ class Schema(TarchiaBaseModel):
     columns: List[Column]
 
 
-class HistoryEntry(TarchiaBaseModel):
-    sha: str
-    branch: str
-    message: str
-    user: str
-    timestamp: int
-    parent_sha: Optional[str] = None
-
-
-class Commit(TarchiaBaseModel):
-    """
-    Model representing a commit.
-    """
-
-    data_hash: str
-    user: str
-    message: str
-    branch: str
-    parent_commit_sha: Optional[str]
-    last_updated_ms: int
-    manifest_path: Optional[str]
-    table_schema: Schema
-    encryption_details: Optional[EncryptionDetails]
-    commit_sha: Optional[str] = None
-
-    def calculate_hash(self) -> str:
-        import hashlib
-
-        hasher = hashlib.sha256()
-        hasher.update(self.data_hash.encode())
-        hasher.update(self.message.encode())
-        hasher.update(self.user.encode())
-        hasher.update(self.branch.encode())
-        hasher.update(str(self.last_updated_ms).encode())
-        if self.parent_commit_sha:
-            hasher.update(self.parent_commit_sha.encode())
-        return hasher.hexdigest()
-
-    def __init__(self, **data):
-        super().__init__(**data)
-        self.commit_sha = self.calculate_hash()
-
-    @property
-    def history_entry(self):
-        """Slimemed record for Merkle Tree"""
-        return HistoryEntry(
-            sha=self.commit_sha,
-            branch=self.branch,
-            message=self.message,
-            user=self.user,
-            timestamp=self.last_updated_ms,
-            parent_sha=self.parent_commit_sha,
-        )
-
-
-class TableCatalogEntry(TarchiaBaseModel):
+class TableCatalogEntry(Eventable, TarchiaBaseModel):
     """
     The Catalog entry for a table.
 
     This is intended to be stored in a document store like FireStore or MongoDB.
     """
+
+    class EventTypes(Enum):
+        """Supported Eventables"""
+
+        NEW_COMMIT = "NEW_COMMIT"
 
     name: str
     steward: str
@@ -189,12 +140,12 @@ class TableCatalogEntry(TarchiaBaseModel):
     location: Optional[str]
     partitioning: Optional[List[str]]
     last_updated_ms: int
+    freshness_life_in_days: int
+    retention_in_days: int
     permissions: List[DatasetPermissions]
     visibility: TableVisibility
-    current_schema: Schema
     current_commit_sha: Optional[str] = None
     current_history: Optional[str] = None
-    encryption_details: Optional[EncryptionDetails] = None
     format_version: int = Field(default=1)
     disposition: TableDisposition = Field(default=TableDisposition.SNAPSHOT)
     metadata: dict = Field(default_factory=dict)
@@ -207,7 +158,7 @@ class TableCatalogEntry(TarchiaBaseModel):
         return True
 
 
-class OwnerEntry(TarchiaBaseModel):
+class OwnerEntry(Eventable, TarchiaBaseModel):
     """
     Model for owners.
 
@@ -217,6 +168,12 @@ class OwnerEntry(TarchiaBaseModel):
         user (str): The name of the user/group that owns this group.
         memberships (List(str)): Identifiers to automatically map users to Owners
     """
+
+    class EventTypes(Enum):
+        """Supported Eventables"""
+
+        TABLE_CREATED = "TABLE_CREATED"
+        TABLE_DELETED = "TABLE_DELETED"
 
     name: str
     owner_id: str
@@ -238,6 +195,8 @@ class Transaction(TarchiaBaseModel):
     table_id: str
     table: str
     owner: str
+    encryption: Optional[EncryptionDetails]
+    table_schema: Schema
     parent_commit_sha: Optional[str] = None
     additions: List[str] = Field(default_factory=list)
     deletions: List[str] = Field(default_factory=list)

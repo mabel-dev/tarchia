@@ -2,7 +2,6 @@ from enum import Enum
 from typing import Any
 from typing import Dict
 
-import orjson
 from pydantic import BaseModel
 
 

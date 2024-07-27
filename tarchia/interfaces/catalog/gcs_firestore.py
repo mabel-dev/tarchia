@@ -5,13 +5,13 @@ development, prototyping and for regression testing.
 
 from typing import List
 
-from tarchia import config
 from tarchia.catalog.provider_base import CatalogProvider
 from tarchia.exceptions import AmbiguousTableError
 from tarchia.exceptions import MissingDependencyError
 from tarchia.exceptions import UnmetRequirementError
 from tarchia.models import OwnerEntry
 from tarchia.models import TableCatalogEntry
+from tarchia.utils import config
 
 GCP_PROJECT_ID = config.GCP_PROJECT_ID
 

@@ -1,22 +1,39 @@
+"""
+Transaction control
+
+@router.post("/transactions/start")     -> [GET]    /tables/{owner}/{table}/commits/{commit}/pull/start
+@router.post("/transactions/commit")    -> [POST]   /pull/commit
+@router.post("/transactions/stage")     -> [POST]   /pull/stage
+@router.post("/transactions/truncate")  -> [POST]   /pull/truncate
+@router.patch("/transaction/encryption")-> [PATCH]  /pull/encryption
+                                        -> [POST]   /pull/abort
+"""
+
 import base64
 import hashlib
 import time
 from typing import List
+from typing import Literal
+from typing import Optional
+from typing import Union
 
 import orjson
 from fastapi import APIRouter
 from fastapi import HTTPException
+from fastapi import Path
+from fastapi import Request
 
-from tarchia import config
-from tarchia.constants import COMMITS_ROOT
-from tarchia.constants import HISTORY_ROOT
-from tarchia.constants import MAIN_BRANCH
-from tarchia.constants import MANIFEST_ROOT
 from tarchia.exceptions import TransactionError
+from tarchia.models import Commit
 from tarchia.models import CommitRequest
 from tarchia.models import StageFilesRequest
-from tarchia.models import TableRequest
 from tarchia.models import Transaction
+from tarchia.utils import config
+from tarchia.utils.constants import COMMITS_ROOT
+from tarchia.utils.constants import HISTORY_ROOT
+from tarchia.utils.constants import IDENTIFIER_REG_EX
+from tarchia.utils.constants import MAIN_BRANCH
+from tarchia.utils.constants import MANIFEST_ROOT
 
 router = APIRouter()
 
@@ -79,16 +96,16 @@ def verify_and_decode_transaction(transaction_data: str) -> Transaction:
     return Transaction(**transaction)
 
 
-def load_old_commit(storage_provider, commit_root, parent_commit):
+def load_old_commit(storage_provider, commit_root, parent_commit) -> Optional[Commit]:
     if parent_commit:
         commit_file = storage_provider.read_blob(f"{commit_root}/commit-{parent_commit}.json")
         if commit_file:
-            return orjson.loads(commit_file)
-    return {}
+            return Commit(**orjson.loads(commit_file))
+    return None
 
 
 def build_new_manifest(old_manifest, transaction, schema):
-    from tarchia.manifests import build_manifest_entry
+    from tarchia.metadata.manifests import build_manifest_entry
 
     existing_entries = {e.file_path for e in old_manifest}
     new_entries = [
@@ -125,43 +142,50 @@ def xor_hex_strings(hex_strings: List[str]) -> str:
     return result_bytes.hex()
 
 
-@router.post("/transactions/start")
-async def start_transaction(table: TableRequest):
-    from tarchia.storage import storage_factory
+@router.post("/tables/{owner}/{table}/commits/{commit_sha}/pull/start")
+async def start_transaction(
+    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
+    commit_sha: Union[str, Literal["head"]] = Path(description="The commit to retrieve."),
+):
+    from tarchia.interfaces.storage import storage_factory
     from tarchia.utils import build_root
     from tarchia.utils import generate_uuid
     from tarchia.utils.catalogs import identify_table
 
-    catalog_entry = identify_table(owner=table.owner, table=table.table)
+    catalog_entry = identify_table(owner=owner, table=table)
     table_id = catalog_entry.table_id
 
-    if table.commit_sha is None:
-        table.commit_sha = catalog_entry.current_commit_sha
-    else:
-        commit_root = build_root(COMMITS_ROOT, owner=table.owner, table_id=catalog_entry.table_id)
-        storage_provider = storage_factory()
-        commit_file = storage_provider.read_blob(f"{commit_root}/commit-{table.commit_sha}.json")
-        if not commit_file:
-            raise TransactionError("Snapshot not found")
+    if commit_sha == "head":
+        commit_sha = catalog_entry.current_commit_sha
+
+    commit_root = build_root(COMMITS_ROOT, owner=owner, table_id=catalog_entry.table_id)
+    storage_provider = storage_factory()
+    parent_commit = load_old_commit(storage_provider, commit_root, commit_sha)
+
+    if parent_commit is None:
+        raise TransactionError("Commit not found")
 
     transaction_id = generate_uuid()
     transaction = Transaction(
         transaction_id=transaction_id,
         expires_at=int(time.time()),
         table_id=table_id,
-        table=table.table,
-        owner=table.owner,
-        parent_commit_sha=table.commit_sha,
+        table=table,
+        owner=owner,
+        parent_commit_sha=commit_sha,
         additions=[],
         deletions=[],
         truncate=False,
+        encryption=parent_commit.encryption,
+        table_schema=parent_commit.table_schema,
     )
     encoded_data = encode_and_sign_transaction(transaction)
     return {"message": "Transaction started", "encoded_transaction": encoded_data}
 
 
-@router.post("/transactions/commit")
-async def commit_transaction(commit_request: CommitRequest):
+@router.post("/pull/commit")
+async def commit_transaction(request: Request, commit_request: CommitRequest):
     """
     Commits a transaction by verifying it, updating the manifest and commit,
     and updating the catalog.
@@ -173,16 +197,17 @@ async def commit_transaction(commit_request: CommitRequest):
     Returns:
         dict: Result of the transaction commit.
     """
-    from tarchia.catalog import catalog_factory
-    from tarchia.history import HistoryTree
-    from tarchia.manifests import get_manifest
-    from tarchia.manifests import write_manifest
+    from tarchia.interfaces.catalog import catalog_factory
+    from tarchia.interfaces.storage import storage_factory
+    from tarchia.metadata.history import HistoryTree
+    from tarchia.metadata.manifests import get_manifest
+    from tarchia.metadata.manifests import write_manifest
     from tarchia.models import Commit
-    from tarchia.storage import storage_factory
     from tarchia.utils import build_root
     from tarchia.utils import generate_uuid
     from tarchia.utils.catalogs import identify_table
 
+    base_url = request.url.scheme + "://" + request.url.netloc
     timestamp = int(time.time_ns() / 1e6)
     uuid = generate_uuid()
 
@@ -233,7 +258,9 @@ async def commit_transaction(commit_request: CommitRequest):
             last_updated_ms=timestamp,
             manifest_path=manifest_path,
             table_schema=catalog_entry.current_schema,
-            encryption_details=catalog_entry.encryption_details,
+            encryption=catalog_entry.encryption,
+            added_files=transaction.additions,
+            removed_files=transaction.deletions,
         )
 
         commit_path = f"{commit_root}/commit-{commit.commit_sha}.json"
@@ -259,19 +286,31 @@ async def commit_transaction(commit_request: CommitRequest):
         catalog_entry.current_history = uuid
         catalog_provider.update_table(catalog_entry.table_id, catalog_entry)
 
+        # trigger webhooks - this should be async so we don't wait for the outcome
+        catalog_entry.trigger_event(
+            catalog_entry.EventTypes.NEW_COMMIT,
+            {
+                "event": "NEW_COMMIT",
+                "table": f"{catalog_entry.owner}.{catalog_entry.name}",
+                "commit": commit.commit_sha,
+                "url": f"{base_url}/v1/tables/{catalog_entry.owner}/{catalog_entry.name}/commits/{commit.commit_sha}",
+            },
+        )
+
         return {
+            "table": f"{catalog_entry.owner}.{catalog_entry.name}",
             "message": "Transaction committed successfully",
             "transaction": transaction.transaction_id,
             "commit": commit.commit_sha,
+            "url": f"{base_url}/v1/tables/{catalog_entry.owner}/{catalog_entry.name}/commits/{commit.commit_sha}",
         }
     except TransactionError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise e
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.post("/transactions/stage")
+@router.post("/pull/stage")
 async def add_files_to_transaction(stage: StageFilesRequest):
     """
     Add files to a table.
@@ -289,7 +328,7 @@ async def add_files_to_transaction(stage: StageFilesRequest):
     return {"message": "Files added to transaction", "encoded_transaction": new_encoded_transaction}
 
 
-@router.post("/transactions/truncate")
+@router.post("/pull/truncate")
 async def truncate_all_files(encoded_transaction: str):
     """
     Truncate (delete all records) from a table.
@@ -313,3 +352,21 @@ async def truncate_all_files(encoded_transaction: str):
         "message": "Table truncated in Transaction",
         "encoded_transaction": new_encoded_transaction,
     }
+
+
+@router.patch("/pull/encryption")
+async def update_encryption(
+    schema: Request,
+    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
+):
+    raise NotImplementedError("Create a commit")
+
+
+@router.patch("/pull/abort")
+async def abort_pull(
+    schema: Request,
+    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
+):
+    raise NotImplementedError("Create a commit")

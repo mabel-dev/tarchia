@@ -22,12 +22,12 @@ from fastapi import Path
 from fastapi import Request
 from fastapi.responses import ORJSONResponse
 
-from tarchia.config import METADATA_ROOT
-from tarchia.constants import IDENTIFIER_REG_EX
 from tarchia.exceptions import AlreadyExistsError
 from tarchia.models import CreateOwnerRequest
 from tarchia.models import OwnerEntry
 from tarchia.models import UpdateValueRequest
+from tarchia.utils.config import METADATA_ROOT
+from tarchia.utils.constants import IDENTIFIER_REG_EX
 
 router = APIRouter()
 
@@ -44,7 +44,7 @@ async def create_owner(request: CreateOwnerRequest):
     Returns:
         JSON response with a message and owner name.
     """
-    from tarchia.catalog import catalog_factory
+    from tarchia.interfaces.catalog import catalog_factory
     from tarchia.utils import generate_uuid
 
     catalog_provider = catalog_factory()
@@ -105,7 +105,7 @@ async def update_owner(owner: str, attribute: str, request: UpdateValueRequest):
     Returns:
         JSON response with a message, owner name, and updated attribute.
     """
-    from tarchia.catalog import catalog_factory
+    from tarchia.interfaces.catalog import catalog_factory
     from tarchia.utils.catalogs import identify_owner
 
     if attribute not in {"steward"}:
@@ -131,7 +131,7 @@ async def delete_owner(owner: str):
     Returns:
         JSON response with a message and owner name.
     """
-    from tarchia.catalog import catalog_factory
+    from tarchia.interfaces.catalog import catalog_factory
     from tarchia.utils.catalogs import identify_owner
 
     entry = identify_owner(owner)

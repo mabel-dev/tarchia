@@ -1,14 +1,14 @@
-from tarchia import config
 from tarchia.exceptions import InvalidConfigurationError
+from tarchia.utils import config
 
 
 def catalog_factory():  # pragma: no cover
     if config.CATALOG_PROVIDER is None or config.CATALOG_PROVIDER.upper() == "DEVELOPMENT":
-        from tarchia.catalog.dev_catalog import DevelopmentCatalogProvider
+        from tarchia.interfaces.catalog.dev_catalog import DevelopmentCatalogProvider
 
         return DevelopmentCatalogProvider(config.CATALOG_NAME or "catalog.json")
     if config.CATALOG_PROVIDER.upper() == "FIRESTORE":
-        from tarchia.catalog.gcs_firestore import FirestoreCatalogProvider
+        from tarchia.interfaces.catalog.gcs_firestore import FirestoreCatalogProvider
 
         return FirestoreCatalogProvider(config.CATALOG_NAME)
     raise InvalidConfigurationError(setting="CATALOG_PROVIDER")

@@ -3,17 +3,17 @@ from typing import Optional
 from typing import Tuple
 
 from tarchia.exceptions import DataError
-from tarchia.manifests.models import EntryType
-from tarchia.manifests.models import ManifestEntry
-from tarchia.manifests.pruning import prune
+from tarchia.interfaces.storage import StorageProvider
+from tarchia.interfaces.storage import storage_factory
+from tarchia.metadata.manifests.pruning import prune
 from tarchia.models import Column
 from tarchia.models import Schema
-from tarchia.storage import StorageProvider
-from tarchia.storage import storage_factory
+from tarchia.models.manifest_models import EntryType
+from tarchia.models.manifest_models import ManifestEntry
 
 
 def get_manifest(
-    location: str,
+    location: Optional[str],
     storage_provider: StorageProvider,
     filter_conditions: Optional[List[Tuple[str, str, int]]],
 ) -> List[ManifestEntry]:
@@ -42,6 +42,9 @@ def get_manifest(
 
     manifest = []
 
+    if location is None:
+        return manifest
+
     # get the manifest
     manifest_bytes = storage_provider.read_blob(location)
     manifest_complete = fastavro.reader(BytesIO(manifest_bytes))
@@ -68,7 +71,7 @@ def write_manifest(location: str, storage_provider: StorageProvider, entries: Li
 
     import fastavro
 
-    from .models import MANIFEST_SCHEMA
+    from ..models.manifest_models import MANIFEST_SCHEMA
 
     stream = BytesIO()
 

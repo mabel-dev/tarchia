@@ -8,24 +8,11 @@ from typing import Optional
 from fastavro import reader
 from fastavro import writer
 
-from tarchia.constants import MAIN_BRANCH
+from tarchia.models import HISTORY_SCHEMA
 from tarchia.models import HistoryEntry
+from tarchia.utils.constants import MAIN_BRANCH
 
 sys.path.insert(0, os.path.join(sys.path[0], "../.."))
-
-
-HISTORY_SCHEMA = {
-    "type": "record",
-    "name": "Commit",
-    "fields": [
-        {"name": "sha", "type": "string"},
-        {"name": "branch", "type": "string"},
-        {"name": "message", "type": "string"},
-        {"name": "user", "type": "string"},
-        {"name": "timestamp", "type": "int"},
-        {"name": "parent_sha", "type": ["null", "string"], "default": None},
-    ],
-}
 
 
 class HistoryTree:

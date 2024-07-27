@@ -43,6 +43,8 @@ def test_create_read_update_delete_table():
         location="gs://dataset/",
         steward="bob",
         table_schema=Schema(columns=[Column(name="column")]),
+        freshness_life_in_days=0,
+        retention_in_days=0,
     )
 
     # can't create the table for non-existent owner
@@ -97,6 +99,8 @@ def test_maintain_table_metadata():
         location="gs://dataset/",
         steward="bob",
         table_schema=Schema(columns=[Column(name="column")]),
+        freshness_life_in_days=0,
+        retention_in_days=0
     )
 
     # create the table
@@ -124,55 +128,6 @@ def test_maintain_table_metadata():
 
     # delete the table
     response = client.delete(url=f"/v1/tables/{TEST_OWNER}/test_dataset_metadata_test")
-    assert response.status_code == 200, f"{response.status_code} - {response.content}"
-
-
-def test_maintain_table_schema():
-
-    try:
-        os.remove(os.environ["CATALOG_NAME"])
-    except FileNotFoundError:
-        pass
-
-    ensure_owner()
-
-    client = TestClient(application)
-
-    new_table = CreateTableRequest(
-        name="test_dataset_schema_test",
-        location="gs://dataset/",
-        steward="bob",
-        table_schema=Schema(columns=[Column(name="column")]),
-    )
-
-    # create the table
-    response = client.post(url=f"/v1/tables/{TEST_OWNER}", content=new_table.serialize())
-    assert response.status_code == 200, f"{response.status_code} - {response.content}"
-
-    # confirm we know the schema value before we start
-    response = client.get(url=f"/v1/tables/{TEST_OWNER}/test_dataset_schema_test")
-    assert response.status_code == 200, f"{response.status_code} - {response.content}"
-    current_schema = response.json()["current_schema"] 
-    assert current_schema == {"columns": [{"name": "column", "aliases": [], "default": None, "description": "", "type": "VARCHAR"}]}, current_schema
-
-    # update the schema
-    response = client.patch(
-        url=f"/v1/tables/{TEST_OWNER}/test_dataset_schema_test/schema",
-        content=Schema(columns=[Column(name="new", type="VARCHAR", default="true")]).serialize(),
-    )
-    assert response.status_code == 200, f"{response.status_code} - {response.content}"
-
-    # confirm the schema has been updated correctly
-    response = client.get(url=f"/v1/tables/{TEST_OWNER}/test_dataset_schema_test")
-    assert response.status_code == 200, f"{response.status_code} - {response.content}"
-    schema = response.json()["current_schema"]
-    assert schema is not None
-    assert response.json()["current_schema"] == {
-        "columns": [{"name": "new", "aliases": [], "default": "true", "description": "", "type": "VARCHAR"}]
-    }, schema
-
-    # delete the table
-    response = client.delete(url=f"/v1/tables/{TEST_OWNER}/test_dataset_schema_test")
     assert response.status_code == 200, f"{response.status_code} - {response.content}"
 
 

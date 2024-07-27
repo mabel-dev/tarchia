@@ -5,16 +5,19 @@ from fastapi import Path
 from fastapi import Request
 from fastapi.responses import ORJSONResponse
 
-from tarchia.catalog import catalog_factory
-from tarchia.config import METADATA_ROOT
-from tarchia.constants import IDENTIFIER_REG_EX
 from tarchia.exceptions import AlreadyExistsError
+from tarchia.interfaces.catalog import catalog_factory
+from tarchia.interfaces.storage import storage_factory
 from tarchia.models import CreateTableRequest
 from tarchia.models import TableCatalogEntry
 from tarchia.models import UpdateMetadataRequest
-from tarchia.models import UpdateSchemaRequest
 from tarchia.models import UpdateValueRequest
-from tarchia.storage import storage_factory
+from tarchia.utils import get_base_url
+from tarchia.utils.config import METADATA_ROOT
+from tarchia.utils.constants import COMMITS_ROOT
+from tarchia.utils.constants import HISTORY_ROOT
+from tarchia.utils.constants import IDENTIFIER_REG_EX
+from tarchia.utils.constants import MAIN_BRANCH
 
 router = APIRouter()
 catalog_provider = catalog_factory()
@@ -33,7 +36,7 @@ async def list_tables(owner: str, request: Request):
         List[Dict[str, Any]]: A list of tables with their metadata, including the commit URL if applicable.
     """
 
-    base_url = request.url.scheme + "://" + request.url.netloc
+    base_url = get_base_url(request=request)
 
     table_list = []
 
@@ -69,7 +72,8 @@ async def list_tables(owner: str, request: Request):
 
 @router.post("/tables/{owner}", response_class=ORJSONResponse)
 async def create_table(
-    request: CreateTableRequest,
+    request: Request,
+    table_definition: CreateTableRequest,
     owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
 ):
     """
@@ -80,50 +84,91 @@ async def create_table(
     Parameters:
         request: CreateTableRequest - The request body containing the table metadata.
     """
-
+    from tarchia.metadata.history import HistoryTree
+    from tarchia.models import Commit
+    from tarchia.utils import build_root
     from tarchia.utils import generate_uuid
     from tarchia.utils.catalogs import identify_owner
 
-    # check if we have a table with that name already
+    base_url = get_base_url(request=request)
+    timestamp = int(time.time_ns() / 1e6)
 
-    catalog_entry = catalog_provider.get_table(owner=owner, table=request.name)
+    # check if we have a table with that name already
+    catalog_entry = catalog_provider.get_table(owner=owner, table=table_definition.name)
     if catalog_entry:
         # return a 409
-        raise AlreadyExistsError(entity=request.name)
+        raise AlreadyExistsError(entity=table_definition.name)
 
     # can we find the owner?
-    identify_owner(name=owner)
-
+    owner_entry = identify_owner(name=owner)
     table_id = generate_uuid()
 
-    # We create tables without any commit, at create-time the table has no data and some
-    # table types (external) we never record commits for.
-    new_table = TableCatalogEntry(
-        name=request.name,
-        owner=owner,
-        steward=request.steward,
-        table_id=table_id,
-        format_version=1,
-        location=request.location,
-        partitioning=request.partitioning,
-        visibility=request.visibility,
-        permissions=request.permissions,
-        disposition=request.disposition,
-        metadata=request.metadata,
-        current_commit_sha=None,
-        current_schema=request.table_schema,
-        last_updated_ms=int(time.time_ns() / 1e6),
-        encryption_details=request.encryption_details,
+    commit_root = build_root(COMMITS_ROOT, owner=owner, table_id=table_id)
+    history_root = build_root(HISTORY_ROOT, owner=owner, table_id=table_id)
+
+    # build the new commit record
+    new_commit = Commit(
+        data_hash="0" * 64,
+        user="user",
+        message="Initial commit",
+        branch=MAIN_BRANCH,
+        parent_commit_sha=None,
+        last_updated_ms=timestamp,
+        manifest_path=None,
+        table_schema=table_definition.table_schema,
+        encryption=table_definition.encryption,
     )
 
-    # Save the table to the Catalog
-    catalog_provider.update_table(table_id=new_table.table_id, entry=new_table)
+    # write the initial commit to storage
+    commit_path = f"{commit_root}/commit-{new_commit.commit_sha}.json"
+    storage_provider.write_blob(commit_path, new_commit.serialize())
+
+    # we know we have no history, so we initialize it
+    history = HistoryTree(MAIN_BRANCH)
+    history.commit(new_commit.history_entry)
+    history_raw = history.save_to_avro()
+    history_uuid = generate_uuid()
+    history_file = f"{history_root}/history-{history_uuid}.avro"
+    storage_provider.write_blob(history_file, history_raw)
+
+    # We create tables without any data
+    new_table = TableCatalogEntry(
+        name=table_definition.name,
+        owner=owner,
+        steward=table_definition.steward,
+        table_id=table_id,
+        format_version=1,
+        location=table_definition.location,
+        partitioning=table_definition.partitioning,
+        visibility=table_definition.visibility,
+        permissions=table_definition.permissions,
+        disposition=table_definition.disposition,
+        metadata=table_definition.metadata,
+        current_commit_sha=new_commit.commit_sha,
+        last_updated_ms=timestamp,
+        freshness_life_in_days=table_definition.freshness_life_in_days,
+        retention_in_days=table_definition.retention_in_days,
+    )
+
     # create the metadata folder, put a file with the table name in there
-    storage_provider.write_blob(f"{METADATA_ROOT}/{owner}/{table_id}/{request.name}", b"")
+    storage_provider.write_blob(f"{METADATA_ROOT}/{owner}/{table_id}/{table_definition.name}", b"")
+
+    # Save the table to the Catalog - do this last
+    catalog_provider.update_table(table_id=new_table.table_id, entry=new_table)
+
+    # trigger webhooks - this should be async so we don't wait for the outcome
+    owner_entry.trigger_event(
+        owner_entry.EventTypes.TABLE_CREATED,
+        {
+            "event": "TABLE_CREATED",
+            "table": f"{owner}.{table_definition.name}",
+            "url": f"{base_url}/v1/tables/{owner}/{table_definition}",
+        },
+    )
 
     return {
         "message": "Table Created",
-        "table": f"{owner}.{request.name}",
+        "table": f"{owner}.{table_definition.name}",
     }
 
 
@@ -176,8 +221,10 @@ async def delete_table(
         The metadata and data files for this table is NOT deleted.
     """
 
+    from tarchia.utils.catalogs import identify_owner
     from tarchia.utils.catalogs import identify_table
 
+    owner_entry = identify_owner(name=owner)
     catalog_entry = identify_table(owner=owner, table=table)
 
     table_id = catalog_entry.table_id
@@ -189,37 +236,14 @@ async def delete_table(
         f"{METADATA_ROOT}/{owner}/{table_id}/deleted.json", catalog_entry.serialize()
     )
 
+    # trigger webhooks - this should be async so we don't wait for the outcome
+    owner_entry.trigger_event(
+        owner_entry.EventTypes.TABLE_DELETED,
+        {"event": "TABLE_DELETED", "table": f"{owner}.{table}"},
+    )
+
     return {
         "message": "Table Deleted",
-        "table": f"{owner}.{table}",
-    }
-
-
-@router.patch("/tables/{owner}/{table}/schema")
-async def update_schema(
-    schema: UpdateSchemaRequest,
-    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
-    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
-):
-    from tarchia.schemas import validate_schema_update
-    from tarchia.utils.catalogs import identify_table
-
-    # is the new schema valid
-    for col in schema.columns:
-        col.is_valid()
-
-    catalog_entry = identify_table(owner=owner, table=table)
-
-    # is the evolution valid
-    validate_schema_update(current_schema=catalog_entry.current_schema, updated_schema=schema)
-
-    # update the schema
-    table_id = catalog_entry.table_id
-    catalog_entry.current_schema = schema
-    catalog_provider.update_table(table_id, catalog_entry)
-
-    return {
-        "message": "Schema Updated",
         "table": f"{owner}.{table}",
     }
 
@@ -257,10 +281,39 @@ async def update_table(
 
     catalog_entry = identify_table(owner, table)
     setattr(catalog_entry, attribute, value.value)
-
     catalog_provider.update_table(table_id=catalog_entry.table_id, entry=catalog_entry)
 
     return {
         "message": "Table updated",
+        "table": f"{owner}.{table}",
+    }
+
+
+@router.patch("/tables/{owner}/{table}/branches/{branch}/schema")
+async def update_schema(
+    schema: Request,
+    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
+    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
+):
+    raise NotImplementedError("Create a commit")
+    from tarchia.metadata.schemas import validate_schema_update
+    from tarchia.utils.catalogs import identify_table
+
+    # is the new schema valid
+    for col in schema.columns:
+        col.is_valid()
+
+    catalog_entry = identify_table(owner=owner, table=table)
+
+    # is the evolution valid
+    validate_schema_update(current_schema=catalog_entry.current_schema, updated_schema=schema)
+
+    # update the schema
+    table_id = catalog_entry.table_id
+    catalog_entry.current_schema = schema
+    catalog_provider.update_table(table_id, catalog_entry)
+
+    return {
+        "message": "Schema Updated",
         "table": f"{owner}.{table}",
     }
