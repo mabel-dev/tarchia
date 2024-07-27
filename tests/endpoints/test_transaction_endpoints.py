@@ -5,4 +5,5 @@ TESTS TO WRITE
 - cannot truncate after adding
 - after transaction, table GET returns the latest
 - cannot add a file with mismatched columns
+- test updating encryption details
 """

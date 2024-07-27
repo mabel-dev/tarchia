@@ -11,11 +11,11 @@ import pytest
 from tarchia.api.v1.data_management import encode_and_sign_transaction
 from tarchia.api.v1.data_management import verify_and_decode_transaction
 from tarchia.exceptions import TransactionError
-from tarchia.models import Transaction
+from tarchia.models import Transaction, Schema, Column
 
 
 def test_transaction_signing_happy():
-    payload = Transaction(transaction_id="1", expires_at=0, table_id="1", table="1", owner="1")
+    payload = Transaction(transaction_id="1", expires_at=0, table_id="1", table="1", owner="1", table_schema=Schema(columns=[Column(name="test", type="VARCHAR")]), encryption=None)
 
     signed_transaction = encode_and_sign_transaction(payload)
     verified_transaction = verify_and_decode_transaction(signed_transaction)
@@ -32,7 +32,7 @@ def test_transaction_signing_very_wrong_transactions():
         verify_and_decode_transaction(None)
 
     signed_transaction = encode_and_sign_transaction(
-        Transaction(transaction_id="1", expires_at=0, table_id="1", table="1", owner="1")
+        Transaction(transaction_id="1", expires_at=0, table_id="1", table="1", owner="1", table_schema=Schema(columns=[Column(name="test", type="VARCHAR")]), encryption=None)
     )
     # ensure the transaction is valid
     verify_and_decode_transaction(signed_transaction)

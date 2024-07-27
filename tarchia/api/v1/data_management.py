@@ -29,6 +29,7 @@ from tarchia.models import CommitRequest
 from tarchia.models import StageFilesRequest
 from tarchia.models import Transaction
 from tarchia.utils import config
+from tarchia.utils import get_base_url
 from tarchia.utils.constants import COMMITS_ROOT
 from tarchia.utils.constants import HISTORY_ROOT
 from tarchia.utils.constants import IDENTIFIER_REG_EX
@@ -207,7 +208,7 @@ async def commit_transaction(request: Request, commit_request: CommitRequest):
     from tarchia.utils import generate_uuid
     from tarchia.utils.catalogs import identify_table
 
-    base_url = request.url.scheme + "://" + request.url.netloc
+    base_url = get_base_url(request)
     timestamp = int(time.time_ns() / 1e6)
     uuid = generate_uuid()
 
@@ -234,12 +235,12 @@ async def commit_transaction(request: Request, commit_request: CommitRequest):
         # get the commit we're based on
         old_commit = load_old_commit(storage_provider, commit_root, transaction.parent_commit_sha)
         old_manifest = (
-            get_manifest(old_commit.get("manifest_path"), storage_provider, None)
-            if old_commit.get("manifest_path")
+            get_manifest(old_commit.manifest_path, storage_provider, None)
+            if old_commit.manifest_path
             else []
         )
 
-        new_manifest = build_new_manifest(old_manifest, transaction, catalog_entry.current_schema)
+        new_manifest = build_new_manifest(old_manifest, transaction, transaction.table_schema)
         manifest_path = f"{manifest_root}/manifest-{uuid}.avro"
         write_manifest(
             location=manifest_path, storage_provider=storage_provider, entries=new_manifest
@@ -257,8 +258,8 @@ async def commit_transaction(request: Request, commit_request: CommitRequest):
             parent_commit_sha=transaction.parent_commit_sha,
             last_updated_ms=timestamp,
             manifest_path=manifest_path,
-            table_schema=catalog_entry.current_schema,
-            encryption=catalog_entry.encryption,
+            table_schema=transaction.table_schema,
+            encryption=transaction.encryption,
             added_files=transaction.additions,
             removed_files=transaction.deletions,
         )
