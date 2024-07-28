@@ -86,6 +86,10 @@ class CommitNotFoundError(NotFoundError):  # pragma: no cover
         super().__init__(message)
 
 
+class UnableToReadBlobError(Exception):
+    """Can't find a blob when trying to add to manifest"""
+
+
 class AmbiguousTableError(Exception):  # pragma: no cover
     def __init__(self, table: str):
         self.table = table
