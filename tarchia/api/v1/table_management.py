@@ -13,6 +13,7 @@ from tarchia.models import TableCatalogEntry
 from tarchia.models import UpdateMetadataRequest
 from tarchia.models import UpdateValueRequest
 from tarchia.utils import get_base_url
+from tarchia.utils.catalogs import load_commit
 from tarchia.utils.config import METADATA_ROOT
 from tarchia.utils.constants import COMMITS_ROOT
 from tarchia.utils.constants import HISTORY_ROOT
@@ -189,14 +190,20 @@ async def get_table(
     Returns:
         Dict[str, Any]: The table definition
     """
+    from tarchia.utils import build_root
     from tarchia.utils.catalogs import identify_table
 
     catalog_entry = identify_table(owner, table)
+    base_url = get_base_url(request)
 
     table = catalog_entry.as_dict()
 
     current_commit_sha = catalog_entry.current_commit_sha
-    base_url = request.url.scheme + "://" + request.url.netloc
+    commit_root = build_root(COMMITS_ROOT, owner=owner, table_id=catalog_entry.table_id)
+    commit = load_commit(storage_provider, commit_root, current_commit_sha)
+
+    table["schema"] = commit.table_schema.as_dict()
+
     if current_commit_sha is not None:
         # provide the URL to call to get the latest snapshot
         table["commit_url"] = (

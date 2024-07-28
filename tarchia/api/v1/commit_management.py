@@ -9,15 +9,13 @@ from typing import Literal
 from typing import Optional
 from typing import Union
 
-import orjson
 from fastapi import APIRouter
 from fastapi import Path
 from fastapi import Query
 from fastapi import Request
 from fastapi.responses import ORJSONResponse
 
-from tarchia.exceptions import CommitNotFoundError
-from tarchia.models import Schema
+from tarchia.utils.catalogs import load_commit
 from tarchia.utils.constants import COMMITS_ROOT
 from tarchia.utils.constants import HISTORY_ROOT
 from tarchia.utils.constants import IDENTIFIER_REG_EX
@@ -51,22 +49,18 @@ async def get_table_commit(
 
     commit_root = build_root(COMMITS_ROOT, owner=owner, table_id=table_id)
     storage_provider = storage_factory()
-    commit_file = storage_provider.read_blob(f"{commit_root}/commit-{commit_sha}.json")
-    if not commit_file:
-        raise CommitNotFoundError(owner, table, commit_sha)
-
-    commit_entry = orjson.loads(commit_file)
+    commit_entry = load_commit(storage_provider, commit_root, commit_sha)
 
     # retrieve the list of blobs from the manifests
-    filters = parse_filters(filters, Schema(**commit_entry["table_schema"]))
+    filters = parse_filters(filters, commit_entry.table_schema)
     blobs = [
         {"path": entry.file_path, "bytes": entry.file_size, "records": entry.record_count}
-        for entry in get_manifest(commit_entry.get("manifest_path"), storage_provider, filters)
+        for entry in get_manifest(commit_entry.manifest_path, storage_provider, filters)
     ]
 
     # build the response
     table_definition = catalog_entry.as_dict()
-    table_definition.update(commit_entry)
+    table_definition.update(commit_entry.as_dict())
     table_definition.pop("current_commit_sha", None)
     table_definition.pop("current_schema", None)
     table_definition.pop("last_updated_ms", None)

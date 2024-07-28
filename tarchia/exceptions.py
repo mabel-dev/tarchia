@@ -78,12 +78,11 @@ class OwnerNotFoundError(NotFoundError):  # pragma: no cover
 
 
 class CommitNotFoundError(NotFoundError):  # pragma: no cover
-    def __init__(self, owner: str, table: str, commit: str):
+    def __init__(self, root: str, commit: str):
         self.commit = commit
-        self.owner = owner
-        self.table = table
+        self.root = root
 
-        message = f"Commit with reference {commit} for {owner}.{table} could not be found."
+        message = f"Commit with reference {commit} at {root} could not be found."
         super().__init__(message)
 
 
