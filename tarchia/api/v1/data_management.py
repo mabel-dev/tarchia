@@ -14,7 +14,6 @@ import hashlib
 import time
 from typing import List
 from typing import Literal
-from typing import Optional
 from typing import Union
 
 import orjson
@@ -30,6 +29,7 @@ from tarchia.models import StageFilesRequest
 from tarchia.models import Transaction
 from tarchia.utils import config
 from tarchia.utils import get_base_url
+from tarchia.utils.catalogs import load_commit
 from tarchia.utils.constants import COMMITS_ROOT
 from tarchia.utils.constants import HISTORY_ROOT
 from tarchia.utils.constants import IDENTIFIER_REG_EX
@@ -97,14 +97,6 @@ def verify_and_decode_transaction(transaction_data: str) -> Transaction:
     return Transaction(**transaction)
 
 
-def load_old_commit(storage_provider, commit_root, parent_commit) -> Optional[Commit]:
-    if parent_commit:
-        commit_file = storage_provider.read_blob(f"{commit_root}/commit-{parent_commit}.json")
-        if commit_file:
-            return Commit(**orjson.loads(commit_file))
-    return None
-
-
 def build_new_manifest(old_manifest, transaction, schema):
     from tarchia.metadata.manifests import build_manifest_entry
 
@@ -162,7 +154,7 @@ async def start_transaction(
 
     commit_root = build_root(COMMITS_ROOT, owner=owner, table_id=catalog_entry.table_id)
     storage_provider = storage_factory()
-    parent_commit = load_old_commit(storage_provider, commit_root, commit_sha)
+    parent_commit = load_commit(storage_provider, commit_root, commit_sha)
 
     if parent_commit is None:
         raise TransactionError("Commit not found")
@@ -203,7 +195,6 @@ async def commit_transaction(request: Request, commit_request: CommitRequest):
     from tarchia.metadata.history import HistoryTree
     from tarchia.metadata.manifests import get_manifest
     from tarchia.metadata.manifests import write_manifest
-    from tarchia.models import Commit
     from tarchia.utils import build_root
     from tarchia.utils import generate_uuid
     from tarchia.utils.catalogs import identify_table
@@ -233,7 +224,7 @@ async def commit_transaction(request: Request, commit_request: CommitRequest):
         catalog_provider = catalog_factory()
 
         # get the commit we're based on
-        old_commit = load_old_commit(storage_provider, commit_root, transaction.parent_commit_sha)
+        old_commit = load_commit(storage_provider, commit_root, transaction.parent_commit_sha)
         old_manifest = (
             get_manifest(old_commit.manifest_path, storage_provider, None)
             if old_commit.manifest_path
