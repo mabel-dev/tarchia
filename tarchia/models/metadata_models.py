@@ -1,3 +1,4 @@
+import time
 from enum import Enum
 from typing import Any
 from typing import List
@@ -149,6 +150,7 @@ class TableCatalogEntry(Eventable, TarchiaBaseModel):
     format_version: int = Field(default=1)
     disposition: TableDisposition = Field(default=TableDisposition.SNAPSHOT)
     metadata: dict = Field(default_factory=dict)
+    created_at: int = int(time.time_ns() / 1e6)
 
     def is_valid(self):
         # only columns in the schema can be encrypted
@@ -167,6 +169,7 @@ class OwnerEntry(Eventable, TarchiaBaseModel):
         type (OwnerType): The type of the owner.
         user (str): The name of the user/group that owns this group.
         memberships (List(str)): Identifiers to automatically map users to Owners
+        created_at (int): Timestamp this record was creted.
     """
 
     class EventTypes(Enum):
@@ -180,6 +183,7 @@ class OwnerEntry(Eventable, TarchiaBaseModel):
     type: OwnerType
     steward: str
     memberships: List[str]
+    created_at: int = int(time.time_ns() / 1e6)
 
     def is_valid(self):
         if not self.name.isidentifier():

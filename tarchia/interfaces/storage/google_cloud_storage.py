@@ -45,4 +45,6 @@ class GoogleCloudStorage(StorageProvider):
             bucket_name = self.bucket_name
         bucket = self.client.get_bucket(bucket_name)
         blob = bucket.get_blob(location)
-        return blob.download_as_bytes()
+        if blob:
+            return blob.download_as_bytes()
+        return None

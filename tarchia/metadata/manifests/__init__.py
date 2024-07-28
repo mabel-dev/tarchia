@@ -116,6 +116,11 @@ def build_manifest_entry(path: str, expected_schema: Schema) -> ManifestEntry:
 
     # Read the file bytes and initialize the Parquet file object
     file_bytes = storage_provider.read_blob(blob_path, bucket_in_path=True)
+    if file_bytes is None:
+        from tarchia.exceptions import UnableToReadBlobError
+
+        raise UnableToReadBlobError(f"Unable to read {blob_path}.")
+
     new_manifest_entry.file_size = len(file_bytes)
     new_manifest_entry.sha256_checksum = sha256(file_bytes).hexdigest()
 
