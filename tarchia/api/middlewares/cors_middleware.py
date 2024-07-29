@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-allowed_origins_regex = "http(s)?:\/\/.(localhost|.*\.run\.app)(:\d{1,5})?$"
+allowed_origins_regex = r"https://tarchia-app-cuvdwt7kra-uc\.a\.run\.app"
 
 
 def bind(app: FastAPI):
