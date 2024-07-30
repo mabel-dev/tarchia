@@ -3,9 +3,11 @@ This is not intended for production use, however it is being used for
 development, prototyping and for regression testing.
 """
 
+from typing import Any
+from typing import Dict
 from typing import List
+from typing import Optional
 
-from tarchia.exceptions import AmbiguousTableError
 from tarchia.exceptions import MissingDependencyError
 from tarchia.exceptions import UnmetRequirementError
 from tarchia.interfaces.catalog.provider_base import CatalogProvider
@@ -74,8 +76,6 @@ class FirestoreCatalogProvider(CatalogProvider):
         )
         documents = documents.stream()
         documents = list(doc.to_dict() for doc in documents)
-        if len(documents) > 1:
-            raise AmbiguousTableError(owner=owner, table=table)
         if len(documents) == 1:
             return documents[0]
         return None
@@ -92,7 +92,7 @@ class FirestoreCatalogProvider(CatalogProvider):
             entry.as_dict()
         )
 
-    def list_tables(self, owner: str) -> List[TableCatalogEntry]:
+    def list_tables(self, owner: str) -> List[Dict[str, Any]]:
         """
         List all tables in the catalog along with their basic metadata.
 
@@ -103,7 +103,9 @@ class FirestoreCatalogProvider(CatalogProvider):
 
         documents = self.database.collection(self.collection)
 
-        documents = documents.where(filter=FieldFilter("owner", "==", owner))
+        documents = documents.where(filter=FieldFilter("relation", "==", "table")).where(
+            filter=FieldFilter("owner", "==", owner)
+        )
         documents = documents.stream()
         return list(doc.to_dict() for doc in documents)
 
@@ -135,3 +137,53 @@ class FirestoreCatalogProvider(CatalogProvider):
 
     def delete_owner(self, owner_id: str) -> None:
         self.database.collection(self.collection).delete(f"owner-{owner_id}")
+
+    def list_views(self, owner: str) -> List[Dict[str, Any]]:
+        """
+        List all tables in the catalog along with their basic metadata.
+
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries, each representing the metadata of a table.
+        """
+        from google.cloud.firestore_v1.base_query import FieldFilter
+
+        documents = self.database.collection(self.collection)
+
+        documents = documents.where(filter=FieldFilter("relation", "==", "view")).where(
+            filter=FieldFilter("owner", "==", owner)
+        )
+        documents = documents.stream()
+        return list(doc.to_dict() for doc in documents)
+
+    def get_view(self, owner: str, view: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve metadata for a specified view, including its schema and manifest references.
+
+        Parameters:
+            table_id (str): The identifier of the table.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the metadata of the table.
+        """
+        from google.cloud.firestore_v1.base_query import FieldFilter
+
+        documents = self.database.collection(self.collection)
+        documents = (
+            documents.where(filter=FieldFilter("relation", "==", "view"))
+            .where(filter=FieldFilter("owner", "==", owner))
+            .where(filter=FieldFilter("name", "==", view))
+        )
+        documents = documents.stream()
+        documents = list(doc.to_dict() for doc in documents)
+        if len(documents) == 1:
+            return documents[0]
+        return None
+
+    def delete_view(self, view_id: str) -> None:
+        """
+        Delete metadata for a specified table.
+
+        Parameters:
+            view_id (str): The identifier of the table to be deleted.
+        """
+        self.database.collection(self.collection).document(f"view-{view_id}").delete()

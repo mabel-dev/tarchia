@@ -8,6 +8,7 @@ from .owner_management import router as owner_router
 from .relation_management import router as relation_router
 from .search import router as search_router
 from .table_management import router as table_router
+from .view_management import router as view_router
 
 v1_router = APIRouter(prefix="/v1")
 v1_router.include_router(branch_router, tags=["Branch Management"])
@@ -18,3 +19,4 @@ v1_router.include_router(owner_router, tags=["Owner Management"])
 v1_router.include_router(search_router, tags=["Search"])
 v1_router.include_router(relation_router, tags=["Relation Management"])
 v1_router.include_router(table_router, tags=["Table Management"])
+v1_router.include_router(view_router, tags=["View Management"])

@@ -12,9 +12,11 @@ from .metadata_models import Schema
 from .metadata_models import TableCatalogEntry
 from .metadata_models import TableDisposition
 from .metadata_models import Transaction
+from .metadata_models import ViewCatalogEntry
 from .request_models import CommitRequest
 from .request_models import CreateOwnerRequest
 from .request_models import CreateTableRequest
+from .request_models import CreateViewRequest
 from .request_models import StageFilesRequest
 from .request_models import UpdateMetadataRequest
 from .request_models import UpdateValueRequest

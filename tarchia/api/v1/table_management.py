@@ -61,6 +61,8 @@ async def list_tables(
                 "last_updated_ms",
                 "steward",
                 "metadata",
+                "created_at",
+                "disposition",
             }
         }
         current_commit_sha = table.get("current_commit_sha")
@@ -97,14 +99,19 @@ async def create_table(
     base_url = get_base_url(request=request)
     timestamp = int(time.time_ns() / 1e6)
 
+    # can we find the owner?
+    owner_entry = identify_owner(name=owner)
+
+    catalog_entry = catalog_provider.get_view(owner=owner, view=table_definition.name)
+    if catalog_entry:
+        # return a 409
+        raise AlreadyExistsError(entity=table_definition.name)
     # check if we have a table with that name already
     catalog_entry = catalog_provider.get_table(owner=owner, table=table_definition.name)
     if catalog_entry:
         # return a 409
         raise AlreadyExistsError(entity=table_definition.name)
 
-    # can we find the owner?
-    owner_entry = identify_owner(name=owner)
     table_id = generate_uuid()
 
     commit_root = build_root(COMMITS_ROOT, owner=owner, table_id=table_id)
@@ -167,7 +174,7 @@ async def create_table(
         {
             "event": "TABLE_CREATED",
             "table": f"{owner}.{table_definition.name}",
-            "url": f"{base_url}/v1/tables/{owner}/{table_definition}",
+            "url": f"{base_url}/v1/tables/{owner}/{table_definition.name}",
         },
     )
 

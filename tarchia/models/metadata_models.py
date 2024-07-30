@@ -205,10 +205,10 @@ class ViewCatalogEntry(TarchiaBaseModel):
     """
 
     name: str
-    steward: str
     owner: str
     view_id: str
     statement: str
+    last_updated_ms: int
     relation: Literal["view"] = "view"
     metadata: dict = Field(default_factory=dict)
     created_at: int = int(time.time_ns() / 1e6)
