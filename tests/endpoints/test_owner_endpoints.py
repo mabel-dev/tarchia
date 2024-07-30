@@ -32,7 +32,7 @@ def test_create_read_update_delete_owner():
     client = TestClient(application)
 
     owner = CreateOwnerRequest(
-        name=TEST_OWNER, steward="billy", type=OwnerType.INDIVIDUAL, memberships=[]
+        name=TEST_OWNER, steward="billy", type=OwnerType.INDIVIDUAL, memberships=[], description="test"
     )
 
     # create the owner
@@ -56,10 +56,17 @@ def test_create_read_update_delete_owner():
     response = client.patch(url=f"/v1/owners/{TEST_OWNER}/steward", content='{"value":"bobby"}')
     assert response.status_code == 200, f"{response.status_code} - {response.content}"
 
+    # can we update this owner
+    response = client.patch(url=f"/v1/owners/{TEST_OWNER}/description", content='{"value":"not test"}')
+    assert response.status_code == 200, f"{response.status_code} - {response.content}"
+
     # is the owner updated
     response = client.get(url=f"/v1/owners/{TEST_OWNER}")
     assert response.status_code == 200, f"{response.status_code} - {response.content}"
-    assert response.json()["steward"] == "bobby"
+    entry = response.json()
+    assert entry["steward"] == "bobby"
+    assert entry["description"] == "not test"
+    
 
     # delete the owner
     response = client.delete(url=f"/v1/owners/{TEST_OWNER}")
@@ -87,6 +94,7 @@ def test_owner_rules():
         table_schema=Schema(columns=[Column(name="column")]),
         freshness_life_in_days=0,
         retention_in_days=0,
+        description="test"
     )
 
     # add a table
@@ -98,7 +106,7 @@ def test_owner_rules():
     assert response.status_code == 409, f"{response.status_code} - {response.content}"
 
     owner = CreateOwnerRequest(
-        name=TEST_OWNER, steward="***", type=OwnerType.INDIVIDUAL, memberships=[]
+        name=TEST_OWNER, steward="***", type=OwnerType.INDIVIDUAL, memberships=[], description="test"
     )
 
     # can't create an owner with an invalid name
@@ -116,7 +124,7 @@ def test_invalid_owner():
     client = TestClient(application)
 
     owner = CreateOwnerRequest(
-        name="$owner", steward="billy", type=OwnerType.INDIVIDUAL, memberships=[]
+        name="$owner", steward="billy", type=OwnerType.INDIVIDUAL, memberships=[], description="test"
     )
 
     # can't crreate an owner with an invalid name

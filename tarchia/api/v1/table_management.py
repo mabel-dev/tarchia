@@ -26,7 +26,10 @@ storage_provider = storage_factory()
 
 
 @router.get("/tables/{owner}", response_class=ORJSONResponse)
-async def list_tables(owner: str, request: Request):
+async def list_tables(
+    request: Request,
+    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
+):
     """
     Retrieve a list of tables and their current commits.
 

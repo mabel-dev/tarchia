@@ -2,6 +2,7 @@ import time
 from enum import Enum
 from typing import Any
 from typing import List
+from typing import Literal
 from typing import Optional
 
 from orso.schema import FlatColumn
@@ -138,6 +139,7 @@ class TableCatalogEntry(Eventable, TarchiaBaseModel):
     steward: str
     owner: str
     table_id: str
+    relation: Literal["table"] = "table"
     location: Optional[str]
     partitioning: Optional[List[str]]
     last_updated_ms: int
@@ -178,6 +180,8 @@ class OwnerEntry(Eventable, TarchiaBaseModel):
 
         TABLE_CREATED = "TABLE_CREATED"
         TABLE_DELETED = "TABLE_DELETED"
+        VIEW_CREATED = "VIEW_CREATED"
+        VIEW_DELETED = "VIEW_DELETED"
 
     name: str
     owner_id: str
@@ -193,6 +197,23 @@ class OwnerEntry(Eventable, TarchiaBaseModel):
                 fields=["name"],
                 message="Owner name cannot start with a digit and can only contain alphanumerics and underscores.",
             )
+
+
+class ViewCatalogEntry(TarchiaBaseModel):
+    """
+    The Catalog entry for a view.
+    """
+
+    name: str
+    steward: str
+    owner: str
+    view_id: str
+    statement: str
+    relation: Literal["view"] = "view"
+    metadata: dict = Field(default_factory=dict)
+    created_at: int = int(time.time_ns() / 1e6)
+    description: Optional[str] = ""
+    format_version: int = Field(default=1)
 
 
 class Transaction(TarchiaBaseModel):

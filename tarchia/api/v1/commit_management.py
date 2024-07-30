@@ -20,6 +20,7 @@ from tarchia.utils.constants import COMMITS_ROOT
 from tarchia.utils.constants import HISTORY_ROOT
 from tarchia.utils.constants import IDENTIFIER_REG_EX
 from tarchia.utils.constants import MAIN_BRANCH
+from tarchia.utils.constants import SHA_OR_HEAD_REG_EX
 
 router = APIRouter()
 
@@ -29,7 +30,9 @@ async def get_table_commit(
     request: Request,
     owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
     table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
-    commit_sha: Union[str, Literal["head"]] = Path(description="The commit to retrieve."),
+    commit_sha: Union[str, Literal["head"]] = Path(
+        description="The commit to retrieve.", pattern=SHA_OR_HEAD_REG_EX
+    ),
     filters: Optional[str] = Query(None, description="Filters to push to manifest reader"),
 ):
     from tarchia.interfaces.storage import storage_factory
