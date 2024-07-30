@@ -19,14 +19,12 @@ Exceptions:
 from fastapi import APIRouter
 from fastapi import HTTPException
 from fastapi import Path
-from fastapi import Request
 from fastapi.responses import ORJSONResponse
 
 from tarchia.exceptions import AlreadyExistsError
 from tarchia.models import CreateOwnerRequest
 from tarchia.models import OwnerEntry
 from tarchia.models import UpdateValueRequest
-from tarchia.utils.config import METADATA_ROOT
 from tarchia.utils.constants import IDENTIFIER_REG_EX
 
 router = APIRouter()
@@ -59,6 +57,7 @@ async def create_owner(request: CreateOwnerRequest):
         type=request.type,
         steward=request.steward,
         memberships=request.memberships,
+        description=request.description,
     )
     new_owner.is_valid()
     catalog_provider.update_owner(new_owner)
@@ -108,7 +107,7 @@ async def update_owner(owner: str, attribute: str, request: UpdateValueRequest):
     from tarchia.interfaces.catalog import catalog_factory
     from tarchia.utils.catalogs import identify_owner
 
-    if attribute not in {"steward"}:
+    if attribute not in {"steward", "description"}:
         raise HTTPException(status_code=405, detail=f"Attribute {attribute} cannot be PATCHed.")
 
     catalog_provider = catalog_factory()

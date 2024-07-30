@@ -139,6 +139,7 @@ async def create_table(
         steward=table_definition.steward,
         table_id=table_id,
         format_version=1,
+        description=table_definition.description,
         location=table_definition.location,
         partitioning=table_definition.partitioning,
         visibility=table_definition.visibility,
@@ -283,7 +284,7 @@ async def update_table(
 ):
     from tarchia.utils.catalogs import identify_table
 
-    if attribute not in {"visibility", "steward"}:
+    if attribute not in {"visibility", "steward", "description"}:
         raise ValueError(f"Data attribute {attribute} cannot be modified via the API")
 
     catalog_entry = identify_table(owner, table)

@@ -32,6 +32,7 @@ class CreateOwnerRequest(TarchiaBaseModel):
     name: str
     type: OwnerType
     steward: str
+    description: str
     memberships: List[str]
 
 
@@ -58,6 +59,7 @@ class CreateTableRequest(TarchiaBaseModel):
     freshness_life_in_days: int
     retention_in_days: int
     table_schema: Schema
+    description: str
     visibility: TableVisibility = TableVisibility.PRIVATE
     partitioning: Optional[List[str]] = ["year", "month", "day"]
     disposition: TableDisposition = TableDisposition.SNAPSHOT
