@@ -145,6 +145,7 @@ class TableCatalogEntry(Eventable, TarchiaBaseModel):
     retention_in_days: int
     permissions: List[DatasetPermissions]
     visibility: TableVisibility
+    description: Optional[str] = ""
     current_commit_sha: Optional[str] = None
     current_history: Optional[str] = None
     format_version: int = Field(default=1)
@@ -183,6 +184,7 @@ class OwnerEntry(Eventable, TarchiaBaseModel):
     type: OwnerType
     steward: str
     memberships: List[str]
+    description: Optional[str] = ""
     created_at: int = int(time.time_ns() / 1e6)
 
     def is_valid(self):
