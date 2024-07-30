@@ -89,7 +89,11 @@ async def read_owner(
 
 
 @router.patch("/owners/{owner}/{attribute}", response_class=ORJSONResponse)
-async def update_owner(owner: str, attribute: str, request: UpdateValueRequest):
+async def update_owner(
+    attribute: str,
+    request: UpdateValueRequest,
+    owner: str = Path(description="The owner.", pattern=IDENTIFIER_REG_EX),
+):
     """
     Update an attribute of an owner.
 
@@ -119,7 +123,7 @@ async def update_owner(owner: str, attribute: str, request: UpdateValueRequest):
 
 
 @router.delete("/owners/{owner}", response_class=ORJSONResponse)
-async def delete_owner(owner: str):
+async def delete_owner(owner: str = Path(description="The owner.", pattern=IDENTIFIER_REG_EX)):
     """
     Delete an owner.
 

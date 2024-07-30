@@ -1,8 +1,10 @@
 from tarchia.exceptions import InvalidConfigurationError
 from tarchia.utils import config
 
+from .provider_base import CatalogProvider
 
-def catalog_factory():  # pragma: no cover
+
+def catalog_factory() -> CatalogProvider:  # pragma: no cover
     if config.CATALOG_PROVIDER is None or config.CATALOG_PROVIDER.upper() == "DEVELOPMENT":
         from tarchia.interfaces.catalog.dev_catalog import DevelopmentCatalogProvider
 

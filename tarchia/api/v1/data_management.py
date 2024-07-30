@@ -35,6 +35,7 @@ from tarchia.utils.constants import HISTORY_ROOT
 from tarchia.utils.constants import IDENTIFIER_REG_EX
 from tarchia.utils.constants import MAIN_BRANCH
 from tarchia.utils.constants import MANIFEST_ROOT
+from tarchia.utils.constants import SHA_OR_HEAD_REG_EX
 
 router = APIRouter()
 
@@ -139,7 +140,9 @@ def xor_hex_strings(hex_strings: List[str]) -> str:
 async def start_transaction(
     owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
     table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
-    commit_sha: Union[str, Literal["head"]] = Path(description="The commit to retrieve."),
+    commit_sha: Union[str, Literal["head"]] = Path(
+        description="The commit to retrieve.", pattern=SHA_OR_HEAD_REG_EX
+    ),
 ):
     from tarchia.interfaces.storage import storage_factory
     from tarchia.utils import build_root

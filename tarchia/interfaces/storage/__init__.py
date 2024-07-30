@@ -51,7 +51,6 @@ def storage_factory(provider: Optional[str] = None) -> StorageProvider:  # pragm
         return GoogleCloudStorage()
 
     if provider in ("AMAZON", "S3", "MINIO"):
-        from .s3_storage import S3Storage
+        raise NotImplementedError(f"{provider} storage provider not implemented")
 
-        return S3Storage()
     raise InvalidConfigurationError(setting="STORAGE_PROVIDER")

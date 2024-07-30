@@ -45,6 +45,7 @@ def test_create_read_update_delete_table():
         table_schema=Schema(columns=[Column(name="column")]),
         freshness_life_in_days=0,
         retention_in_days=0,
+        description="test"
     )
 
     # can't create the table for non-existent owner
@@ -100,7 +101,8 @@ def test_maintain_table_metadata():
         steward="bob",
         table_schema=Schema(columns=[Column(name="column")]),
         freshness_life_in_days=0,
-        retention_in_days=0
+        retention_in_days=0,
+        description="test"
     )
 
     # create the table
@@ -119,12 +121,21 @@ def test_maintain_table_metadata():
     )
     assert response.status_code == 200, f"{response.status_code} - {response.content}"
 
+    # update the description
+    response = client.patch(
+        url=f"/v1/tables/{TEST_OWNER}/test_dataset_metadata_test/description",
+        content=orjson.dumps({"value": "not test"}),
+    )
+    assert response.status_code == 200, f"{response.status_code} - {response.content}"
+
     # confirm the metadata has been updated correctly
     response = client.get(url=f"/v1/tables/{TEST_OWNER}/test_dataset_metadata_test")
     assert response.status_code == 200, f"{response.status_code} - {response.content}"
-    metadata = response.json()["metadata"]
+    entry = response.json()
+    metadata = entry["metadata"]
     assert metadata is not None
     assert metadata["set"], metadata
+    assert entry["description"] == "not test"
 
     # delete the table
     response = client.delete(url=f"/v1/tables/{TEST_OWNER}/test_dataset_metadata_test")

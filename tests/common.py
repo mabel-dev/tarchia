@@ -11,7 +11,7 @@ def ensure_owner():
     client = TestClient(application)
 
     owner = CreateOwnerRequest(
-        name=TEST_OWNER, steward="billy", type=OwnerType.INDIVIDUAL, memberships=[]
+        name=TEST_OWNER, steward="billy", type=OwnerType.INDIVIDUAL, memberships=[], description="test"
     )
 
     # create the owner

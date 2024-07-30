@@ -67,8 +67,10 @@ class FirestoreCatalogProvider(CatalogProvider):
         from google.cloud.firestore_v1.base_query import FieldFilter
 
         documents = self.database.collection(self.collection)
-        documents = documents.where(filter=FieldFilter("owner", "==", owner)).where(
-            filter=FieldFilter("name", "==", table)
+        documents = documents.where(
+            filter=FieldFilter("relation", "==", "table")
+            .where(FieldFilter("owner", "==", owner))
+            .where(filter=FieldFilter("name", "==", table))
         )
         documents = documents.stream()
         documents = list(doc.to_dict() for doc in documents)
