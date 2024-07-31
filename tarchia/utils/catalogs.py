@@ -33,7 +33,7 @@ def identify_owner(name: str) -> OwnerEntry:
 
 def identify_view(owner: str, view: str) -> ViewCatalogEntry:
     """Get the catalog entry for a table name/identifier"""
-    catalog_entry = catalog_provider.get_view(view=view)
+    catalog_entry = catalog_provider.get_view(owner=owner, view=view)
     if catalog_entry is None:
         raise ViewNotFoundError(owner=owner, view=view)
     return ViewCatalogEntry(**catalog_entry)

@@ -7,6 +7,8 @@ from fastapi.responses import ORJSONResponse
 
 from tarchia.interfaces.catalog import catalog_factory
 from tarchia.models import CreateViewRequest
+from tarchia.models import UpdateMetadataRequest
+from tarchia.models import UpdateValueRequest
 from tarchia.models import ViewCatalogEntry
 from tarchia.utils import get_base_url
 from tarchia.utils.constants import IDENTIFIER_REG_EX
@@ -90,7 +92,7 @@ async def create_view(
         last_updated_ms=timestamp,
     )
     # Save the table to the Catalog - do this last
-    catalog_provider.update_view(table_id=new_view.table_id, entry=new_view)
+    catalog_provider.update_view(view_id=new_view.view_id, entry=new_view)
 
     # trigger webhooks - this should be async so we don't wait for the outcome
     owner_entry.trigger_event(
@@ -103,8 +105,8 @@ async def create_view(
     )
 
     return {
-        "message": "Table Created",
-        "table": f"{owner}.{table_definition.name}",
+        "message": "View Created",
+        "view": f"{owner}.{view_definition.name}",
     }
 
 
@@ -142,5 +144,46 @@ async def delete_view(
 
     return {
         "message": "View Deleted",
+        "view": f"{owner}.{view}",
+    }
+
+
+@router.patch("/views/{owner}/{view}/{attribute}", response_class=ORJSONResponse)
+async def update_view(
+    value: UpdateValueRequest,
+    attribute: str,
+    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
+    view: str = Path(description="The name of the view.", pattern=IDENTIFIER_REG_EX),
+):
+    from tarchia.utils.catalogs import identify_view
+
+    if attribute not in {"statement", "description"}:
+        raise ValueError(f"Data attribute {attribute} cannot be modified via the API")
+
+    catalog_entry = identify_view(owner, view)
+    setattr(catalog_entry, attribute, value.value)
+    catalog_provider.update_view(view_id=catalog_entry.view_id, entry=catalog_entry)
+
+    return {
+        "message": "View updated",
+        "view": f"{owner}.{view}",
+    }
+
+
+@router.patch("/views/{owner}/{view}/metadata")
+async def update_metadata(
+    metadata: UpdateMetadataRequest,
+    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
+    view: str = Path(description="The name of the view.", pattern=IDENTIFIER_REG_EX),
+):
+    from tarchia.utils.catalogs import identify_view
+
+    catalog_entry = identify_view(owner, view)
+    view_id = catalog_entry.view_id
+    catalog_entry.metadata = metadata.metadata
+    catalog_provider.update_view(view_id=view_id, entry=catalog_entry)
+
+    return {
+        "message": "Metadata updated",
         "view": f"{owner}.{view}",
     }

@@ -13,6 +13,7 @@ from tarchia.exceptions import UnmetRequirementError
 from tarchia.interfaces.catalog.provider_base import CatalogProvider
 from tarchia.models import OwnerEntry
 from tarchia.models import TableCatalogEntry
+from tarchia.models import ViewCatalogEntry
 from tarchia.utils import config
 
 GCP_PROJECT_ID = config.GCP_PROJECT_ID
@@ -187,3 +188,15 @@ class FirestoreCatalogProvider(CatalogProvider):
             view_id (str): The identifier of the table to be deleted.
         """
         self.database.collection(self.collection).document(f"view-{view_id}").delete()
+
+    def update_view(self, view_id: str, entry: ViewCatalogEntry) -> None:
+        """
+        Update the metadata for a specified table.
+
+        Parameters:
+            table_id (str): The identifier of the table.
+            metadata (Dict[str, Any]): A dictionary containing the metadata to be updated.
+        """
+        self.database.collection(self.collection).document(f"view-{entry.view_id}").set(
+            entry.as_dict()
+        )

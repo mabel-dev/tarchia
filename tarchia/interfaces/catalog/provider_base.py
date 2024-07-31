@@ -6,6 +6,7 @@ from typing import Optional
 
 from tarchia.models import OwnerEntry
 from tarchia.models import TableCatalogEntry
+from tarchia.models import ViewCatalogEntry
 
 
 class CatalogProvider:  # pragma: no cover
@@ -108,6 +109,18 @@ class CatalogProvider:  # pragma: no cover
 
         Parameters:
             table_id (str): The identifier of the table to be deleted.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name} is not implemented."
+        )
+
+    def update_view(self, view_id: str, entry: ViewCatalogEntry) -> None:
+        """
+        Update the metadata for a specified table.
+
+        Parameters:
+            table_id (str): The identifier of the table.
+            entry (Dict[str, Any]): A dictionary containing the metadata to be updated.
         """
         raise NotImplementedError(
             f"{self.__class__.__name__}.{inspect.currentframe().f_code.co_name} is not implemented."

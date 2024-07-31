@@ -11,6 +11,7 @@ from typing import Optional
 from tarchia.interfaces.catalog.provider_base import CatalogProvider
 from tarchia.models import OwnerEntry
 from tarchia.models import TableCatalogEntry
+from tarchia.models import ViewCatalogEntry
 
 
 class DevelopmentCatalogProvider(CatalogProvider):
@@ -117,3 +118,14 @@ class DevelopmentCatalogProvider(CatalogProvider):
             table_id (str): The identifier of the table to be deleted.
         """
         self.store.delete("views", {"view_id": view_id})
+
+    def update_view(self, view_id: str, entry: ViewCatalogEntry) -> None:
+        """
+        Update the metadata for a specified table.
+
+        Parameters:
+            table_id (str): The identifier of the table.
+            metadata (Dict[str, Any]): A dictionary containing the metadata to be updated.
+        """
+
+        self.store.upsert("views", entry.as_dict(), {"view_id": view_id})

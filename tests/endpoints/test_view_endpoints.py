@@ -54,7 +54,7 @@ def test_create_read_update_delete_view():
     # can we retrieve this table?
     response = client.get(url=f"/v1/views/{TEST_OWNER}/test_view")
     assert response.status_code == 200, f"{response.status_code} - {response.content}"
-    assert response.json()["visibility"] == "PRIVATE"
+    assert response.json()["statement"] == "SELECT * FROM $planets"
 
     # we shouldn't be able to update the table_id
     response = client.patch(url=f"/v1/tables/{TEST_OWNER}/test_view/view_id", content="1234")
