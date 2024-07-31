@@ -3,13 +3,15 @@ This is not intended for production use, however it is being used for
 development, prototyping and for regression testing.
 """
 
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 
-from tarchia.exceptions import AmbiguousTableError
 from tarchia.interfaces.catalog.provider_base import CatalogProvider
 from tarchia.models import OwnerEntry
 from tarchia.models import TableCatalogEntry
+from tarchia.models import ViewCatalogEntry
 
 
 class DevelopmentCatalogProvider(CatalogProvider):
@@ -42,8 +44,6 @@ class DevelopmentCatalogProvider(CatalogProvider):
         """
 
         result = self.store.find("tables", {"owner": owner, "name": table})
-        if len(result) > 1:
-            raise AmbiguousTableError(owner=owner, table=table)
         return result[0] if result else None
 
     def update_table(self, table_id: str, entry: TableCatalogEntry) -> None:
@@ -57,7 +57,7 @@ class DevelopmentCatalogProvider(CatalogProvider):
 
         self.store.upsert("tables", entry.as_dict(), {"table_id": table_id})
 
-    def list_tables(self, owner: str) -> List[dict]:
+    def list_tables(self, owner: str) -> List[Dict[str, Any]]:
         """
         List all tables in the catalog along with their basic metadata.
 
@@ -85,3 +85,47 @@ class DevelopmentCatalogProvider(CatalogProvider):
 
     def delete_owner(self, owner_id: str) -> None:
         self.store.delete("owners", {"owner_id": owner_id})
+
+    def list_views(self, owner: str) -> List[Dict[str, Any]]:
+        """
+        List all views in the catalog along with their basic metadata.
+
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries, each representing the metadata of a table.
+        """
+        result = self.store.find("views", {"owner": owner})
+        return result
+
+    def get_view(self, owner: str, view: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve metadata for a specified view.
+
+        Parameters:
+            table_id (str): The identifier of the table.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the metadata of the table.
+        """
+
+        result = self.store.find("views", {"owner": owner, "name": view})
+        return result[0] if result else None
+
+    def delete_view(self, view_id: str) -> None:
+        """
+        Delete metadata for a specified table.
+
+        Parameters:
+            table_id (str): The identifier of the table to be deleted.
+        """
+        self.store.delete("views", {"view_id": view_id})
+
+    def update_view(self, view_id: str, entry: ViewCatalogEntry) -> None:
+        """
+        Update the metadata for a specified table.
+
+        Parameters:
+            table_id (str): The identifier of the table.
+            metadata (Dict[str, Any]): A dictionary containing the metadata to be updated.
+        """
+
+        self.store.upsert("views", entry.as_dict(), {"view_id": view_id})

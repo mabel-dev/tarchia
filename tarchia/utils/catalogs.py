@@ -5,10 +5,12 @@ import orjson
 from tarchia.exceptions import CommitNotFoundError
 from tarchia.exceptions import OwnerNotFoundError
 from tarchia.exceptions import TableNotFoundError
+from tarchia.exceptions import ViewNotFoundError
 from tarchia.interfaces.catalog import catalog_factory
 from tarchia.models import Commit
 from tarchia.models import OwnerEntry
 from tarchia.models import TableCatalogEntry
+from tarchia.models import ViewCatalogEntry
 
 catalog_provider = catalog_factory()
 
@@ -27,6 +29,14 @@ def identify_owner(name: str) -> OwnerEntry:
     if catalog_entry is None:
         raise OwnerNotFoundError(owner=name)
     return OwnerEntry(**catalog_entry)
+
+
+def identify_view(owner: str, view: str) -> ViewCatalogEntry:
+    """Get the catalog entry for a table name/identifier"""
+    catalog_entry = catalog_provider.get_view(owner=owner, view=view)
+    if catalog_entry is None:
+        raise ViewNotFoundError(owner=owner, view=view)
+    return ViewCatalogEntry(**catalog_entry)
 
 
 def load_commit(storage_provider, commit_root, commit_sha) -> Optional[Commit]:

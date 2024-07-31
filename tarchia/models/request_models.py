@@ -107,3 +107,10 @@ class CommitRequest(TarchiaBaseModel):
 class StageFilesRequest(TarchiaBaseModel):
     paths: List[str]
     encoded_transaction: str
+
+
+class CreateViewRequest(TarchiaBaseModel):
+    name: str
+    statement: str
+    metadata: dict = Field(default_factory=dict)
+    description: Optional[str] = ""

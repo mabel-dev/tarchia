@@ -69,6 +69,15 @@ class TableNotFoundError(NotFoundError):  # pragma: no cover
         super().__init__(message)
 
 
+class ViewNotFoundError(NotFoundError):  # pragma: no cover
+    def __init__(self, owner: str, view: str):
+        self.owner = owner
+        self.view = view
+
+        message = f"View with reference {owner}.{view} could not be found."
+        super().__init__(message)
+
+
 class OwnerNotFoundError(NotFoundError):  # pragma: no cover
     def __init__(self, owner: str):
         self.owner = owner
@@ -88,14 +97,6 @@ class CommitNotFoundError(NotFoundError):  # pragma: no cover
 
 class UnableToReadBlobError(Exception):
     """Can't find a blob when trying to add to manifest"""
-
-
-class AmbiguousTableError(Exception):  # pragma: no cover
-    def __init__(self, table: str):
-        self.table = table
-
-        message = f"Multiple tables with reference {table} were found."
-        super().__init__(message)
 
 
 class AlreadyExistsError(Exception):  # pragma: no cover
