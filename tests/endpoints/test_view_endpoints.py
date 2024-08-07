@@ -1,12 +1,10 @@
 """
 
-- cannot create a column with an invalid name
-- cannot create an alias with an invalid name
+- cannot create a view with the name of an existing table
 """
 
 import sys
 import os
-import orjson
 
 os.environ["CATALOG_NAME"] = "test_catalog.json"
 os.environ["TARCHIA_DEBUG"] = "TRUE"
@@ -47,12 +45,17 @@ def test_create_read_update_delete_view():
     response = client.post(url=f"/v1/views/s{TEST_OWNER}", content=new_view.serialize())
     assert response.status_code == 404, f"{response.status_code} - {response.content}"
 
-    # create the table
+    # create the view
     response = client.post(url=f"/v1/views/{TEST_OWNER}", content=new_view.serialize())
     assert response.status_code == 200, f"{response.status_code} - {response.content}"
 
-    # can we retrieve this table?
+    # can we retrieve this view directly?
     response = client.get(url=f"/v1/views/{TEST_OWNER}/test_view")
+    assert response.status_code == 200, f"{response.status_code} - {response.content}"
+    assert response.json()["statement"] == "SELECT * FROM $planets"
+
+    # can we retrieve this view from the relation endpoint?
+    response = client.get(url=f"/v1/relations/{TEST_OWNER}/test_view")
     assert response.status_code == 200, f"{response.status_code} - {response.content}"
     assert response.json()["statement"] == "SELECT * FROM $planets"
 

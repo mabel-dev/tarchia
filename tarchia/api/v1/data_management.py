@@ -27,6 +27,7 @@ from tarchia.models import Commit
 from tarchia.models import CommitRequest
 from tarchia.models import StageFilesRequest
 from tarchia.models import Transaction
+from tarchia.models import TransactionRequest
 from tarchia.utils import config
 from tarchia.utils import get_base_url
 from tarchia.utils.catalogs import load_commit
@@ -193,6 +194,15 @@ async def commit_transaction(request: Request, commit_request: CommitRequest):
     Returns:
         dict: Result of the transaction commit.
     """
+
+    raise NotImplementedError("read notes")
+    """
+    get all of the commits between HEAD and the parent, if any include deletes
+    then fail this commit, if they're all additive then we can continue
+
+    make sure we change the parent commit to the HEAD commit
+    """
+
     from tarchia.interfaces.catalog import catalog_factory
     from tarchia.interfaces.storage import storage_factory
     from tarchia.metadata.history import HistoryTree
@@ -324,14 +334,14 @@ async def add_files_to_transaction(stage: StageFilesRequest):
 
 
 @router.post("/pull/truncate")
-async def truncate_all_files(encoded_transaction: str):
+async def truncate_all_files(tran: TransactionRequest):
     """
     Truncate (delete all records) from a table.
 
     This operation can only be called as part of a transaction and does not make
     any changes to the table until the commit end-point is called.
     """
-    transaction = verify_and_decode_transaction(encoded_transaction)
+    transaction = verify_and_decode_transaction(tran.encoded_transaction)
 
     if len(transaction.additions) != 0:
         raise TransactionError("Use 'truncate' before staging files in transaction.")
@@ -350,18 +360,11 @@ async def truncate_all_files(encoded_transaction: str):
 
 
 @router.patch("/pull/encryption")
-async def update_encryption(
-    schema: Request,
-    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
-    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
-):
+async def update_encryption(tran: TransactionRequest):
     raise NotImplementedError("Create a commit")
 
 
 @router.patch("/pull/abort")
-async def abort_pull(
-    schema: Request,
-    owner: str = Path(description="The owner of the table.", pattern=IDENTIFIER_REG_EX),
-    table: str = Path(description="The name of the table.", pattern=IDENTIFIER_REG_EX),
-):
-    raise NotImplementedError("Create a commit")
+async def abort_pull(tran: TransactionRequest):
+    """doesn't do anything, exists for conceptual completeness"""
+    return {"message": "Transaction Aborted"}

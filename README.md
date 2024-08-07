@@ -128,17 +128,15 @@ flowchart TD
 ### Manifests
 
 - Manifests are immutable, adding a new file creates a new Manifest.
-- First split at 4097, (11 years of daily writes, 61 million records if 15k/file, 200 million if 50k/file)
-- Otherwise, limited to 2048 rows (aiming for most files to be <2MB to support caching).
-- If a manifest exceeds this number, it is split, and a Manifest List is created.
+- First split at 16385, (44 years of daily writes, 22 months of hourly writes, 245 million records if 15k/file, 819 million if 50k/file)
+- Otherwise, limited to 8192 rows, if a Manifest exceeds this size, it is split, and a Manifest List is created.
 - Use B-Tree style management for efficient pruning:
 
-  - **Read and Write Overheads**:
-    - 1 million row dataset: single manifest.
-    - 1 billion row dataset: 33 manifests (1 root and 1 layer with 32 children).
-    - 1 trillion row dataset: 32568 manifests in three layers.
-    - Parallel/Async access reduces read and process time.
-    - Pruning can quickly reduce reads.
+  - **Read and Write Overheads (with 20k rows per data file)**:
+    - 1 million row (1e6) dataset: single manifest.
+    - 1 billion row (1e9) dataset: 7 manifests (1 root and 1 layer with 6 children).
+    - 1 trillion row (1e12) dataset: 6104 manifests in two layers.
+    - Pruning will quickly reduce read effort - latest record is O(n) where n is the height of the tree, regardless of the size of the tree.
 
 ### Data Files
 
@@ -149,7 +147,7 @@ flowchart TD
 
 - Updates are Atomic, effective only when the Catalog is updated.
 - Updates are Consistent, commits are checked if they match the schema.
-- Updates are Isolated, via Commit version checking, this is brutish but effective.
+- Updates are Isolated, via Commit confict checks.
 - Updated are Durable, use of a database like FireStore and Cloud Storage ensure writes are persistent.
 - Failed updates may leave artifacts (e.g., orphan files), but the update itself is either successful or not.
 - Storage cost for failed commits (orphaned files) is considered acceptable.
@@ -213,10 +211,10 @@ End Point            | GET | POST | PATCH | DELETE
 
 End Point                | GET | POST | PATCH | DELETE
 ------------------------ | --- | ---- | ----- | ------
-/v1/transaction/start    | - | Start Transaction | - | -
-/v1/transaction/commit   | - | Commit Transaction | - | -
-/v1/transaction/stage    | - | Add file to Transaction | - | -
-/v1/transaction/truncate | - | Truncate table | - | -
+/v1/tables/{owner}/{table}/commits/{commit_sha}/pull/start           | - | Start Transaction | - | -
+/v1/pull/commit          | - | Commit Transaction | - | -
+/v1/pull/stage           | - | Add file to Transaction | - | -
+/v1/pull/truncate        | - | Truncate table | - | -
 
 ### Commit Management
 
