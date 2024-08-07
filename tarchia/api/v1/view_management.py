@@ -112,6 +112,7 @@ async def create_view(
 
 @router.get("/views/{owner}/{view}", response_class=ORJSONResponse)
 async def get_view(
+    request: Request,
     owner: str = Path(description="The owner of the view.", pattern=IDENTIFIER_REG_EX),
     view: str = Path(description="The view.", pattern=IDENTIFIER_REG_EX),
 ):

@@ -2,6 +2,7 @@
 
 - cannot create a column with an invalid name
 - cannot create an alias with an invalid name
+- cannot create a view with the name of an existing table
 """
 
 import sys
@@ -56,8 +57,13 @@ def test_create_read_update_delete_table():
     response = client.post(url=f"/v1/tables/{TEST_OWNER}", content=new_table.serialize())
     assert response.status_code == 200, f"{response.status_code} - {response.content}"
 
-    # can we retrieve this table?
+    # can we retrieve this table directly?
     response = client.get(url=f"/v1/tables/{TEST_OWNER}/test_dataset")
+    assert response.status_code == 200, f"{response.status_code} - {response.content}"
+    assert response.json()["visibility"] == "PRIVATE"
+
+    # can we retrieve this table from the relation end point?
+    response = client.get(url=f"/v1/relations/{TEST_OWNER}/test_dataset")
     assert response.status_code == 200, f"{response.status_code} - {response.content}"
     assert response.json()["visibility"] == "PRIVATE"
 

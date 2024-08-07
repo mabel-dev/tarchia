@@ -18,5 +18,6 @@ from .request_models import CreateOwnerRequest
 from .request_models import CreateTableRequest
 from .request_models import CreateViewRequest
 from .request_models import StageFilesRequest
+from .request_models import TransactionRequest
 from .request_models import UpdateMetadataRequest
 from .request_models import UpdateValueRequest

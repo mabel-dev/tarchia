@@ -99,14 +99,16 @@ class UpdateValueRequest(TarchiaBaseModel):
     value: Any
 
 
-class CommitRequest(TarchiaBaseModel):
+class TransactionRequest(TarchiaBaseModel):
     encoded_transaction: str
+
+
+class CommitRequest(TransactionRequest):
     commit_message: str
 
 
-class StageFilesRequest(TarchiaBaseModel):
+class StageFilesRequest(TransactionRequest):
     paths: List[str]
-    encoded_transaction: str
 
 
 class CreateViewRequest(TarchiaBaseModel):
